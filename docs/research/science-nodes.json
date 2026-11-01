@@ -1,0 +1,828 @@
+[
+  {
+    "id": "S01",
+    "parentId": null,
+    "stage": 1,
+    "name": "实验科学与现代研究体系",
+    "countryOrContext": "多国，跨国科学史草案",
+    "historicalPeriod": "20世纪前半叶为基础，研究内容延伸至1958年",
+    "historicalNote": "大型科学项目结合实验、工程与机构协作。",
+    "effect": "游戏设计：解锁纯科研树；基础研究速度提高3%。",
+    "requirements": [
+      {
+        "type": "city",
+        "level": 1,
+        "count": 1
+      }
+    ],
+    "additionalPrerequisites": [],
+    "sources": [
+      "https://www.nps.gov/mapr/learn/manhattan-project.htm",
+      "https://www.computerhistory.org/timeline/computers/"
+    ],
+    "conditions": [],
+    "track": "science",
+    "children": [
+      "S02",
+      "S03"
+    ],
+    "researchCost": 8000,
+    "researchSeconds": 60,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "S02",
+    "parentId": "S01",
+    "stage": 2,
+    "name": "物质科学与化学基础",
+    "countryOrContext": "多国",
+    "historicalPeriod": "1900—1940年代，研究领域",
+    "historicalNote": "物质结构、材料和化学构成不同研究方向。",
+    "effect": "游戏设计：解锁物理材料和化学生命两个研究方向。",
+    "requirements": [
+      {
+        "type": "researchCenter",
+        "level": 1,
+        "count": 1
+      }
+    ],
+    "additionalPrerequisites": [],
+    "sources": [
+      "https://ndaarchives.gov.uk/history/1930s/",
+      "https://www.acs.org/education/whatischemistry/landmarks/carotherspolymers.html",
+      "https://www.acs.org/education/whatischemistry/landmarks/flemingpenicillin.html"
+    ],
+    "conditions": [],
+    "track": "science",
+    "children": [
+      "S04",
+      "S05"
+    ],
+    "researchCost": 20000,
+    "researchSeconds": 120,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [
+      "S01"
+    ],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "S03",
+    "parentId": "S01",
+    "stage": 2,
+    "name": "信息科学与飞行研究",
+    "countryOrContext": "多国",
+    "historicalPeriod": "1920—1958年，研究领域",
+    "historicalNote": "电子计算与航空宇航在此时期发展。",
+    "effect": "游戏设计：解锁电子计算和航空宇航两个研究方向。",
+    "requirements": [
+      {
+        "type": "researchCenter",
+        "level": 1,
+        "count": 1
+      }
+    ],
+    "additionalPrerequisites": [],
+    "sources": [
+      "https://www.computerhistory.org/timeline/computers/",
+      "https://www.nasa.gov/history/the-national-advisory-committee-for-aeronautics-naca/",
+      "https://www.nasa.gov/history/sputnik/sputorig.html"
+    ],
+    "conditions": [],
+    "track": "science",
+    "children": [
+      "S06",
+      "S07"
+    ],
+    "researchCost": 20000,
+    "researchSeconds": 120,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [
+      "S01"
+    ],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "S04",
+    "parentId": "S02",
+    "stage": 3,
+    "name": "物理与材料研究",
+    "countryOrContext": "多国",
+    "historicalPeriod": "20世纪前半叶，基础领域",
+    "historicalNote": "核物理与工程材料分别取得进展。",
+    "effect": "游戏设计：开启物理实验和新材料课题；研究失败返工损失减少3%。",
+    "requirements": [
+      {
+        "type": "researchCenter",
+        "level": 1,
+        "count": 1
+      }
+    ],
+    "additionalPrerequisites": [],
+    "sources": [
+      "https://ndaarchives.gov.uk/history/1930s/",
+      "https://blog.sciencemuseum.org.uk/100-years-of-stainless-steel/"
+    ],
+    "conditions": [],
+    "track": "science",
+    "children": [
+      "S08",
+      "S09"
+    ],
+    "researchCost": 50000,
+    "researchSeconds": 240,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [
+      "S02"
+    ],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "S05",
+    "parentId": "S02",
+    "stage": 3,
+    "name": "化学与生命科学",
+    "countryOrContext": "多国",
+    "historicalPeriod": "1910—1940年代，基础领域",
+    "historicalNote": "工业化学和生物化学形成不同应用。",
+    "effect": "游戏设计：开启化学和生命研究；城市科研人员恢复效率提高3%。",
+    "requirements": [
+      {
+        "type": "researchCenter",
+        "level": 1,
+        "count": 1
+      }
+    ],
+    "additionalPrerequisites": [],
+    "sources": [
+      "https://www.basf.com/global/en/who-we-are/history/chronology",
+      "https://www.acs.org/education/whatischemistry/landmarks/flemingpenicillin.html"
+    ],
+    "conditions": [],
+    "track": "science",
+    "children": [
+      "S10",
+      "S11"
+    ],
+    "researchCost": 50000,
+    "researchSeconds": 240,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [
+      "S02"
+    ],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "S06",
+    "parentId": "S03",
+    "stage": 3,
+    "name": "电子学与计算科学",
+    "countryOrContext": "英美等",
+    "historicalPeriod": "1930—1950年代，基础领域",
+    "historicalNote": "电子器件与数字计算逐步发展。",
+    "effect": "游戏设计：开启电子和计算课题；研究数据整理时间减少3%。",
+    "requirements": [
+      {
+        "type": "researchCenter",
+        "level": 1,
+        "count": 1
+      }
+    ],
+    "additionalPrerequisites": [],
+    "sources": [
+      "https://www.computerhistory.org/siliconengine/invention-of-the-point-contact-transistor/",
+      "https://www.computerhistory.org/timeline/computers/"
+    ],
+    "conditions": [],
+    "track": "science",
+    "children": [
+      "S12",
+      "S13"
+    ],
+    "researchCost": 50000,
+    "researchSeconds": 240,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [
+      "S03"
+    ],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "S07",
+    "parentId": "S03",
+    "stage": 3,
+    "name": "航空与宇航科学",
+    "countryOrContext": "多国",
+    "historicalPeriod": "1920—1958年，基础领域",
+    "historicalNote": "航空实验与火箭研究先于人造卫星。",
+    "effect": "游戏设计：开启航空和宇航课题；实验项目组织成本减少3%。",
+    "requirements": [
+      {
+        "type": "researchCenter",
+        "level": 1,
+        "count": 1
+      }
+    ],
+    "additionalPrerequisites": [],
+    "sources": [
+      "https://www.nasa.gov/history/the-national-advisory-committee-for-aeronautics-naca/",
+      "https://www.nasa.gov/history/95-years-ago-goddards-first-liquid-fueled-rocket/",
+      "https://www.nasa.gov/history/story-of-explorer-1/"
+    ],
+    "conditions": [],
+    "track": "science",
+    "children": [
+      "S14",
+      "S15"
+    ],
+    "researchCost": 50000,
+    "researchSeconds": 240,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [
+      "S03"
+    ],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "S08",
+    "parentId": "S04",
+    "stage": 4,
+    "name": "原子物理与核科学",
+    "countryOrContext": "英国、德国、美国等",
+    "historicalPeriod": "1930—1940年代，研究领域",
+    "historicalNote": "中子与裂变研究推动核科学。",
+    "effect": "游戏设计：解锁原子结构和核能历史项目。",
+    "requirements": [
+      {
+        "type": "researchCenter",
+        "level": 2,
+        "count": 1
+      },
+      {
+        "type": "factory",
+        "level": 2,
+        "count": 2
+      }
+    ],
+    "additionalPrerequisites": [],
+    "sources": [
+      "https://ndaarchives.gov.uk/history/1930s/",
+      "https://www.ne.anl.gov/About/reactors/early-reactors.shtml"
+    ],
+    "conditions": [],
+    "track": "science",
+    "children": [
+      "S16"
+    ],
+    "researchCost": 120000,
+    "researchSeconds": 480,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [
+      "S04"
+    ],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "S09",
+    "parentId": "S04",
+    "stage": 4,
+    "name": "冶金与高分子材料",
+    "countryOrContext": "多国",
+    "historicalPeriod": "1900—1940年代，研究领域",
+    "historicalNote": "金属合金与合成聚合物分别发展。",
+    "effect": "游戏设计：解锁合金和聚合物项目；工业维护资金消耗减少3%。",
+    "requirements": [
+      {
+        "type": "researchCenter",
+        "level": 2,
+        "count": 1
+      },
+      {
+        "type": "factory",
+        "level": 2,
+        "count": 2
+      }
+    ],
+    "additionalPrerequisites": [],
+    "sources": [
+      "https://blog.sciencemuseum.org.uk/100-years-of-stainless-steel/",
+      "https://www.acs.org/education/whatischemistry/landmarks/carotherspolymers.html"
+    ],
+    "conditions": [],
+    "track": "science",
+    "children": [
+      "S16"
+    ],
+    "researchCost": 120000,
+    "researchSeconds": 480,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [
+      "S04"
+    ],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "S10",
+    "parentId": "S05",
+    "stage": 4,
+    "name": "微生物与工业化学",
+    "countryOrContext": "英美、德国等",
+    "historicalPeriod": "1910—1940年代，研究领域",
+    "historicalNote": "微生物研究和催化工艺具有不同应用。",
+    "effect": "游戏设计：解锁抗生素与催化化工课题。",
+    "requirements": [
+      {
+        "type": "researchCenter",
+        "level": 2,
+        "count": 1
+      },
+      {
+        "type": "factory",
+        "level": 2,
+        "count": 2
+      }
+    ],
+    "additionalPrerequisites": [],
+    "sources": [
+      "https://www.acs.org/education/whatischemistry/landmarks/flemingpenicillin.html",
+      "https://www.basf.com/global/en/who-we-are/history/chronology"
+    ],
+    "conditions": [],
+    "track": "science",
+    "children": [
+      "S17"
+    ],
+    "researchCost": 120000,
+    "researchSeconds": 480,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [
+      "S05"
+    ],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "S11",
+    "parentId": "S05",
+    "stage": 4,
+    "name": "实验分析与生物化学",
+    "countryOrContext": "多国",
+    "historicalPeriod": "1920—1940年代，研究领域",
+    "historicalNote": "测量仪器和生物化学研究支持实验。",
+    "effect": "游戏设计：解锁分析仪器及生化研究；科研质量检查耗时减少3%。",
+    "requirements": [
+      {
+        "type": "researchCenter",
+        "level": 2,
+        "count": 1
+      },
+      {
+        "type": "factory",
+        "level": 2,
+        "count": 2
+      }
+    ],
+    "additionalPrerequisites": [],
+    "sources": [
+      "https://www.acs.org/education/whatischemistry/landmarks/beckman.html",
+      "https://www.acs.org/education/whatischemistry/landmarks/insulin.html"
+    ],
+    "conditions": [],
+    "track": "science",
+    "children": [
+      "S17"
+    ],
+    "researchCost": 120000,
+    "researchSeconds": 480,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [
+      "S05"
+    ],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "S12",
+    "parentId": "S06",
+    "stage": 4,
+    "name": "固态电子与微波研究",
+    "countryOrContext": "英美等",
+    "historicalPeriod": "1930—1950年代，研究领域",
+    "historicalNote": "半导体器件与微波器件沿不同路线发展。",
+    "effect": "游戏设计：解锁固态器件和微波实验；电子科研成本减少3%。",
+    "requirements": [
+      {
+        "type": "researchCenter",
+        "level": 2,
+        "count": 1
+      },
+      {
+        "type": "factory",
+        "level": 2,
+        "count": 2
+      }
+    ],
+    "additionalPrerequisites": [],
+    "sources": [
+      "https://www.computerhistory.org/siliconengine/invention-of-the-point-contact-transistor/",
+      "https://collection.sciencemuseumgroup.org.uk/objects/co34430/original-cavity-magnetron"
+    ],
+    "conditions": [],
+    "track": "science",
+    "children": [
+      "S18"
+    ],
+    "researchCost": 120000,
+    "researchSeconds": 480,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [
+      "S06"
+    ],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "S13",
+    "parentId": "S06",
+    "stage": 4,
+    "name": "数字计算与信息存储",
+    "countryOrContext": "英美等",
+    "historicalPeriod": "1940—1950年代，研究领域",
+    "historicalNote": "电子数字计算机需要运算与存储技术。",
+    "effect": "游戏设计：解锁计算机与存储课题；复杂研究数据处理效率提高3%。",
+    "requirements": [
+      {
+        "type": "researchCenter",
+        "level": 2,
+        "count": 1
+      },
+      {
+        "type": "factory",
+        "level": 2,
+        "count": 2
+      }
+    ],
+    "additionalPrerequisites": [],
+    "sources": [
+      "https://www.computerhistory.org/timeline/computers/",
+      "https://www.computerhistory.org/storageengine/timeline/"
+    ],
+    "conditions": [],
+    "track": "science",
+    "children": [
+      "S18"
+    ],
+    "researchCost": 120000,
+    "researchSeconds": 480,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [
+      "S06"
+    ],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "S14",
+    "parentId": "S07",
+    "stage": 4,
+    "name": "空气动力与推进实验",
+    "countryOrContext": "多国",
+    "historicalPeriod": "1930—1950年代，研究领域",
+    "historicalNote": "风洞和发动机实验用于理解飞行性能。",
+    "effect": "游戏设计：解锁气动和喷气推进研究；航空实验返工成本减少3%。",
+    "requirements": [
+      {
+        "type": "researchCenter",
+        "level": 2,
+        "count": 1
+      },
+      {
+        "type": "factory",
+        "level": 2,
+        "count": 2
+      }
+    ],
+    "additionalPrerequisites": [],
+    "sources": [
+      "https://www.nasa.gov/altitude-wind-tunnel/",
+      "https://www.nasa.gov/history/the-national-advisory-committee-for-aeronautics-naca/"
+    ],
+    "conditions": [],
+    "track": "science",
+    "children": [
+      "S19"
+    ],
+    "researchCost": 120000,
+    "researchSeconds": 480,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [
+      "S07"
+    ],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "S15",
+    "parentId": "S07",
+    "stage": 4,
+    "name": "火箭与空间科学",
+    "countryOrContext": "美国、苏联及国际合作",
+    "historicalPeriod": "1920—1958年，研究领域",
+    "historicalNote": "火箭实验最终使早期卫星入轨。",
+    "effect": "游戏设计：解锁火箭科学与早期卫星课题；明确进入战后延伸研究。",
+    "requirements": [
+      {
+        "type": "researchCenter",
+        "level": 2,
+        "count": 1
+      },
+      {
+        "type": "factory",
+        "level": 2,
+        "count": 2
+      }
+    ],
+    "additionalPrerequisites": [],
+    "sources": [
+      "https://www.nasa.gov/history/95-years-ago-goddards-first-liquid-fueled-rocket/",
+      "https://www.nasa.gov/history/sputnik/sputorig.html",
+      "https://www.nasa.gov/history/story-of-explorer-1/"
+    ],
+    "conditions": [],
+    "track": "science",
+    "children": [
+      "S19"
+    ],
+    "researchCost": 120000,
+    "researchSeconds": 480,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [
+      "S07"
+    ],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "S16",
+    "track": "science",
+    "stage": 5,
+    "name": "核物理与先进材料",
+    "parentIds": [
+      "S08",
+      "S09"
+    ],
+    "parentId": "S08",
+    "children": [
+      "S20"
+    ],
+    "additionalPrerequisites": [],
+    "historicalPeriod": "1932—1939年，研究领域；1942—1945年，研究领域；20世纪前半叶，研究领域；1920—1930年代，研究领域",
+    "countryOrContext": "多国历史技术综合研究",
+    "historicalNote": "汇集原子核结构实验、受控核反应与大型科学项目、工程合金与材料性能等已有历史项目；不是同名的单一历史发明。",
+    "effect": "游戏设计：汇合原子核、核能研究、冶金与材料基础，解锁终期核能项目研究。",
+    "requirements": [
+      {
+        "type": "researchCenter",
+        "level": 3,
+        "count": 1
+      },
+      {
+        "type": "factory",
+        "level": 2,
+        "count": 3
+      }
+    ],
+    "conditions": [],
+    "researchCost": 300000,
+    "researchSeconds": 1200,
+    "sources": [
+      "https://ndaarchives.gov.uk/history/1930s/",
+      "https://www.ne.anl.gov/About/reactors/early-reactors.shtml",
+      "https://www.nps.gov/mapr/learn/manhattan-project.htm",
+      "https://blog.sciencemuseum.org.uk/100-years-of-stainless-steel/",
+      "https://data.fitzmuseum.cam.ac.uk/id/terminology/term-39714",
+      "https://www.acs.org/education/whatischemistry/landmarks/carotherspolymers.html",
+      "https://pubs.acs.org/doi/10.1021/bk-2011-1080.ch009"
+    ],
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "S17",
+    "track": "science",
+    "stage": 5,
+    "name": "工业化学与生命科学",
+    "parentIds": [
+      "S10",
+      "S11"
+    ],
+    "parentId": "S10",
+    "children": [
+      "S20"
+    ],
+    "additionalPrerequisites": [],
+    "historicalPeriod": "1928—1940年代，研究领域；1910—1930年代，研究领域；1930—1940年代，研究领域；1920—1930年代，研究领域",
+    "countryOrContext": "多国历史技术综合研究",
+    "historicalNote": "汇集抗生素发现与药物研究、工业催化研究、实验测量与工艺放大等已有历史项目；不是同名的单一历史发明。",
+    "effect": "游戏设计：汇合工业化学、实验测量与医药研究；提升人口恢复和工业资源利用效率。",
+    "requirements": [
+      {
+        "type": "researchCenter",
+        "level": 2,
+        "count": 1
+      },
+      {
+        "type": "factory",
+        "level": 2,
+        "count": 3
+      }
+    ],
+    "conditions": [],
+    "researchCost": 300000,
+    "researchSeconds": 1200,
+    "sources": [
+      "https://www.acs.org/education/whatischemistry/landmarks/flemingpenicillin.html",
+      "https://www.acs.org/education/whatischemistry/landmarks/selmanwaksman.html",
+      "https://www.basf.com/global/en/who-we-are/history/chronology",
+      "https://www.acs.org/education/whatischemistry/landmarks/houdry.html",
+      "https://www.acs.org/education/whatischemistry/landmarks/beckman.html",
+      "https://www.acs.org/content/dam/acsorg/education/whatischemistry/landmarks/penicillin/development-of-deep-tank-fermentation-commemorative-booklet.pdf",
+      "https://www.acs.org/education/whatischemistry/landmarks/medical.html",
+      "https://www.acs.org/education/whatischemistry/landmarks/insulin.html"
+    ],
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "S18",
+    "track": "science",
+    "stage": 5,
+    "name": "电子计算与自动控制",
+    "parentIds": [
+      "S12",
+      "S13"
+    ],
+    "parentId": "S12",
+    "children": [
+      "S21"
+    ],
+    "additionalPrerequisites": [],
+    "historicalPeriod": "1947—1948年，战后；1940—1945年，研究领域；1943—1949年，研究领域；1946—1950年代，战后",
+    "countryOrContext": "多国历史技术综合研究",
+    "historicalNote": "汇集半导体放大器研究、微波发生与回波测量、电子数字计算项目等已有历史项目；不是同名的单一历史发明。",
+    "effect": "游戏设计：汇合半导体、微波、电子计算与存储研究，为科学观测和航天控制提供基础。",
+    "requirements": [
+      {
+        "type": "researchCenter",
+        "level": 3,
+        "count": 1
+      },
+      {
+        "type": "factory",
+        "level": 2,
+        "count": 3
+      }
+    ],
+    "conditions": [],
+    "researchCost": 300000,
+    "researchSeconds": 1200,
+    "sources": [
+      "https://www.computerhistory.org/siliconengine/invention-of-the-point-contact-transistor/",
+      "https://www.computerhistory.org/siliconengine/conception-of-the-junction-transistor/",
+      "https://collection.sciencemuseumgroup.org.uk/objects/co34430/original-cavity-magnetron",
+      "https://www.history.navy.mil/research/library/online-reading-room/title-list-alphabetically/u/operational-characteristics-of-radar-classified-by-tactical-application.html",
+      "https://www.computerhistory.org/timeline/computers/",
+      "https://www.computerhistory.org/storageengine/timeline/"
+    ],
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "S19",
+    "track": "science",
+    "stage": 5,
+    "name": "航天推进与空间观测",
+    "parentIds": [
+      "S14",
+      "S15"
+    ],
+    "parentId": "S14",
+    "children": [
+      "S21"
+    ],
+    "additionalPrerequisites": [],
+    "historicalPeriod": "1930—1950年代，研究领域；1940—1950年代，研究领域；1926—1958年，研究领域；1957—1958年，战后",
+    "countryOrContext": "多国历史技术综合研究",
+    "historicalNote": "汇集风洞与高速气动、喷气推进试验科学、液体火箭与高空探测研究等已有历史项目；不是同名的单一历史发明。",
+    "effect": "游戏设计：汇合空气动力、推进与空间观测项目，为人造卫星科学工程提供基础。",
+    "requirements": [
+      {
+        "type": "researchCenter",
+        "level": 3,
+        "count": 1
+      },
+      {
+        "type": "airfield",
+        "level": 2,
+        "count": 1
+      }
+    ],
+    "conditions": [],
+    "researchCost": 300000,
+    "researchSeconds": 1200,
+    "sources": [
+      "https://www.nasa.gov/altitude-wind-tunnel/",
+      "https://www.nasa.gov/pdf/607087main_NASAsFirst50YearsHistoricalPerspectives-ebook.pdf",
+      "https://www.nasa.gov/history/the-national-advisory-committee-for-aeronautics-naca/",
+      "https://www.nasa.gov/history/95-years-ago-goddards-first-liquid-fueled-rocket/",
+      "https://www.nasa.gov/history/story-of-explorer-1/",
+      "https://www.nasa.gov/history/sputnik/sputorig.html",
+      "https://science.nasa.gov/mission/explorer-1/"
+    ],
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "S20",
+    "track": "science",
+    "stage": 6,
+    "name": "原子弹与核能项目",
+    "parentIds": [
+      "S16",
+      "S17"
+    ],
+    "parentId": "S16",
+    "children": [],
+    "additionalPrerequisites": [],
+    "historicalPeriod": "1942年12月2日；1942—1945年，1945年首次核试验",
+    "countryOrContext": "多国历史技术综合研究",
+    "historicalNote": "汇集芝加哥一号堆：受控核反应、曼哈顿计划：原子弹项目等已有历史项目；不是同名的单一历史发明。",
+    "effect": "游戏设计：完成终期核科学项目，获得核能与原子弹战略项目资格；具体作战、设施与生产规则另行实现。",
+    "requirements": [
+      {
+        "type": "researchCenter",
+        "level": 3,
+        "count": 1
+      },
+      {
+        "type": "factory",
+        "level": 3,
+        "count": 4
+      }
+    ],
+    "conditions": [
+      "总人口≥50000",
+      "可用人力≥3000"
+    ],
+    "researchCost": 2000000,
+    "researchSeconds": 3600,
+    "sources": [
+      "https://www.ne.anl.gov/About/reactors/early-reactors.shtml",
+      "https://www.nps.gov/mapr/learn/manhattan-project.htm"
+    ],
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "S21",
+    "track": "science",
+    "stage": 6,
+    "name": "人造卫星科学项目",
+    "parentIds": [
+      "S18",
+      "S19"
+    ],
+    "parentId": "S18",
+    "children": [],
+    "additionalPrerequisites": [],
+    "historicalPeriod": "1957年10月4日，战后；1958年1月31日美国当地时间，战后",
+    "countryOrContext": "多国历史技术综合研究",
+    "historicalNote": "汇集Sputnik 1：首颗人造卫星、Explorer 1：宇宙射线观测卫星等已有历史项目；不是同名的单一历史发明。",
+    "effect": "游戏设计：完成Sputnik 1和Explorer 1代表的早期卫星科学工程，解锁空间观测与科研收益；不提供GPS或现代全球成像能力。",
+    "requirements": [
+      {
+        "type": "researchCenter",
+        "level": 3,
+        "count": 1
+      },
+      {
+        "type": "factory",
+        "level": 2,
+        "count": 4
+      },
+      {
+        "type": "airfield",
+        "level": 2,
+        "count": 1
+      }
+    ],
+    "conditions": [
+      "总人口≥50000",
+      "装备库存≥3000"
+    ],
+    "researchCost": 1800000,
+    "researchSeconds": 3600,
+    "sources": [
+      "https://www.nasa.gov/history/sputnik/sputorig.html",
+      "https://science.nasa.gov/mission/explorer-1/"
+    ],
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "prerequisiteMode": "all"
+  }
+]

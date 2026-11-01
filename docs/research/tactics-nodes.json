@@ -1,0 +1,839 @@
+[
+  {
+    "id": "T01",
+    "parentId": null,
+    "stage": 1,
+    "name": "战间期军用工业基础",
+    "countryOrContext": "多国",
+    "historicalPeriod": "1920—1930年代，基础领域",
+    "historicalNote": "标准化生产支撑战时扩军。",
+    "effect": "游戏设计：解锁战术军事树、研究所Ⅰ级；工厂生产资金消耗−5%。",
+    "requirements": [
+      {
+        "type": "city",
+        "level": 1,
+        "count": 1
+      }
+    ],
+    "additionalPrerequisites": [],
+    "sources": [
+      "https://home.nps.gov/articles/liberty-ships-and-victory-ships-america-s-lifeline-in-war-teaching-with-historic-places.htm",
+      "https://www.nps.gov/spar/learn/historyculture/john-c-garand.htm"
+    ],
+    "conditions": [],
+    "track": "tactics",
+    "children": [
+      "T02",
+      "T03"
+    ],
+    "researchCost": 8000,
+    "researchSeconds": 60,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "T02",
+    "parentId": "T01",
+    "stage": 2,
+    "name": "车辆与兵器工程",
+    "countryOrContext": "多国",
+    "historicalPeriod": "1930年代，基础领域",
+    "historicalNote": "装甲车辆和步兵兵器并行发展。",
+    "effect": "游戏设计：解锁地面装备研究及城市Ⅱ／Ⅲ级升级许可；Ⅲ级另需工程里程碑。",
+    "requirements": [
+      {
+        "type": "factory",
+        "level": 1,
+        "count": 1
+      }
+    ],
+    "additionalPrerequisites": [],
+    "sources": [
+      "https://daspanzermuseum.de/en/large-exhibits/",
+      "https://www.nps.gov/spar/learn/historyculture/john-c-garand.htm"
+    ],
+    "conditions": [],
+    "track": "tactics",
+    "children": [
+      "T04",
+      "T05"
+    ],
+    "researchCost": 20000,
+    "researchSeconds": 120,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [
+      "T01"
+    ],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "T03",
+    "parentId": "T01",
+    "stage": 2,
+    "name": "舰船航空与无线电工程",
+    "countryOrContext": "多国",
+    "historicalPeriod": "1930年代，基础领域",
+    "historicalNote": "舰船航空与电子技术在战间期发展。",
+    "effect": "游戏设计：解锁海空电子分支、研究所Ⅱ级升级许可。",
+    "requirements": [
+      {
+        "type": "factory",
+        "level": 1,
+        "count": 1
+      }
+    ],
+    "additionalPrerequisites": [],
+    "sources": [
+      "https://www.history.navy.mil/research/histories/ship-histories/danfs/e/essex-iv.html",
+      "https://www.history.navy.mil/research/library/online-reading-room/title-list-alphabetically/u/operational-characteristics-of-radar-classified-by-tactical-application.html"
+    ],
+    "conditions": [],
+    "track": "tactics",
+    "children": [
+      "T06",
+      "T07"
+    ],
+    "researchCost": 20000,
+    "researchSeconds": 120,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [
+      "T01"
+    ],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "T04",
+    "parentId": "T02",
+    "stage": 3,
+    "name": "装甲车辆制造",
+    "countryOrContext": "多国",
+    "historicalPeriod": "1930年代，基础领域",
+    "historicalNote": "装甲车体与动力制造构成坦克工业基础。",
+    "effect": "游戏设计：解锁工厂Ⅱ级升级许可及装甲生产类别。",
+    "requirements": [
+      {
+        "type": "factory",
+        "level": 1,
+        "count": 2
+      }
+    ],
+    "additionalPrerequisites": [],
+    "sources": [
+      "https://daspanzermuseum.de/en/large-exhibits/"
+    ],
+    "conditions": [],
+    "track": "tactics",
+    "children": [
+      "T08",
+      "T09"
+    ],
+    "researchCost": 50000,
+    "researchSeconds": 240,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [
+      "T02"
+    ],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "T05",
+    "parentId": "T02",
+    "stage": 3,
+    "name": "步兵兵器与弹药制造",
+    "countryOrContext": "多国",
+    "historicalPeriod": "1930年代，基础领域",
+    "historicalNote": "制式枪械与配套弹药需批量制造。",
+    "effect": "游戏设计：解锁兵营Ⅱ级升级许可；装备产量+5%。",
+    "requirements": [
+      {
+        "type": "factory",
+        "level": 1,
+        "count": 2
+      }
+    ],
+    "additionalPrerequisites": [],
+    "sources": [
+      "https://www.nps.gov/spar/learn/historyculture/john-c-garand.htm"
+    ],
+    "conditions": [],
+    "track": "tactics",
+    "children": [
+      "T10",
+      "T11"
+    ],
+    "researchCost": 50000,
+    "researchSeconds": 240,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [
+      "T02"
+    ],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "T06",
+    "parentId": "T03",
+    "stage": 3,
+    "name": "海军造船工程",
+    "countryOrContext": "多国",
+    "historicalPeriod": "1930年代，基础领域",
+    "historicalNote": "港口造船支撑水面舰艇与潜艇。",
+    "effect": "游戏设计：解锁港口Ⅰ级、基础运兵船和自动商船；届时登陆改为需要港口。",
+    "requirements": [
+      {
+        "type": "factory",
+        "level": 1,
+        "count": 2
+      }
+    ],
+    "additionalPrerequisites": [],
+    "sources": [
+      "https://www.history.navy.mil/research/histories/ship-histories/danfs/e/essex-iv.html",
+      "https://www.history.navy.mil/research/histories/ship-histories/danfs/l/lst-1.html"
+    ],
+    "conditions": [],
+    "track": "tactics",
+    "children": [
+      "T12",
+      "T13"
+    ],
+    "researchCost": 50000,
+    "researchSeconds": 240,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [
+      "T03"
+    ],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "T07",
+    "parentId": "T03",
+    "stage": 3,
+    "name": "航空制造与无线电探测",
+    "countryOrContext": "多国",
+    "historicalPeriod": "1930年代，基础领域",
+    "historicalNote": "飞机制造与无线电探测成为空战基础。",
+    "effect": "游戏设计：解锁机场Ⅰ级、基础侦察与雷达站Ⅰ级。",
+    "requirements": [
+      {
+        "type": "factory",
+        "level": 1,
+        "count": 2
+      }
+    ],
+    "additionalPrerequisites": [],
+    "sources": [
+      "https://www.history.navy.mil/research/library/online-reading-room/title-list-alphabetically/u/operational-characteristics-of-radar-classified-by-tactical-application.html",
+      "https://www.nationalmuseum.af.mil/Visit/Museum-Exhibits/Fact-Sheets/Display/Article/196263/north-american-p-51d-mustang/"
+    ],
+    "conditions": [],
+    "track": "tactics",
+    "children": [
+      "T14",
+      "T15"
+    ],
+    "researchCost": 50000,
+    "researchSeconds": 240,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [
+      "T03"
+    ],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "T08",
+    "parentId": "T04",
+    "stage": 4,
+    "name": "中型坦克生产工艺",
+    "countryOrContext": "多国",
+    "historicalPeriod": "1930年代—1940年代初，技术类别",
+    "historicalNote": "中型坦克兼顾机动与生产规模。",
+    "effect": "游戏设计：解锁中型坦克研究项目与工厂Ⅲ级升级许可。",
+    "requirements": [
+      {
+        "type": "factory",
+        "level": 2,
+        "count": 3
+      }
+    ],
+    "additionalPrerequisites": [],
+    "sources": [
+      "https://tankmuseum.org/tank-nuts/tank-collection/m4-sherman/",
+      "https://tankmuseum.org/tank-nuts/tank-collection/t-34-85"
+    ],
+    "conditions": [],
+    "track": "tactics",
+    "children": [
+      "T16"
+    ],
+    "researchCost": 120000,
+    "researchSeconds": 480,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [
+      "T04"
+    ],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "T09",
+    "parentId": "T04",
+    "stage": 4,
+    "name": "重型装甲与无炮塔战车",
+    "countryOrContext": "苏联、德国等",
+    "historicalPeriod": "1930年代末—1940年代，技术类别",
+    "historicalNote": "重型坦克与突击炮是不同装备路线。",
+    "effect": "游戏设计：解锁重装甲及突击炮研究类别。",
+    "requirements": [
+      {
+        "type": "factory",
+        "level": 2,
+        "count": 3
+      }
+    ],
+    "additionalPrerequisites": [],
+    "sources": [
+      "https://ar.culture.ru/en/subject/tank-kv-1",
+      "https://tankmuseum.org/tank-nuts/tank-collection/stug-iii"
+    ],
+    "conditions": [],
+    "track": "tactics",
+    "children": [
+      "T16"
+    ],
+    "researchCost": 120000,
+    "researchSeconds": 480,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [
+      "T04"
+    ],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "T10",
+    "parentId": "T05",
+    "stage": 4,
+    "name": "自动装填与机枪制造",
+    "countryOrContext": "美国、德国等",
+    "historicalPeriod": "1930年代，技术类别",
+    "historicalNote": "半自动步枪和机枪采用不同设计。",
+    "effect": "游戏设计：解锁步兵装备改进、兵营Ⅲ级升级许可。",
+    "requirements": [
+      {
+        "type": "factory",
+        "level": 2,
+        "count": 3
+      }
+    ],
+    "additionalPrerequisites": [
+      "T04"
+    ],
+    "sources": [
+      "https://www.nps.gov/spar/learn/historyculture/john-c-garand.htm",
+      "https://norfolktankmuseum.co.uk/mg-42/"
+    ],
+    "conditions": [],
+    "track": "tactics",
+    "children": [
+      "T17"
+    ],
+    "researchCost": 120000,
+    "researchSeconds": 480,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [
+      "T05"
+    ],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "T11",
+    "parentId": "T05",
+    "stage": 4,
+    "name": "火炮弹药与重装运输",
+    "countryOrContext": "多国",
+    "historicalPeriod": "1930年代，技术类别",
+    "historicalNote": "火炮、弹药和铁路运输支撑重火力。",
+    "effect": "游戏设计：解锁铁路Ⅰ级、要塞Ⅱ／Ⅲ级升级许可与炮兵研究；Ⅲ级要塞另需工程里程碑。",
+    "requirements": [
+      {
+        "type": "factory",
+        "level": 2,
+        "count": 3
+      }
+    ],
+    "additionalPrerequisites": [
+      "T04"
+    ],
+    "sources": [
+      "https://goordnance.army.mil/history/historicalCollectionHighlights.html",
+      "https://www.awm.gov.au/collection/C239057"
+    ],
+    "conditions": [],
+    "track": "tactics",
+    "children": [
+      "T17"
+    ],
+    "researchCost": 120000,
+    "researchSeconds": 480,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [
+      "T05"
+    ],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "T12",
+    "parentId": "T06",
+    "stage": 4,
+    "name": "水面舰艇与船体工程",
+    "countryOrContext": "多国",
+    "historicalPeriod": "1930年代，技术类别",
+    "historicalNote": "航母与运输船采用不同船体需求。",
+    "effect": "游戏设计：解锁港口Ⅱ级升级许可、水面舰船研究类别。",
+    "requirements": [
+      {
+        "type": "factory",
+        "level": 2,
+        "count": 3
+      },
+      {
+        "type": "port",
+        "level": 1,
+        "count": 1
+      }
+    ],
+    "additionalPrerequisites": [
+      "T04"
+    ],
+    "sources": [
+      "https://www.history.navy.mil/research/histories/ship-histories/danfs/e/essex-iv.html",
+      "https://www.history.navy.mil/research/histories/ship-histories/danfs/l/lst-1.html"
+    ],
+    "conditions": [],
+    "track": "tactics",
+    "children": [
+      "T18"
+    ],
+    "researchCost": 120000,
+    "researchSeconds": 480,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [
+      "T06"
+    ],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "T13",
+    "parentId": "T06",
+    "stage": 4,
+    "name": "潜艇与反潜探测工程",
+    "countryOrContext": "多国",
+    "historicalPeriod": "1930年代—二战，技术类别",
+    "historicalNote": "潜艇发展推动护航与探测技术。",
+    "effect": "游戏设计：解锁潜艇和反潜装备研究类别。",
+    "requirements": [
+      {
+        "type": "factory",
+        "level": 2,
+        "count": 3
+      },
+      {
+        "type": "port",
+        "level": 1,
+        "count": 1
+      }
+    ],
+    "additionalPrerequisites": [
+      "T04"
+    ],
+    "sources": [
+      "https://www.bremerhaven.de/en/tourism/museums-adventure-worlds/submarine-wilhelm-bauer.21815.html",
+      "https://www.history.navy.mil/content/history/museums/nmusn/explore/photography/wwii/wwii-atlantic/battle-of-the-atlantic/anti-submarine-warfare/hedgehog.html"
+    ],
+    "conditions": [],
+    "track": "tactics",
+    "children": [
+      "T18"
+    ],
+    "researchCost": 120000,
+    "researchSeconds": 480,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [
+      "T06"
+    ],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "T14",
+    "parentId": "T07",
+    "stage": 4,
+    "name": "航空动力与机体工程",
+    "countryOrContext": "多国",
+    "historicalPeriod": "1930年代，技术类别",
+    "historicalNote": "活塞与喷气动力是不同航空技术路线。",
+    "effect": "游戏设计：解锁机场Ⅱ级升级许可和先进飞机研究类别。",
+    "requirements": [
+      {
+        "type": "factory",
+        "level": 2,
+        "count": 3
+      },
+      {
+        "type": "airfield",
+        "level": 1,
+        "count": 1
+      }
+    ],
+    "additionalPrerequisites": [
+      "T04"
+    ],
+    "sources": [
+      "https://www.nationalmuseum.af.mil/Visit/Museum-Exhibits/Fact-Sheets/Display/Article/196263/north-american-p-51d-mustang/",
+      "https://www.history.navy.mil/content/history/museums/nnam/explore/collections/aircraft/m/me-262.html"
+    ],
+    "conditions": [],
+    "track": "tactics",
+    "children": [
+      "T19"
+    ],
+    "researchCost": 120000,
+    "researchSeconds": 480,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [
+      "T07"
+    ],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "T15",
+    "parentId": "T07",
+    "stage": 4,
+    "name": "无线电测向与电子工程",
+    "countryOrContext": "英国、美国等",
+    "historicalPeriod": "1930年代—二战，技术类别",
+    "historicalNote": "无线电测向和雷达服务侦察与火控。",
+    "effect": "游戏设计：解锁研究所Ⅲ级升级许可及电子设备研究类别。",
+    "requirements": [
+      {
+        "type": "factory",
+        "level": 2,
+        "count": 3
+      },
+      {
+        "type": "radarStation",
+        "level": 1,
+        "count": 1
+      }
+    ],
+    "additionalPrerequisites": [
+      "T04"
+    ],
+    "sources": [
+      "https://www.history.navy.mil/research/library/online-reading-room/title-list-alphabetically/u/operational-characteristics-of-radar-classified-by-tactical-application.html",
+      "https://www.history.navy.mil/research/histories/ship-histories/danfs/g/guadalcanal-i.html"
+    ],
+    "conditions": [],
+    "track": "tactics",
+    "children": [
+      "T19"
+    ],
+    "researchCost": 120000,
+    "researchSeconds": 480,
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "parentIds": [
+      "T07"
+    ],
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "T16",
+    "track": "tactics",
+    "stage": 5,
+    "name": "装甲与自行火炮工程",
+    "parentIds": [
+      "T08",
+      "T09"
+    ],
+    "parentId": "T08",
+    "children": [
+      "T20"
+    ],
+    "additionalPrerequisites": [],
+    "historicalPeriod": "1940年起生产，二战服役；1942年投入作战；1939—1940年起，二战服役；1940年起，二战服役",
+    "countryOrContext": "多国历史技术综合研究",
+    "historicalNote": "汇集T-34/76中型坦克、M4“谢尔曼”中型坦克、KV-1重型坦克等已有历史项目；不是同名的单一历史发明。",
+    "effect": "游戏设计：汇合中型坦克、重型装甲和突击炮项目，为机械化陆军提供装备基础。",
+    "requirements": [
+      {
+        "type": "factory",
+        "level": 2,
+        "count": 4
+      }
+    ],
+    "conditions": [],
+    "researchCost": 300000,
+    "researchSeconds": 1200,
+    "sources": [
+      "https://tankmuseum.org/tank-nuts/tank-collection/t-34-85",
+      "https://tankmuseum.org/tank-nuts/tank-collection/m4-sherman/",
+      "https://ar.culture.ru/en/subject/tank-kv-1",
+      "https://tankmuseum.org/tank-nuts/tank-collection/stug-iii"
+    ],
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "T17",
+    "track": "tactics",
+    "stage": 5,
+    "name": "步兵装备与炮兵工程",
+    "parentIds": [
+      "T10",
+      "T11"
+    ],
+    "parentId": "T10",
+    "children": [
+      "T20"
+    ],
+    "additionalPrerequisites": [],
+    "historicalPeriod": "1930年代—二战，技术类别；1930年代—1940年代，技术类别",
+    "countryOrContext": "多国历史技术综合研究",
+    "historicalNote": "汇集半自动步枪与通用机枪工艺、冲锋枪与中间威力弹研究、反坦克炮与穿甲弹等已有历史项目；不是同名的单一历史发明。",
+    "effect": "游戏设计：汇合制式枪械、反坦克炮、火箭炮和铁路重炮研究；解锁铁路Ⅱ级。",
+    "requirements": [
+      {
+        "type": "factory",
+        "level": 2,
+        "count": 4
+      },
+      {
+        "type": "barracks",
+        "level": 2,
+        "count": 1
+      }
+    ],
+    "conditions": [],
+    "researchCost": 300000,
+    "researchSeconds": 1200,
+    "sources": [
+      "https://www.nps.gov/spar/learn/historyculture/john-c-garand.htm",
+      "https://norfolktankmuseum.co.uk/mg-42/",
+      "https://muzeumwp.pl/mwpedia/karabin-automatyczny-sturmgewehr-44/",
+      "https://paradata.org.uk/content/4663761",
+      "https://www.awm.gov.au/collection/C239057",
+      "https://goordnance.army.mil/history/historicalCollectionHighlights.html",
+      "https://www.nationalmuseum.af.mil/Visit/Museum-Exhibits/Fact-Sheets/Display/Article/196684/AFmuseum/flying-bomb-and-rocket-development/"
+    ],
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "T18",
+    "track": "tactics",
+    "stage": 5,
+    "name": "舰船与海运工程",
+    "parentIds": [
+      "T12",
+      "T13"
+    ],
+    "parentId": "T12",
+    "children": [
+      "T21"
+    ],
+    "additionalPrerequisites": [],
+    "historicalPeriod": "1930年代—二战，技术类别；1940—1941年起，战时量产",
+    "countryOrContext": "多国历史技术综合研究",
+    "historicalNote": "汇集舰载航空与航母工程、标准船型与焊接造船、柴电潜艇与水下航行等已有历史项目；不是同名的单一历史发明。",
+    "effect": "游戏设计：汇合水面舰船、商运、潜艇和反潜技术；解锁港口Ⅲ级升级许可。",
+    "requirements": [
+      {
+        "type": "factory",
+        "level": 2,
+        "count": 4
+      },
+      {
+        "type": "port",
+        "level": 2,
+        "count": 1
+      }
+    ],
+    "conditions": [],
+    "researchCost": 300000,
+    "researchSeconds": 1200,
+    "sources": [
+      "https://www.history.navy.mil/research/histories/ship-histories/danfs/e/essex-iv.html",
+      "https://collection.nam.ac.uk/detail.php?acc=2003-03-622-1",
+      "https://home.nps.gov/articles/liberty-ships-and-victory-ships-america-s-lifeline-in-war-teaching-with-historic-places.htm",
+      "https://www.history.navy.mil/research/histories/ship-histories/danfs/l/lst-1.html",
+      "https://www.bremerhaven.de/en/tourism/museums-adventure-worlds/submarine-wilhelm-bauer.21815.html",
+      "https://www.history.navy.mil/content/history/museums/nmusn/explore/photography/wwii/wwii-atlantic/battle-of-the-atlantic/anti-submarine-warfare/hedgehog.html",
+      "https://www.history.navy.mil/research/histories/ship-histories/danfs/g/guadalcanal-i.html"
+    ],
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "T19",
+    "track": "tactics",
+    "stage": 5,
+    "name": "航空与电子工程",
+    "parentIds": [
+      "T14",
+      "T15"
+    ],
+    "parentId": "T14",
+    "children": [
+      "T21"
+    ],
+    "additionalPrerequisites": [],
+    "historicalPeriod": "1930年代末—1944年，技术类别；1930年代—1940年代，技术类别；1940—1944年，战时技术；1930年代—1944年，研发与服役",
+    "countryOrContext": "多国历史技术综合研究",
+    "historicalNote": "汇集高性能战斗机工程、四发动机重型轰炸机工程、厘米波雷达工程等已有历史项目；不是同名的单一历史发明。",
+    "effect": "游戏设计：汇合航空动力、重轰炸机、雷达与火箭工程；解锁机场Ⅲ级、雷达站Ⅲ级升级许可。",
+    "requirements": [
+      {
+        "type": "factory",
+        "level": 2,
+        "count": 4
+      },
+      {
+        "type": "airfield",
+        "level": 2,
+        "count": 1
+      },
+      {
+        "type": "radarStation",
+        "level": 2,
+        "count": 1
+      }
+    ],
+    "conditions": [],
+    "researchCost": 300000,
+    "researchSeconds": 1200,
+    "sources": [
+      "https://www.nationalmuseum.af.mil/Visit/Museum-Exhibits/Fact-Sheets/Display/Article/196263/north-american-p-51d-mustang/",
+      "https://www.history.navy.mil/content/history/museums/nnam/explore/collections/aircraft/m/me-262.html",
+      "https://airandspace.si.edu/collection-objects/boeing-b-29-superfortress-enola-gay/nasm_A19500100000",
+      "https://www.rafmuseum.org.uk/blog/the-lancaster-enters-the-fray/",
+      "https://www.history.navy.mil/research/library/online-reading-room/title-list-alphabetically/u/operational-characteristics-of-radar-classified-by-tactical-application.html",
+      "https://collection.sciencemuseumgroup.org.uk/objects/co35145/h2s-mk-iic-airborne-ground-scanning-radar-installation-c-1943",
+      "https://collection.sciencemuseumgroup.org.uk/objects/co34430/original-cavity-magnetron",
+      "https://www.nationalmuseum.af.mil/Visit/Museum-Exhibits/Fact-Sheets/Display/Article/196684/AFmuseum/flying-bomb-and-rocket-development/",
+      "https://www.rafmuseum.org.uk/research/collections/german-army-v2-assembly-4/"
+    ],
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "T20",
+    "track": "tactics",
+    "stage": 6,
+    "name": "机械化陆军体系",
+    "parentIds": [
+      "T16",
+      "T17"
+    ],
+    "parentId": "T16",
+    "children": [],
+    "additionalPrerequisites": [],
+    "historicalPeriod": "1944年起量产并服役；1944年起生产，战争末期服役；1944年末—1945年，战时使用；1944年投入作战；1943年末—1944年，生产服役；1942年末起生产，二战服役；1936年定型，二战大规模装备；1942年起，二战服役；1941年起，二战服役；1943年先行型号、1944年名称，战时服役；1943年投入战场；1941—1942年起，二战服役；1941年投入作战；1930年代制造、1944年安齐奥使用",
+    "countryOrContext": "多国历史技术综合研究",
+    "historicalNote": "汇集T-34/85中型坦克、SU-100坦克歼击车、M4A3E8“谢尔曼”等已有历史项目；不是同名的单一历史发明。",
+    "effect": "游戏设计：解锁T-34/85、M4改进型、IS-2、自行火炮、改进步兵装备及K5铁路炮等终期陆战生产项目；生产仍另付成本。",
+    "requirements": [
+      {
+        "type": "factory",
+        "level": 2,
+        "count": 6
+      },
+      {
+        "type": "barracks",
+        "level": 3,
+        "count": 1
+      }
+    ],
+    "conditions": [],
+    "researchCost": 900000,
+    "researchSeconds": 1800,
+    "sources": [
+      "https://tankmuseum.org/tank-nuts/tank-collection/t-34-85",
+      "https://daspanzermuseum.de/en/large-exhibits/",
+      "https://tankmuseum.org/article/make-tracks-with-ww2-inspired-trainers",
+      "https://tankmuseum.org/tank-nuts/tank-collection/m4-sherman/",
+      "https://www.panssarimuseo.fi/en/visit/node/is-2-has-arrived-at-the-parola-armour-museum",
+      "https://tankmuseum.org/tank-nuts/tank-collection/stug-iii",
+      "https://www.nps.gov/spar/learn/historyculture/john-c-garand.htm",
+      "https://norfolktankmuseum.co.uk/mg-42/",
+      "https://www.awm.gov.au/collection/C1203998",
+      "https://muzeumwp.pl/mwpedia/karabin-automatyczny-sturmgewehr-44/",
+      "https://paradata.org.uk/content/4663761",
+      "https://www.awm.gov.au/collection/C239057",
+      "https://ar.culture.ru/en/subject/boevaya-mashina-reaktivnoy-artillerii-bm-13",
+      "https://goordnance.army.mil/history/historicalCollectionHighlights.html"
+    ],
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "prerequisiteMode": "all"
+  },
+  {
+    "id": "T21",
+    "track": "tactics",
+    "stage": 6,
+    "name": "远洋海空与远程打击",
+    "parentIds": [
+      "T18",
+      "T19"
+    ],
+    "parentId": "T18",
+    "children": [],
+    "additionalPrerequisites": [],
+    "historicalPeriod": "1942年底首舰服役、1943年投入作战；1940年起服役；1941年起量产；1942年起服役；1943年起服役，U 995为保存实例；1944—1945年建造；战末有限出航；1942年起使用；二战，1941—1943年扩大运用；1944年大量投入欧洲战场；1944年投入作战；1942年首飞、1944年投入作战；1942年首次作战；1944年前后投入作战；1941—1942年研制、1943年使用；1944年首次作战发射",
+    "countryOrContext": "多国历史技术综合研究",
+    "historicalNote": "汇集“埃塞克斯”级航空母舰、“光辉”级航空母舰、“自由轮”标准货船等已有历史项目；不是同名的单一历史发明。",
+    "effect": "游戏设计：解锁舰队航母、先进潜艇、P-51D、Me 262、B-29和V系列等海空远程项目；B-29仍要求至少Ⅱ级机场；各单位生产单独付费。",
+    "requirements": [
+      {
+        "type": "factory",
+        "level": 2,
+        "count": 6
+      },
+      {
+        "type": "port",
+        "level": 2,
+        "count": 1
+      },
+      {
+        "type": "airfield",
+        "level": 2,
+        "count": 1
+      },
+      {
+        "type": "researchCenter",
+        "level": 2,
+        "count": 1
+      }
+    ],
+    "conditions": [],
+    "researchCost": 1200000,
+    "researchSeconds": 2400,
+    "sources": [
+      "https://www.history.navy.mil/research/histories/ship-histories/danfs/e/essex-iv.html",
+      "https://collection.nam.ac.uk/detail.php?acc=2003-03-622-1",
+      "https://home.nps.gov/articles/liberty-ships-and-victory-ships-america-s-lifeline-in-war-teaching-with-historic-places.htm",
+      "https://www.history.navy.mil/research/histories/ship-histories/danfs/l/lst-1.html",
+      "https://deutscher-marinebund.de/marine-ehrenmal-u-995/technisches-museum-u-995/",
+      "https://www.bremerhaven.de/en/tourism/museums-adventure-worlds/submarine-wilhelm-bauer.21815.html",
+      "https://www.history.navy.mil/content/history/museums/nmusn/explore/photography/wwii/wwii-atlantic/battle-of-the-atlantic/anti-submarine-warfare/hedgehog.html",
+      "https://www.history.navy.mil/research/histories/ship-histories/danfs/g/guadalcanal-i.html",
+      "https://www.nationalmuseum.af.mil/Visit/Museum-Exhibits/Fact-Sheets/Display/Article/196263/north-american-p-51d-mustang/",
+      "https://www.history.navy.mil/content/history/museums/nnam/explore/collections/aircraft/m/me-262.html",
+      "https://airandspace.si.edu/collection-objects/boeing-b-29-superfortress-enola-gay/nasm_A19500100000",
+      "https://www.nationalmuseum.af.mil/Visit/Museum-Exhibits/Fact-Sheets/Display/Article/196652/development-of-the-boeing-b-29/",
+      "https://www.rafmuseum.org.uk/blog/the-lancaster-enters-the-fray/",
+      "https://www.history.navy.mil/research/library/online-reading-room/title-list-alphabetically/u/operational-characteristics-of-radar-classified-by-tactical-application.html",
+      "https://collection.sciencemuseumgroup.org.uk/objects/co35145/h2s-mk-iic-airborne-ground-scanning-radar-installation-c-1943",
+      "https://www.nationalmuseum.af.mil/Visit/Museum-Exhibits/Fact-Sheets/Display/Article/196684/AFmuseum/flying-bomb-and-rocket-development/",
+      "https://www.rafmuseum.org.uk/research/collections/german-army-v2-assembly-4/"
+    ],
+    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "prerequisiteMode": "all"
+  }
+]

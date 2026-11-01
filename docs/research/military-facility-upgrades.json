@@ -1,0 +1,180 @@
+[
+  {
+    "type": "researchCenter",
+    "level": 1,
+    "research": [
+      "T01"
+    ]
+  },
+  {
+    "type": "researchCenter",
+    "level": 2,
+    "research": [
+      "T03"
+    ]
+  },
+  {
+    "type": "researchCenter",
+    "level": 3,
+    "research": [
+      "T15"
+    ]
+  },
+  {
+    "type": "city",
+    "level": 2,
+    "research": [
+      "T02"
+    ]
+  },
+  {
+    "type": "city",
+    "level": 3,
+    "research": [
+      "T02"
+    ],
+    "completedFacilities": [
+      {
+        "type": "city",
+        "level": 2,
+        "count": 3
+      },
+      {
+        "type": "factory",
+        "level": 2,
+        "count": 2
+      }
+    ]
+  },
+  {
+    "type": "factory",
+    "level": 2,
+    "research": [
+      "T04"
+    ]
+  },
+  {
+    "type": "factory",
+    "level": 3,
+    "research": [
+      "T08"
+    ]
+  },
+  {
+    "type": "barracks",
+    "level": 2,
+    "research": [
+      "T05"
+    ]
+  },
+  {
+    "type": "barracks",
+    "level": 3,
+    "research": [
+      "T10"
+    ]
+  },
+  {
+    "type": "fort",
+    "level": 2,
+    "research": [
+      "T11"
+    ]
+  },
+  {
+    "type": "fort",
+    "level": 3,
+    "research": [
+      "T11"
+    ],
+    "completedFacilities": [
+      {
+        "type": "fort",
+        "level": 2,
+        "count": 2
+      },
+      {
+        "type": "factory",
+        "level": 2,
+        "count": 2
+      }
+    ]
+  },
+  {
+    "type": "port",
+    "level": 1,
+    "research": [
+      "T06"
+    ]
+  },
+  {
+    "type": "port",
+    "level": 2,
+    "research": [
+      "T12"
+    ]
+  },
+  {
+    "type": "port",
+    "level": 3,
+    "research": [
+      "T18"
+    ]
+  },
+  {
+    "type": "airfield",
+    "level": 1,
+    "research": [
+      "T07"
+    ]
+  },
+  {
+    "type": "airfield",
+    "level": 2,
+    "research": [
+      "T14"
+    ]
+  },
+  {
+    "type": "airfield",
+    "level": 3,
+    "research": [
+      "T19"
+    ]
+  },
+  {
+    "type": "radarStation",
+    "level": 1,
+    "research": [
+      "T07"
+    ]
+  },
+  {
+    "type": "radarStation",
+    "level": 2,
+    "research": [
+      "T15"
+    ]
+  },
+  {
+    "type": "radarStation",
+    "level": 3,
+    "research": [
+      "T19"
+    ]
+  },
+  {
+    "type": "railway",
+    "level": 1,
+    "research": [
+      "T11"
+    ]
+  },
+  {
+    "type": "railway",
+    "level": 2,
+    "research": [
+      "T17"
+    ]
+  }
+]
