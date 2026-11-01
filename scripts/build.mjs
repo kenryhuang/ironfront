@@ -5,4 +5,6 @@ await copyFile('index.html', 'dist/index.html');
 await cp('src', 'dist/src', { recursive: true });
 await mkdir('dist/docs/research',{recursive:true});
 await copyFile('docs/research/research-browser.html','dist/docs/research/research-browser.html');
+await cp('docs/facilities','dist/docs/facilities',{recursive:true});
+await cp('docs/bench','dist/docs/bench',{recursive:true});
 console.log('Built IronFront → dist/ (static HTML, CSS and ES modules)');

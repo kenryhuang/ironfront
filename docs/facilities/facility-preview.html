@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>设施建筑图鉴 · IronFront</title>
+  <link rel="stylesheet" href="./facility-preview.css">
+</head>
+<body>
+  <main class="page">
+    <header class="masthead">
+      <a class="brand" href="../../index.html"><span class="brand-mark">IF</span> IRONFRONT <span class="divider">/</span> 建筑图鉴</a>
+      <span class="edition">ARCHITECTURE STUDY · 01</span>
+    </header>
+    <section class="intro">
+      <p class="eyebrow">从聚落到要塞，升级看得见</p>
+      <h1>每一级，都有新的建筑。</h1>
+      <p class="intro-copy">近距离查看屋面、立面和结构扩建。三个等级并排展示，直接比较轮廓与细节。</p>
+    </section>
+    <section class="gallery" aria-labelledby="facility-title">
+      <div class="toolbar">
+        <div class="facility-tabs" role="group" aria-label="选择设施">
+          <button type="button" data-type="city" aria-pressed="true">城市</button>
+          <button type="button" data-type="factory" aria-pressed="false">工厂</button>
+          <button type="button" data-type="barracks" aria-pressed="false">兵营</button>
+          <button type="button" data-type="fort" aria-pressed="false">要塞</button>
+        </div>
+        <label class="detail-label">几何细节 <select id="detail"><option value="high">精细</option><option value="medium">均衡</option><option value="low">远景</option></select></label>
+      </div>
+      <div class="gallery-heading"><div><span class="index-number" id="facility-index">01</span><h2 id="facility-title">城市</h2><span class="facility-subtitle" id="facility-subtitle">街区 · 民居 · 钟楼</span></div><span class="view-label">同尺度 · 正交视图</span></div>
+      <div class="comparison-scroll">
+        <div class="comparison">
+          <div id="viewport" role="img" aria-label="城市一级、二级和三级建筑的三维对比"></div>
+          <div class="levels" id="levels"></div>
+        </div>
+      </div>
+      <div class="view-controls"><span class="lighting"><span></span>日光下的建筑细节</span><div><button id="rotate-left" type="button" aria-label="向左旋转建筑十五度">↶ 左转 15°</button><button id="reset-view" type="button">正面</button><button id="rotate-right" type="button" aria-label="向右旋转建筑十五度">右转 15° ↷</button></div></div>
+      <div class="render-status"><span id="render-stats" aria-live="polite">正在准备模型…</span><span>单一 WebGL 画布 · 仅在操作或尺寸变化时绘制</span></div>
+      <p class="error" id="error" hidden></p>
+    </section>
+    <footer><p><strong>建筑预览</strong>仅展示各等级外观，不会解锁设施或修改游戏中的等级。</p><p>全部模型来自游戏本地资源；无需外部图片或网络素材。远景模式省略微小结构，保留主要轮廓。</p></footer>
+  </main>
+  <script type="module" src="./facility-preview.js"></script>
+</body>
+</html>

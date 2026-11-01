@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>IronFront · 战略武器演示场</title>
+<link rel="stylesheet" href="/src/style.css">
+<style>
+body{height:100vh;display:grid;grid-template-rows:auto 1fr}header{padding:18px 24px;border-bottom:1px solid #46505a;display:flex;justify-content:space-between;gap:20px}h1{font-size:20px;color:#e6c77d}header p{margin-top:8px;color:#a8b6bd}main{display:grid;grid-template-columns:330px 1fr;min-height:0}aside{overflow:auto;padding:18px;background:#172229}.stage{display:grid;grid-template-rows:auto minmax(0,1fr) auto;min-width:0;min-height:0}.toolbar{padding:14px;display:flex;gap:10px;flex-wrap:wrap;background:#202d35}.toolbar button{padding:8px 14px}.map-panel{min-height:0}#battlefield{position:absolute;inset:0}#status{padding:18px;white-space:pre-line;line-height:1.8;background:#202d35;color:#e2dbc3}#message{color:#d6b66b;line-height:1.8;padding-top:12px}.section-label{margin-bottom:12px}@media(max-width:750px){main{grid-template-columns:280px 1fr}header p{max-width:440px}}
+</style>
+<header><div><h1>战略武器演示场</h1><p>预设 T21 / S20 与制造、投送设施；弹药从零生产。时间自动运行，可暂停或快进；不影响你的战役。</p></div><a href="/" target="_blank">打开正式游戏 ↗</a></header>
+<main><aside><section id="weapons"></section><p id="message" role="status">先生产弹药，再选择目标。生产会自动推进；也可点上方「快进60秒」加速入库。</p></aside><div class="stage"><div class="toolbar"><button id="clock-toggle" aria-pressed="false">暂停演示</button><button id="advance10">快进10秒</button><button id="advance60">快进60秒</button><button id="target-base">目标：敌方设施群</button><button id="target-border">目标：边界（含己方）</button></div><div class="map-panel"><canvas id="battlefield" aria-label="武器演示地图，可点击敌方陆地瞄准"></canvas></div><output id="status"></output></div></main>
+<script type="module">
+import {Game} from '/src/engine.js';
+import {Renderer} from '/src/renderer.js';
+import {createStrategicUI} from '/src/strategic-ui.js';
+const $=id=>document.getElementById(id),width=80,height=40;
+const game=new Game({width,height,owners:Array.from({length:width*height},(_,t)=>t%width<30?1:2),terrain:Array(width*height).fill(1),logistics:true,nations:[{id:1,name:'我方',color:'#bda16b',gold:1000000,equipment:30000,manpower:20000,troops:20000},{id:2,name:'敌方',color:'#b97a72',gold:100000,equipment:5000,troops:30000}]});
+for(const [x,y,type,level]of [[9,20,'factory',3],[15,15,'airfield',2],[20,25,'researchCenter',3],[29,20,'city',1],[45,20,'fort',1],[48,22,'city',2],[49,17,'factory',2]])game.buildings.set(y*width+x,{type,level,remaining:0,enabled:true,workers:0});
+game.researchState(1).completed.add('T21');game.researchState(1).completed.add('S20');
+const renderer=new Renderer($('battlefield'),game);let mode=null,running=true;
+const ui=createStrategicUI({root:$('weapons'),getGame:()=>game,isPaused:()=>!running,
+ command(result,message){$('message').textContent=result.ok?message:result.message;return result.ok;},
+ beginTarget(kind){mode=kind;$('message').textContent='点击敌方陆地或上方目标按钮预览，再在左侧确认。';},
+ onPreview(preview){renderer.strikePreview=preview;},onExit(){mode=null;}});
+function update(){ui.update();const n=game.nations.get(1),enemy=game.nations.get(2),fort=game.buildings.get(20*width+45);$('status').textContent=`时钟${running?'运行中':'已暂停'} · 演示时间 ${Math.floor(game.time)}秒 · 资金 ${Math.floor(n.gold).toLocaleString()} · 装备 ${Math.floor(n.equipment).toLocaleString()} · 制造工人 ${game.strategicWorkers(1)}\n敌方要塞：${fort?'完好度 '+(fort.integrity??100)+'%':'已摧毁'} · 剩余敌方设施 ${[...game.buildings].filter(([t])=>game.owners[t]===2).length} 座 · 敌方守军 ${Math.floor(enemy.troops).toLocaleString()}\n最新战果：${game.events.find(e=>e.text.includes('命中：'))?.text??'暂无打击'}`;renderer.render();}
+function advance(seconds){for(let i=0;i<seconds;i++)game.step(1);update();}
+$('clock-toggle').onclick=()=>{running=!running;$('clock-toggle').textContent=running?'暂停演示':'继续演示';$('clock-toggle').setAttribute('aria-pressed',String(!running));update();};
+$('advance10').onclick=()=>advance(10);$('advance60').onclick=()=>advance(60);
+function target(tile){if(!mode){$('message').textContent='先点击左侧某种武器的“选择目标”。';return;}ui.selectTarget(tile);renderer.render();}
+$('target-base').onclick=()=>target(20*width+45);$('target-border').onclick=()=>target(20*width+30);
+$('battlefield').onclick=e=>{const r=e.currentTarget.getBoundingClientRect();target(renderer.tileAt(e.clientX-r.left,e.clientY-r.top));};
+$('weapons').addEventListener('click',()=>update());
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){mode=null;ui.reset();update();}});
+new ResizeObserver(()=>renderer.render()).observe($('battlefield'));update();
+// Use battle time for manufacture and flight; never catch up a hidden tab in one burst.
+let lastFrame=performance.now(),lastUI=0;
+function frame(now){const dt=Math.max(0,Math.min(.25,(now-lastFrame)/1000));lastFrame=now;if(!document.hidden){if(running)game.step(dt);if(now-lastUI>=200){update();lastUI=now;}renderer.render(now);}requestAnimationFrame(frame);}
+document.addEventListener('visibilitychange',()=>{lastFrame=performance.now();});
+requestAnimationFrame(frame);
+</script></html>

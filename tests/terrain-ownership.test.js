@@ -33,3 +33,11 @@ test('rock and snow cannot overwrite political color, which is applied before li
   assert.equal(material.transparent,false);
   material.dispose();map.dispose();political.value.dispose();
 });
+
+test('atlas vertex coordinates do not overwrite Three native mapTransform uniform',()=>{
+  const map=new THREE.Texture(),political={value:new THREE.Texture()},transform={value:new THREE.Vector4()},material=createTerrainMaterial(map,political,transform);
+  const native={value:new THREE.Matrix3()},shader={uniforms:{mapTransform:native},vertexShader:'uniform mat3 mapTransform;\n#include <uv_vertex>\n#include <begin_vertex>',fragmentShader:'#include <color_fragment>'};
+  material.onBeforeCompile(shader);
+  assert.equal(shader.uniforms.mapTransform,native);assert.equal(shader.uniforms.worldAtlasTransform,transform);
+  assert.ok(shader.vertexShader.includes('position.xy*worldAtlasTransform.xy'));assert.ok(!shader.vertexShader.includes('uniform vec4 mapTransform'));
+});

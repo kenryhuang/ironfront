@@ -753,7 +753,7 @@
     "historicalPeriod": "1942年12月2日；1942—1945年，1945年首次核试验",
     "countryOrContext": "多国历史技术综合研究",
     "historicalNote": "汇集芝加哥一号堆：受控核反应、曼哈顿计划：原子弹项目等已有历史项目；不是同名的单一历史发明。",
-    "effect": "游戏设计：完成终期核科学项目，获得核能与原子弹战略项目资格；具体作战、设施与生产规则另行实现。",
+    "effect": "游戏设计：解锁原子弹制造与库存；需要Ⅲ级工厂和Ⅲ级研究所。使用另需T21与Ⅱ级机场，执行范围轰炸，实际摧毁设施、削减守军并暂时压制防御；核爆半径24地理单位，留下120秒不可清除的核污染，持续造成兵力损耗并使设施停工。",
     "requirements": [
       {
         "type": "researchCenter",
@@ -776,7 +776,7 @@
       "https://www.ne.anl.gov/About/reactors/early-reactors.shtml",
       "https://www.nps.gov/mapr/learn/manhattan-project.htm"
     ],
-    "implementationStatus": "live-bonuses-and-facility-licenses",
+    "implementationStatus": "live-strategic-weapons",
     "prerequisiteMode": "all"
   },
   {

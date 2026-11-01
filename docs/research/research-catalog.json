@@ -821,7 +821,7 @@
       "historicalPeriod": "1942年底首舰服役、1943年投入作战；1940年起服役；1941年起量产；1942年起服役；1943年起服役，U 995为保存实例；1944—1945年建造；战末有限出航；1942年起使用；二战，1941—1943年扩大运用；1944年大量投入欧洲战场；1944年投入作战；1942年首飞、1944年投入作战；1942年首次作战；1944年前后投入作战；1941—1942年研制、1943年使用；1944年首次作战发射",
       "countryOrContext": "多国历史技术综合研究",
       "historicalNote": "汇集“埃塞克斯”级航空母舰、“光辉”级航空母舰、“自由轮”标准货船等已有历史项目；不是同名的单一历史发明。",
-      "effect": "游戏设计：解锁舰队航母、先进潜艇、P-51D、Me 262、B-29和V系列等海空远程项目；B-29仍要求至少Ⅱ级机场；各单位生产单独付费。",
+      "effect": "游戏设计：解锁V-2常规导弹制造、储备与范围打击，并解锁B-29原子弹轰炸投送（另需S20与Ⅱ级机场）。其他航母、潜艇及独立飞机单位仍记录许可。各枚弹药单独消耗资金、装备、人力和时间。",
       "requirements": [
         {
           "type": "factory",
@@ -866,7 +866,7 @@
         "https://www.nationalmuseum.af.mil/Visit/Museum-Exhibits/Fact-Sheets/Display/Article/196684/AFmuseum/flying-bomb-and-rocket-development/",
         "https://www.rafmuseum.org.uk/research/collections/german-army-v2-assembly-4/"
       ],
-      "implementationStatus": "live-bonuses-and-facility-licenses",
+      "implementationStatus": "live-strategic-weapons",
       "prerequisiteMode": "all"
     },
     {
@@ -1623,7 +1623,7 @@
       "historicalPeriod": "1942年12月2日；1942—1945年，1945年首次核试验",
       "countryOrContext": "多国历史技术综合研究",
       "historicalNote": "汇集芝加哥一号堆：受控核反应、曼哈顿计划：原子弹项目等已有历史项目；不是同名的单一历史发明。",
-      "effect": "游戏设计：完成终期核科学项目，获得核能与原子弹战略项目资格；具体作战、设施与生产规则另行实现。",
+      "effect": "游戏设计：解锁原子弹制造与库存；需要Ⅲ级工厂和Ⅲ级研究所。使用另需T21与Ⅱ级机场，执行范围轰炸，实际摧毁设施、削减守军并暂时压制防御；核爆半径24地理单位，留下120秒不可清除的核污染，持续造成兵力损耗并使设施停工。",
       "requirements": [
         {
           "type": "researchCenter",
@@ -1646,7 +1646,7 @@
         "https://www.ne.anl.gov/About/reactors/early-reactors.shtml",
         "https://www.nps.gov/mapr/learn/manhattan-project.htm"
       ],
-      "implementationStatus": "live-bonuses-and-facility-licenses",
+      "implementationStatus": "live-strategic-weapons",
       "prerequisiteMode": "all"
     },
     {

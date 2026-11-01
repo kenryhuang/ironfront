@@ -3,7 +3,9 @@ export function createResearchUI({getGame,command,isPaused}){
  const $=id=>document.getElementById(id),dialog=$('research-dialog'),frame=$('research-frame'),summary=$('research-summary');
  summary.innerHTML='<b id="research-overview">尚未开始研发</b><progress id="research-overview-progress" max="1" value="0"></progress><small id="research-overview-status"></small><button id="research-inline-pause" type="button" hidden>暂停研发</button>';
  const number=n=>Math.floor(n).toLocaleString('en-US');
- const publish=()=>{const g=getGame(),state=g.researchState(1);frame.contentWindow?.postMessage({type:'ironfront:research-state',payload:{statuses:Object.fromEntries(RESEARCH_NODES.map(n=>[n.id,g.researchStatus(1,n.id)])),activeId:state.activeId,paused:state.paused,completed:[...state.completed],worldPaused:isPaused(),phase:g.phase}},location.origin);};
+ const publishVisibility=()=>frame.contentWindow?.postMessage({type:'ironfront:research-visibility',open:dialog.open},location.origin);
+ dialog.addEventListener('close',publishVisibility);
+ const publish=()=>{publishVisibility();const g=getGame(),state=g.researchState(1);frame.contentWindow?.postMessage({type:'ironfront:research-state',payload:{statuses:Object.fromEntries(RESEARCH_NODES.map(n=>[n.id,g.researchStatus(1,n.id)])),activeId:state.activeId,paused:state.paused,completed:[...state.completed],worldPaused:isPaused(),phase:g.phase}},location.origin);};
  const update=()=>{
   const g=getGame(),state=g.researchState(1),id=state.activeId,node=RESEARCH_NODES.find(n=>n.id===id),status=id?g.researchStatus(1,id):null;
   $('open-research').disabled=!g.logistics;

@@ -1,3 +1,7 @@
+import {ScorchLayer} from './contamination-visual.js';
+import {clampMapZoom} from './navigation-input.js';
+import {drawStrategic} from './strategic-overlay.js';
+import {FACILITY_SIZE} from './facility-placement.js';
 import { FACILITIES } from './facilities.js';
 import { transportPosition } from './naval.js';
 import { traceCoastline } from './coastline.js';
@@ -5,6 +9,8 @@ import { territoryContours, traceSmoothTerritory } from './territory.js';
 import { TerrainScene } from './terrain-scene.js';
 import { requiredOverscan } from './terrain-relief.js';
 import { drawRivers } from './rivers.js';
+import { surfaceKey } from './render-policy.js';
+import { TerrainAtlas } from './terrain-atlas.js';
 
 const rgb = hex => [1,3,5].map(i => parseInt(hex.slice(i,i+2),16));
 const mix = (a,b,t) => a.map((v,i)=>Math.round(v*(1-t)+b[i]*t));
@@ -57,9 +63,12 @@ export class Renderer {
     this.geography=document.createElement('canvas');this.landMask=document.createElement('canvas');
     this.coastInk=document.createElement('canvas');this.states=document.createElement('canvas');
     this.geographyKey=null;this.statesKey=null;this.revision=0;
+    this.baseKey=null;this.baseVersion=0;this.planPreviewRevision=0;
     this.territoryPaths=new Map();this.planPolygon=null;this.planTiles=null;this.planDrawing=false;
+    this.atlas=new TerrainAtlas(this);this.scorchLayer=new ScorchLayer(this);
   }
   resize() {
+    this.baseKey=null;
     const rect = this.canvas.getBoundingClientRect(); this.w = rect.width; this.h = rect.height;
     this.baseScale = Math.min((this.w - 44) / this.game.width, (this.h - 110) / this.game.height);
     this.overscan=this.surface?.active?requiredOverscan(this.h,this.surface.tilt,this.surface.maxElevation*this.scale):Math.ceil(this.h*.2+110);
@@ -74,11 +83,12 @@ export class Renderer {
   displayPoint(x,y){return this.overlayDrawing?this.surface.project(x,y):[x,y];}
   sourceAt(x,y,models=false){return this.surface?.active?this.surface.pick(x,y,models):[x,y];}
   worldAt(x,y){const [sx,sy]=this.sourceAt(x,y);return [Math.max(0,Math.min(this.game.width,(sx-this.originX)/this.scale)),Math.max(0,Math.min(this.game.height,(sy-this.originY)/this.scale))];}
-  toggleView(){this.surface?.setActive(!this.surface.active);this.updateReliefBounds();this.lastRender=0;return !!this.surface?.active;}
+  toggleView(){this.surface?.setActive(!this.surface.active);this.resize();this.lastRender=0;return !!this.surface?.active;}
   updateReliefBounds(){
-    if(this.surface?.active&&this.overscan!==requiredOverscan(this.h,this.surface.tilt,this.surface.maxElevation*this.scale))this.resize();
+    if(this.surface?.active)this.overscan=requiredOverscan(this.h,this.surface.tilt,this.surface.maxElevation*this.scale);
   }
   setPlanPreview(plan){
+    this.planPreviewRevision++;
     this.planPreviewPath=plan?.ok?traceSmoothTerritory(new Path2D(),territoryContours(this.game.owners,this.game.width,this.game.height,0,plan.allowedTiles)):null;
   }
   tileAt(x, y) {
@@ -102,7 +112,7 @@ export class Renderer {
   zoomAt(factor, x = this.w / 2, y = this.h / 2) {
     const [sx,sy]=this.sourceAt(x,y);
     const mx = (sx - this.originX) / this.scale, my = (sy - this.originY) / this.scale;
-    this.zoom = Math.max(0.75, Math.min(32, this.zoom * factor));
+    this.zoom = clampMapZoom(this.zoom * factor);
     const nx=this.originX+mx*this.scale,ny=this.originY+my*this.scale;
     const [px,py]=this.surface?.active?this.surface.project(nx,ny):[nx,ny];
     this.panX+=x-px;this.panY+=(y-py)/(this.surface?.active?Math.cos(this.surface.tilt):1);
@@ -122,6 +132,7 @@ export class Renderer {
       this.territoryPaths.set(n.id,{path,version,color:`rgb(${color.join(',')})`});changed=true;
     }
     if(changed)this.revision++;
+    if(!changed&&this.labels?.length){this.cacheTime=g.time;return;}
     this.labels = [];
     for (const n of g.nations.values()) if (n.alive && n.tiles.size) {
       let x = 0, y = 0;
@@ -134,7 +145,7 @@ export class Renderer {
     this.cacheTime = g.time;
   }
 
-  drawGeography(c,ox,oy,scale){
+  drawGeography(c,ox,oy,scale,compose=true){
     const g=this.game,key=[this.w,this.h,this.dpr,this.overscan,ox,oy,scale].join(':');
     if(this.geographyKey!==key){
       for(const canvas of [this.geography,this.landMask,this.coastInk,this.states]){
@@ -158,20 +169,27 @@ export class Renderer {
       ctx.setTransform(1,0,0,1,0,0);ctx.globalCompositeOperation='destination-in';ctx.drawImage(this.landMask,0,0);ctx.globalCompositeOperation='source-over';
       this.statesKey=stateKey;
     }
+    if(!compose)return;
     const layers=this.surface?.active?[this.geography,this.coastInk]:[this.geography,this.states,this.coastInk];
     for(const image of layers)c.drawImage(image,0,-this.overscan,this.w,this.h+2*this.overscan);
     c.save();c.translate(ox,oy);c.scale(scale,scale);c.clip(this.coastPath,'evenodd');drawRivers(c,g);c.restore();
   }
 
   render(now = 0) {
-    if(now&&this.lastRender&&now-this.lastRender<32)return;
+    const viewKey=[this.w,this.h,this.scale,this.panX,this.panY].join(':');
+    if(now&&this.lastRender&&now-this.lastRender<(viewKey===this.lastViewKey?32:16))return false;
+    this.lastViewKey=viewKey;
     this.lastRender=now;
     let c=this.ctx;const g=this.game,sourceContext=c;
     if (this.cacheTime !== g.time) this.rebuild();
+    this.scorchLayer.update();
+    const scale = this.scale, ox = this.originX, oy = this.originY;
+    if(this.surface?.active){this.surface.updateCoverage();this.atlas.update();this.baseVersion=this.atlas.baseVersion;}
+    const baseKey=surfaceKey(this);
+    if(!this.surface?.active){
     c.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); c.clearRect(0, 0, this.w, this.h+2*this.overscan);c.translate(0,this.overscan);
     const ocean=c.createLinearGradient(0,0,0,this.h);ocean.addColorStop(0,'#d0e7f0');ocean.addColorStop(1,'#9ccadd');
     c.fillStyle = ocean; c.fillRect(0, -this.overscan, this.w, this.h+2*this.overscan);
-    const scale = this.scale, ox = this.originX, oy = this.originY;
     c.save(); c.strokeStyle = '#527f9826'; c.lineWidth = 0.5;
     const spacing = 30 * g.gridScale * scale;
     for (let x = ox % spacing; x < this.w; x += spacing) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, this.h); c.stroke(); }
@@ -182,17 +200,20 @@ export class Renderer {
     c.imageSmoothingEnabled = true;c.imageSmoothingQuality='high';
     if(this.coastPath)this.drawGeography(c,ox,oy,scale);
     else{c.drawImage(this.climate,ox,oy,g.width*scale,g.height*scale);c.save();c.translate(ox,oy);c.scale(scale,scale);for(const {path,color} of this.territoryPaths.values()){c.fillStyle=color;c.fill(path,'evenodd');}c.restore();}
+    if(this.scorchLayer.active)c.drawImage(this.scorchLayer.canvas,ox,oy,g.width*scale,g.height*scale);
     // Topographic ridges use original procedural markings rather than borrowed assets.
     c.strokeStyle = '#81735350'; c.lineWidth = 0.7;
-    for (let t = 0; t < g.owners.length; t += 13) if (!this.surface?.active && g.owners[t] >= 0 && g.terrain[t] > 1.5 && this.zoom>1.5) {
+    if(!this.surface?.active)for (let t = 0; t < g.owners.length; t += 13) if (g.owners[t] >= 0 && g.terrain[t] > 1.5 && this.zoom>1.5) {
       const [x, y] = this.point(t); c.beginPath(); c.moveTo(x - scale * 0.6, y + scale * 0.4); c.lineTo(x, y - scale * 0.5); c.lineTo(x + scale * 0.6, y + scale * 0.4); c.stroke();
     }
     this.drawPlans(c,ox,oy,scale);
+    c.restore();this.baseKey=baseKey;this.baseVersion++;
+    }
     if(this.surface?.active){
-      c.restore();this.surface.render();
+      this.surface.render();
       c=this.surface.hudContext;this.ctx=c;this.overlayDrawing=true;
       c.setTransform(this.dpr,0,0,this.dpr,0,0);c.clearRect(0,0,this.w,this.h);c.save();
-    }
+    }else c.save();
     c.textAlign = 'center';
     const labelBoxes = [];
     for (const { nation: n, tile } of this.labels) {
@@ -219,16 +240,17 @@ export class Renderer {
       const [x, y] = this.point(tile); const owner = g.owners[tile];
       if(x < -100 || x > this.w+100 || y < -this.overscan || y > this.h+this.overscan)continue;
       c.textAlign='center';c.globalAlpha=b.remaining>0?.7:1;
+      const footprint=FACILITY_SIZE*scale,half=Math.max(.5,footprint/2);
       if(!this.surface?.active){
-      c.fillStyle = '#17272de8'; c.fillRect(x - 6, y - 6, 12, 12);
-      c.strokeStyle = g.nations.get(owner)?.color ?? '#a6b29e'; c.lineWidth = 1; c.strokeRect(x - 6, y - 6, 12, 12);
-      c.fillStyle = '#ebdfb9'; c.font = '11px sans-serif'; c.fillText(FACILITIES[b.type]?.icon??'▥', x, y + 4);
+      c.fillStyle = '#17272de8'; c.fillRect(x-half,y-half,half*2,half*2);
+      c.strokeStyle = g.nations.get(owner)?.color ?? '#a6b29e'; c.lineWidth = .7; c.strokeRect(x-half,y-half,half*2,half*2);
+      if(footprint>=8){c.fillStyle = '#ebdfb9'; c.font = `${Math.min(32,footprint*.8)}px sans-serif`; c.fillText(FACILITIES[b.type]?.icon??'▥',x,y+footprint*.3);}
       }
-      if(b.remaining>0){c.fillStyle='#17272d';c.fillRect(x-7,y+8,14,3);c.fillStyle='#efd18c';c.fillRect(x-7,y+8,14*Math.max(0,1-b.remaining/(b.constructionTotal??FACILITIES[b.type]?.seconds??1)),3);}
-      else if(['factory','barracks'].includes(b.type)){c.beginPath();c.arc(x+6,y-6,2.5,0,Math.PI*2);c.fillStyle=b.enabled?'#9fd1a0':'#e09a86';c.fill();}
+      if(footprint>=8&&b.remaining>0){c.fillStyle='#17272d';c.fillRect(x-half,y+half+2,footprint,2);c.fillStyle='#efd18c';c.fillRect(x-half,y+half+2,footprint*Math.max(0,1-b.remaining/(b.constructionTotal??FACILITIES[b.type]?.seconds??1)),2);}
+      else if(footprint>=8&&['factory','barracks'].includes(b.type)){c.beginPath();c.arc(x+half,y-half,Math.min(2,footprint*.1),0,Math.PI*2);c.fillStyle=b.enabled?'#9fd1a0':'#e09a86';c.fill();}
       c.globalAlpha=1;
     }
-    const overlays = []; this.drawNaval(overlays); this.drawBattles(overlays);
+    const overlays = []; this.drawNaval(overlays); this.drawBattles(overlays);drawStrategic(this);
     if (this.hover !== null) {
       const [x, y] = this.point(this.hover); c.strokeStyle = '#745619'; c.lineWidth = 1;
       c.beginPath();c.arc(x,y,3,0,Math.PI*2);c.stroke();
@@ -240,16 +262,17 @@ export class Renderer {
     c.font = '10px Georgia'; c.fillText('N', cx, cy - 24);
     c.restore();
     this.ctx=sourceContext;this.overlayDrawing=false;
+    return true;
   }
 
-  drawPlans(c,ox,oy,scale){
+  drawPlans(c,ox,oy,scale,strokeScale=scale){
     c.save();c.translate(ox,oy);c.scale(scale,scale);
     const outline=(points,color,drawing=false)=>{
       if(!points||points.length<2)return;
       c.beginPath();c.moveTo(...points[0]);for(let i=1;i<points.length;i++)c.lineTo(...points[i]);
       if(!drawing)c.closePath();
-      c.strokeStyle=color;c.lineWidth=2/scale;c.setLineDash(drawing?[]:[6/scale,4/scale]);c.stroke();c.setLineDash([]);
-      if(drawing&&points.length>2){c.beginPath();c.moveTo(...points.at(-1));c.lineTo(...points[0]);c.lineWidth=1/scale;c.setLineDash([4/scale,4/scale]);c.stroke();c.setLineDash([]);}
+      c.strokeStyle=color;c.lineWidth=2/strokeScale;c.setLineDash(drawing?[]:[6/strokeScale,4/strokeScale]);c.stroke();c.setLineDash([]);
+      if(drawing&&points.length>2){c.beginPath();c.moveTo(...points.at(-1));c.lineTo(...points[0]);c.lineWidth=1/strokeScale;c.setLineDash([4/strokeScale,4/strokeScale]);c.stroke();c.setLineDash([]);}
     };
     for(const a of this.game.armies)if(a.owner===1&&a.planPolygon)outline(a.planPolygon,'#326c9dbb');
     if(this.planPreviewPath){c.save();if(this.coastPath)c.clip(this.coastPath,'evenodd');c.fillStyle='#2a6ca93b';c.fill(this.planPreviewPath,'evenodd');c.restore();}

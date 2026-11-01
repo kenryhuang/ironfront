@@ -1,0 +1,15 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>全息蓝图绘制性能</title>
+<link rel="stylesheet" href="../../src/research-hologram.css">
+<style>body{padding:24px;display:block;overflow:auto;color:#d9edf4;font:14px system-ui}.projection-body{width:380px;height:440px;display:block}.projection-body>.hologram{height:100%}button{padding:9px 16px;color:inherit}pre{white-space:pre-wrap}</style>
+<h2>B-29 细节与辉光绘制测试</h2><p>固定 380×440 面板，120 个旋转角度；只计蓝图绘图 CPU，不含战役与 GPU 合成。</p><button id="run">运行测试</button><pre id="results">就绪</pre><div class="projection-body"><section class="hologram" id="preview"></section></div>
+<script type="module">
+import {ResearchHologram} from '../../src/research-hologram.js';
+const preview=new ResearchHologram(document.querySelector('#preview'));
+preview.state.paused=true;preview.show({id:'T19',track:'tactics'});
+document.querySelector('#run').onclick=async()=>{
+ const button=document.querySelector('#run');button.disabled=true;const samples=[];
+ for(let i=0;i<120;i++){await new Promise(requestAnimationFrame);const start=performance.now();preview.yaw=-.52+i*.01;preview.draw();samples.push(performance.now()-start);}
+ samples.sort((a,b)=>a-b);
+ document.querySelector('#results').textContent=JSON.stringify({draws:samples.length,canvasCss:[preview.w,preview.h],meanCpuMs:+(samples.reduce((a,b)=>a+b,0)/samples.length).toFixed(2),p95CpuMs:+samples[Math.floor(samples.length*.95)].toFixed(2),vertices:preview.model.parts.reduce((n,p)=>n+p.vertices.length,0),edges:preview.model.parts.reduce((n,p)=>n+p.edges.length,0),normalAnimationLimit:'24 fps'},null,2);button.disabled=false;
+};
+</script></html>

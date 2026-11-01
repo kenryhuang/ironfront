@@ -2,6 +2,7 @@ import { findSeaRoute } from './naval.js';
 import { buildAttackPlan } from './attack-plan.js';
 import {productionMethods} from './facilities.js';
 import {researchMethods} from './research.js';
+import {strategicMethods} from './strategic-weapons.js';
 import {effectiveness,takeTroops,addTroops,returnTroops} from './troops.js';
 
 export const RULES = Object.freeze({
@@ -21,6 +22,8 @@ export class Game {
     this.nations = new Map(nations.map(n => [n.id, { color: '#b5b5a0', troops: 1600, gold: 2000, militia:0, manpower:logistics?4000:0, equipment:logistics?400:0, ...n, alive: true, tiles: new Set() }]));
     this.territoryVersions=new Map(nations.map(n=>[n.id,0]));
     this.armies = []; this.transports = []; this.buildings = new Map(); this.events = [];
+    this.strikes=[];this.strikeZones=[];this.strikeReports=[];this.nextStrike=1;
+    this.radiationZones=[];this.scorchZones=[];this.nextRadiationTick=null;
     this.adjacent = this.owners.map((_, i) => {
       const x = i % width; const y = Math.floor(i / width); const list = [];
       if (x > 0) list.push(i - 1); if (x < width - 1) list.push(i + 1);
@@ -53,7 +56,7 @@ export class Game {
   capacity(id) {
     const n = this.nations.get(id); if (!n) return 0;
     let cities = 0;
-    for (const [tile, b] of this.buildings) if (this.owners[tile] === id && b.type === 'city'&&!(b.remaining>0)) cities += b.level;
+    for (const [tile, b] of this.buildings) if (this.owners[tile] === id && b.type === 'city'&&!(b.remaining>0)&&!(b.suppressedUntil>this.time)&&!this.radiationAt(tile)) cities += b.level;
     return ((this.logistics?10000:RULES.baseCapacity) + n.tiles.size * this.cellArea * RULES.landCapacity + cities * RULES.cityCapacity)*(this.logistics?this.researchBonuses(id).populationCapacity:1);
   }
 
@@ -65,7 +68,7 @@ export class Game {
   }
 
   income(id) {
-    const n = this.nations.get(id); if(!n?.alive)return 0;let ports=0;if(this.logistics)for(const [t,b] of this.buildings)if(this.owners[t]===id&&b.type==='port'&&!(b.remaining>0))ports+=20*b.level;return (24+n.tiles.size*this.cellArea*.14+ports)*(this.logistics?this.researchBonuses(id).income:1);
+    const n = this.nations.get(id); if(!n?.alive)return 0;let ports=0;if(this.logistics)for(const [t,b] of this.buildings)if(this.owners[t]===id&&b.type==='port'&&!(b.remaining>0)&&!(b.suppressedUntil>this.time)&&!this.radiationAt(t))ports+=20*b.level;return (24+n.tiles.size*this.cellArea*.14+ports)*(this.logistics?this.researchBonuses(id).income:1);
   }
 
   claim(tile, owner) {
@@ -251,9 +254,9 @@ export class Game {
     const defender = this.nations.get(target);
     const density = defender.troops / Math.max(1, defender.tiles.size);
     let fort = 1;
-    for (const [t, b] of this.buildings) if (b.type === 'fort' && !(b.remaining>0) && this.owners[t] === target && Math.hypot(t % this.width - tile % this.width, Math.floor(t / this.width) - Math.floor(tile / this.width)) <= 5*this.gridScale) { fort = 2.4; break; }
+    for (const [t, b] of this.buildings) if (b.type === 'fort' && !(b.remaining>0) && !(b.suppressedUntil>this.time) && !this.radiationAt(t) && this.owners[t] === target && Math.hypot(t % this.width - tile % this.width, Math.floor(t / this.width) - Math.floor(tile / this.width)) <= 5*this.gridScale) { fort = 2.4; break; }
     const defense = Math.min(defender.troops, Math.max(0, density * 0.8));
-    return { attack: (7*this.cellArea + defense * effectiveness(defender) * (this.logistics?this.researchBonuses(target).defense:1) * 1.15) * this.terrain[tile] * fort, defense };
+    return { attack: (7*this.cellArea + defense * effectiveness(defender) * (this.logistics?this.researchBonuses(target).defense*this.defenseSuppression(tile):1) * 1.15) * this.terrain[tile] * fort, defense };
   }
 
   finishArmy(army, refund = true) {
@@ -320,6 +323,7 @@ export class Game {
     while (left > 1e-8 && this.phase === 'running') {
       const tick = Math.min(0.1, left); left -= tick; this.time += tick;
       if(economy&&this.logistics){this.advanceProduction(tick);this.advanceResearch(tick);}
+      if(this.logistics)this.advanceStrategic(tick,{production:economy});
       if (economy&&!this.logistics) for (const n of this.nations.values()) if (n.alive) {
         // Losing land may temporarily leave a country above capacity. It cannot grow further.
         n.troops += Math.min(this.growth(n.id) * tick, Math.max(0, this.capacity(n.id) - n.troops));
@@ -335,4 +339,4 @@ export class Game {
   }
 }
 
-Object.assign(Game.prototype,productionMethods,researchMethods);
+Object.assign(Game.prototype,productionMethods,researchMethods,strategicMethods);

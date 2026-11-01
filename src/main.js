@@ -1,3 +1,4 @@
+import { createStrategicUI } from './strategic-ui.js';
 import { createResearchUI } from './research-ui.js';
 import { FACILITIES } from './facilities.js';
 import { Game } from './engine.js';
@@ -7,17 +8,32 @@ import { Renderer } from './renderer.js';
 import { findSeaRoute } from './naval.js';
 import { buildAttackPlan } from './attack-plan.js';
 import { updateBattleEvents } from './battle-events.js';
+import { createRenderDiagnostics } from './render-diagnostics.js';
+import { createZoomInput } from './navigation-input.js';
 
 const $ = id => document.getElementById(id);
 const number = n => Math.floor(n).toLocaleString('en-US');
 const time = n => `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(Math.floor(n % 60)).padStart(2, '0')}`;
 let game = new Game(createTheater());
 const renderer = new Renderer($('battlefield'), game);
+const renderDiagnostics=createRenderDiagnostics(renderer);
 let selected = null, selectedTile = null, selectedForLanding = false, mode = null, paused = false, speed = 1, accumulator = 0;
 let lastTime = performance.now(), lastUI = -1, lastAI = -1, toastUntil = 0, ended = false;
 let drag = null, suppressClick = false, helpWasPaused = false;
 let planState=null,drawing=null;
+const zoomInput=createZoomInput({getZoom:()=>renderer.zoom,zoomAt:(...args)=>{
+  const px=renderer.panX,py=renderer.panY;
+  renderer.zoomAt(...args);
+  if(drag){drag.px+=renderer.panX-px;drag.py+=renderer.panY-py;}
+  updateZoomLabel();
+}});
 const researchUI=createResearchUI({getGame:()=>game,command,isPaused:()=>paused});
+const strategicUI=createStrategicUI({root:$('strategic-section'),getGame:()=>game,isPaused:()=>paused,command,
+  beginTarget(kind){if(planState)cancelCustomPlan();mode='strike:'+kind;renderer.plannedRoute=null;toast('点击敌方陆地预览打击范围，再确认发射。');updateUI();},
+  onPreview(preview){renderer.strikePreview=preview;},onExit(){if(mode?.startsWith('strike:'))mode=null;updateUI();}});
+
+
+function updateZoomLabel(){ $('zoom-level').textContent = `${Math.round(renderer.zoom * 100)}%`; }
 
 function toast(message, error = false) {
   $('toast').textContent = message; $('toast').classList.toggle('error', error); $('toast').hidden = false;
@@ -58,6 +74,7 @@ function updatePlanPreview(refreshUI=true){
 }
 
 function startCustomPlan(){
+  zoomInput.flush();
   if(game.phase!=='running'||!game.nations.get(1).alive)return;
   if(planState){cancelCustomPlan();return;}
   if(mode) { mode=null; updateUI(); }
@@ -77,6 +94,7 @@ function cancelCustomPlan(){
 }
 
 function redrawCustomPlan(){
+  zoomInput.flush();
   if(!planState)return;
   planState.points=[];planState.preview=null;drawing=null;mode='custom-draw';
   renderer.planDrawing=true;renderer.planPreviewPath=null;updatePlanPreview();
@@ -93,12 +111,13 @@ function deploy(tile) {
   if (command(game.deploy(tile), '部署完成。先扩张空地，再发展国力。')) { chooseTarget(0); $('deployment').hidden = true; }
 }
 function reset() {
+  zoomInput.flush();
   if(planState)cancelCustomPlan();
   game = new Game(createTheater()); renderer.setGame(game); selected = null; selectedTile = null; selectedForLanding = false; renderer.selected = null; renderer.hover = null;
   renderer.plannedRoute = null; renderer.destination = null;
   mode=null;
   $('facilities').replaceChildren();
-  researchUI.reset();
+  researchUI.reset();strategicUI.reset();
   paused = false; speed = 1; accumulator = 0; lastAI = -1; lastUI = -1; ended = false;
   $('end-card').hidden = true; $('deployment').hidden = false; $('toast').hidden = true; $('map-tooltip').hidden = true;
   $('armies').replaceChildren(); $('fleets').replaceChildren();
@@ -198,7 +217,7 @@ function updateUI() {
   $('conscript').disabled=!active||!Number.isInteger(conscripts)||conscripts<1||conscripts>Math.floor(n.manpower??0);
   $('conscript-info').textContent=`可征 ${number(n.manpower??0)} 人 · 强征减少可用人力，不增加总人口`;
   updateFacilities(active);
-  researchUI.update();
+  researchUI.update();strategicUI.setMode(mode?.startsWith('strike:')?mode.slice(7):null);strategicUI.update();
   $('capacity-fill').style.width = `${Math.min(100, population / capacity * 100)}%`;
   const netIncome=game.logistics?game.income(1)-[...game.buildings].filter(([tile,b])=>game.owners[tile]===1&&b.type==='factory'&&b.enabled&&!(b.remaining>0)&&b.workers>0).reduce((sum,[,b])=>sum+game.factoryOperatingCost(1,b),0):0;
   $('income').textContent = `${game.logistics?(netIncome>=0?'+':'−')+number(Math.abs(netIncome))+'资金/秒 · ':''}海上 ${number(ownFleets.reduce((s,f)=>s+f.troops,0))} 人`;
@@ -212,9 +231,10 @@ function updateUI() {
   $('pause').disabled = !running; $('pause').innerHTML = paused ? '▶ <span>继续</span>' : 'Ⅱ <span>暂停</span>';
   $('pause').setAttribute('aria-label', paused ? '继续游戏' : '暂停游戏');
   $('paused-banner').hidden = !paused || !running;
-  $('plan-banner').hidden=!planState&&!mode?.startsWith('build:');
+  $('plan-banner').hidden=!planState&&!mode?.startsWith('build:')&&!mode?.startsWith('strike:');
   $('plan-banner').textContent=mode==='custom-draw'?'按住鼠标圈画进攻区域 · 松开闭合 · Esc 取消':'选区已闭合 · 在左侧指定兵力并确认 · 拖动可平移地图';
   if(mode?.startsWith('build:'))$('plan-banner').textContent=`建设${FACILITIES[mode.slice(6)].name} · 点击己方空地 · Esc 取消 · 战役继续`;
+  if(mode?.startsWith('strike:'))$('plan-banner').textContent='点击敌方陆地选择打击中心 · 左侧确认发射 · Esc 取消';
   $('naval-mode').classList.toggle('active',mode==='naval');
   $('custom-attack').disabled=!running||!n.alive;
   $('custom-attack').setAttribute('aria-pressed',String(Boolean(planState)));
@@ -249,7 +269,7 @@ function updateUI() {
   $('battle-event-count').textContent=String($('battle-events').querySelectorAll('[data-battle]').length);
   if (game.events.length) $('events').innerHTML = game.events.slice(0, 7).map(e => `<div class="event ${e.kind}"><time>${time(e.time)}</time><p>${e.text}</p></div>`).join('');
   else $('events').innerHTML = '<div class="event"><time>00:00</time><p>战区地图已就绪，等待指挥官部署。</p></div>';
-  $('zoom-level').textContent = `${Math.round(renderer.zoom * 100)}%`;
+  updateZoomLabel();
   if (!ended && (game.phase === 'finished' || (running && !n.alive))) {
     ended = true; $('end-card').hidden = false;
     const won = game.winner === 1;
@@ -268,7 +288,7 @@ $('build-options').addEventListener('click',e=>{const b=e.target.closest('[data-
 $('conscript-amount').addEventListener('input',updateUI);
 $('conscript-amount').addEventListener('keydown',e=>{if(e.key==='Enter'&&!$('conscript').disabled)$('conscript').click();});
 $('conscript').addEventListener('click',()=>command(game.conscript(1,Number($('conscript-amount').value)),'强征军已入伍。'));
-$('facilities').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;if(b.dataset.facilityToggle!==undefined)command(game.toggleFacility(1,Number(b.dataset.facilityToggle)));if(b.dataset.facilityUpgrade!==undefined)command(game.upgradeFacility(1,Number(b.dataset.facilityUpgrade)),'设施升级已开工。');});
+$('facilities').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;if(b.dataset.facilityToggle!==undefined)command(game.toggleFacility(1,Number(b.dataset.facilityToggle)));if(b.dataset.facilityRepair!==undefined)command(game.repairFacility(1,Number(b.dataset.facilityRepair)),'设施修复已开始。');if(b.dataset.facilityUpgrade!==undefined)command(game.upgradeFacility(1,Number(b.dataset.facilityUpgrade)),'设施升级已开工。');});
 $('facilities').addEventListener('change',e=>{if(e.target.matches('[data-training-mode]'))command(game.setTrainingMode(1,Number(e.target.dataset.trainingMode),e.target.value));});
 function updateFacilities(active){
   const container=$('facilities'),owned=[...game.buildings].filter(([tile])=>game.owners[tile]===1),tiles=new Set(owned.map(([tile])=>String(tile)));
@@ -278,14 +298,15 @@ function updateFacilities(active){
   $('build-hint').textContent=mode?.startsWith('build:')?`正在选址：${FACILITIES[mode.slice(6)].name}。点击己方空地，Esc 取消。`:'点击己方空地建设，设施间隔至少2地理单位。战役继续，Esc 取消。';
   for(const [tile,b] of owned){
     let row=container.querySelector(`[data-facility="${tile}"]`);
-    if(!row){row=document.createElement('article');row.className='facility-card';row.dataset.facility=String(tile);row.innerHTML='<div class="facility-heading"><strong></strong><span></span></div><small class="facility-status"></small><progress max="1"></progress><div class="facility-controls"><select aria-label="兵营训练模式"><option value="recruit">训练正规军</option><option value="reform">整编强征军</option></select><button class="facility-toggle"></button></div><div class="facility-upgrade"><button class="facility-upgrade-button"></button><small class="facility-upgrade-requirements"></small></div>';container.append(row);}
+    if(!row){row=document.createElement('article');row.className='facility-card';row.dataset.facility=String(tile);row.innerHTML='<div class="facility-heading"><strong></strong><span></span></div><small class="facility-status"></small><progress max="1"></progress><div class="facility-controls"><select aria-label="兵营训练模式"><option value="recruit">训练正规军</option><option value="reform">整编强征军</option></select><button class="facility-toggle"></button></div><div class="facility-upgrade"><button class="facility-upgrade-button"></button><small class="facility-upgrade-requirements"></small><button class="facility-repair" hidden>修复设施</button></div>';container.append(row);}
     const f=FACILITIES[b.type],building=b.remaining>0,queue=b.queue,operable=['factory','barracks'].includes(b.type);
     row.querySelector('strong').textContent=`${f.icon} ${f.name} Lv.${b.level??1}`;row.querySelector('.facility-heading span').textContent=`${tile%game.width} / ${Math.floor(tile/game.width)}`;
-    row.querySelector('.facility-status').textContent=building?`${b.upgradeTarget?'升级至 Lv.'+b.upgradeTarget:'建设中'} · ${Math.ceil(b.remaining)} 秒`:`${b.status??(b.enabled?'运作中':'已停产')}${b.workers?' · '+number(b.workers)+'工人':''}${queue?' · '+(queue.mode==='reform'?'整编':'训练')+number(queue.amount)+'人 · '+Math.ceil(queue.remaining)+'秒':''}`;
+    row.querySelector('.facility-status').textContent=game.radiationAt(tile)?`核污染停工 · ${Math.ceil(game.radiationAt(tile))}秒`:building?`${b.repairing?'修复中':b.upgradeTarget?'升级至 Lv.'+b.upgradeTarget:'建设中'} · ${Math.ceil(b.remaining)} 秒`:`${b.status??(b.enabled?'运作中':'已停产')}${b.workers?' · '+number(b.workers)+'工人':''}${queue?' · '+(queue.mode==='reform'?'整编':'训练')+number(queue.amount)+'人 · '+Math.ceil(queue.remaining)+'秒':''}`;
     const progress=row.querySelector('progress');progress.hidden=!building&&!queue;progress.value=building?1-b.remaining/(b.constructionTotal??f.seconds):queue?1-queue.remaining/(queue.duration??10):1;
     const toggle=row.querySelector('.facility-toggle');toggle.dataset.facilityToggle=String(tile);toggle.hidden=!operable;toggle.disabled=!active||building;toggle.textContent=b.enabled?'停产 / 取消队列':'恢复运作';
     const select=row.querySelector('select');select.dataset.trainingMode=String(tile);select.hidden=b.type!=='barracks';select.disabled=!active||building;if(document.activeElement!==select)select.value=b.trainingMode??'recruit';
     row.querySelector('.facility-controls').hidden=!operable;
+    const repair=row.querySelector('.facility-repair');repair.hidden=(b.integrity??100)>=100;repair.disabled=!active||building||game.radiationAt(tile)>0;repair.dataset.facilityRepair=String(tile);repair.textContent=`修复（完好度${Math.max(0,b.integrity??100)}%） · ${Math.ceil(f.cost*(100-(b.integrity??100))/200)}资金 / 15秒`;
     const upgrade=game.facilityUpgradeStatus(1,tile),upgradeButton=row.querySelector('.facility-upgrade-button');
     upgradeButton.dataset.facilityUpgrade=String(tile);upgradeButton.disabled=!active||building||!upgrade.ok;
     upgradeButton.textContent=building&&b.upgradeTarget?'升级中':`升级至 Lv.${(b.level??1)+1}${Number.isFinite(upgrade.cost)?' · '+number(upgrade.cost)+'资金':''}${Number.isFinite(upgrade.seconds)?' / '+upgrade.seconds+'秒':''}`;
@@ -314,16 +335,16 @@ $('transport').addEventListener('click', () => {
 $('restart').addEventListener('click', reset);
 $('pause').addEventListener('click', () => { paused = !paused; accumulator = 0; updateUI(); });
 $('speed').addEventListener('click', () => { speed = speed === 1 ? 2 : speed === 2 ? 4 : 1; $('speed').textContent = `${speed}×`; updateUI(); });
-$('zoom-in').addEventListener('click', () => { renderer.zoomAt(1.25); updateUI(); });
-$('zoom-out').addEventListener('click', () => { renderer.zoomAt(0.8); updateUI(); });
-$('fit-map').addEventListener('click', () => { renderer.fit(); updateUI(); });
+$('zoom-in').addEventListener('click', () => { zoomInput.flush();renderer.zoomAt(1.25);updateZoomLabel(); });
+$('zoom-out').addEventListener('click', () => { zoomInput.flush();renderer.zoomAt(0.8);updateZoomLabel(); });
+$('fit-map').addEventListener('click', () => { zoomInput.flush();renderer.fit();updateZoomLabel(); });
 const viewButton=$('terrain-view');
 function updateTerrainView(){
   const active=!!renderer.surface?.active;viewButton.textContent=active?'2.5D 沙盘':'俯视地图';
   viewButton.setAttribute('aria-pressed',String(active));viewButton.disabled=!renderer.surface||renderer.surface.failed;
   viewButton.title=viewButton.disabled?'当前设备使用俯视地图':'切换立体沙盘 / 俯视地图';
 }
-viewButton.addEventListener('click',()=>{renderer.toggleView();updateTerrainView();});
+viewButton.addEventListener('click',()=>{zoomInput.flush();renderer.toggleView();updateTerrainView();});
 renderer.onViewFailure=updateTerrainView;updateTerrainView();
 $('intel-toggle').addEventListener('click', () => { const open = $('intelligence').classList.toggle('open'); $('intel-toggle').setAttribute('aria-expanded', String(open)); });
 $('intel-close').addEventListener('click', () => { $('intelligence').classList.remove('open'); $('intel-toggle').setAttribute('aria-expanded', 'false'); });
@@ -364,6 +385,7 @@ const canvas = $('battlefield');
 const local = e => { const r = canvas.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
 canvas.addEventListener('pointerdown', e => {
   if (e.button !== 0) return;
+  zoomInput.flush();
   if(mode==='custom-draw'&&planState){
     e.preventDefault();const point=renderer.worldAt(...local(e));
     drawing={id:e.pointerId,points:[point],last:local(e)};
@@ -383,12 +405,13 @@ canvas.addEventListener('pointermove', e => {
     }
     $('map-tooltip').hidden=true;return;
   }
-  const [x, y] = local(e); const tile = renderer.tileAt(x, y); renderer.hover = tile;
   if (drag?.id === e.pointerId) {
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
     if (Math.hypot(dx, dy) > 5) drag.moved = true;
-    if (drag.moved) { renderer.panX = drag.px + dx; renderer.panY = drag.py + dy/(renderer.surface?.active?Math.cos(renderer.surface.tilt):1); $('map-tooltip').hidden = true; }
+    if (drag.moved) { renderer.panX = drag.px + dx; renderer.panY = drag.py + dy/(renderer.surface?.active?Math.cos(renderer.surface.tilt):1); }
+    renderer.hover=null;$('map-tooltip').hidden=true;return;
   }
+  const [x, y] = local(e); const tile = renderer.tileAt(x, y); renderer.hover = tile;
   if (tile !== null && !drag?.moved) {
     const owner = game.owners[tile];
     const coastal = owner >= 0 && game.adjacent[tile].some(t => game.owners[t] === -1);
@@ -396,13 +419,14 @@ canvas.addEventListener('pointermove', e => {
     const terrain = game.terrain[tile] > 1.5 ? '山地 · 进攻消耗 ×1.8' : game.terrain[tile] > 1 ? '丘陵 · 进攻消耗 ×1.3' : '平原';
     const facility=game.buildings.get(tile);
     const facilityInfo=facility?`<small>${FACILITIES[facility.type]?.name??facility.type} Lv.${facility.level??1} · ${facility.remaining>0?'建设中 '+Math.ceil(facility.remaining)+'秒':facility.status??(facility.enabled?'运作中':'已停产')}${facility.workers?' · 工人 '+number(facility.workers):''}${facility.queue?' · '+(facility.queue.mode==='reform'?'整编':'训练')+' '+number(facility.queue.amount)+'人 / '+Math.ceil(facility.queue.remaining)+'秒':''}</small>`:'';
-    $('map-tooltip').innerHTML = `${label}${facilityInfo}<small>${owner === -1 ? '选择沿海陆地作为登陆点' : terrain}${coastal ? ' · 沿海，可登陆' : ''}</small>`;
+    $('map-tooltip').innerHTML = `${label}${facilityInfo}${game.radiationAt(tile)?`<small>☢ 核污染 · ${Math.ceil(game.radiationAt(tile))}秒 · 不可清除</small>`:''}<small>${owner === -1 ? '选择沿海陆地作为登陆点' : terrain}${coastal ? ' · 沿海，可登陆' : ''}</small>`;
     $('map-tooltip').style.left = `${Math.max(5, Math.min(x + 15, renderer.w - 190))}px`; $('map-tooltip').style.top = `${Math.min(y + 18, renderer.h - 90)}px`;
     $('map-tooltip').hidden = false;
     $('map-coordinates').textContent = `GRID ${String(tile % game.width).padStart(3, '0')} / ${String(Math.floor(tile / game.width)).padStart(3, '0')}`;
   } else $('map-tooltip').hidden = true;
 });
 canvas.addEventListener('pointerup', e => {
+  zoomInput.flush();
   if(drawing?.id===e.pointerId){
     drawing.points.push(renderer.worldAt(...local(e)));planState.points=drawing.points;drawing=null;
     canvas.releasePointerCapture(e.pointerId);mode='custom-ready';renderer.planDrawing=false;suppressClick=true;updatePlanPreview();return;
@@ -413,6 +437,7 @@ canvas.addEventListener('pointerup', e => {
   if(planState)return;
   const tile = renderer.tileAt(...local(e)); if (tile === null) return;
   if (game.phase === 'deployment') { deploy(tile); return; }
+  if(mode?.startsWith('strike:')){strategicUI.selectTarget(tile);return;}
   if(mode?.startsWith('build:')){
     if(paused){toast('请先继续战役再建设',true);return;}
     const type=mode.slice(6);if(command(game.build(1,tile,type),`${FACILITIES[type].name}已开工。`)){mode=null;updateUI();}return;
@@ -430,13 +455,15 @@ canvas.addEventListener('pointerup', e => {
 canvas.addEventListener('pointercancel', () => { drag = null;if(drawing){drawing=null;if(planState)redrawCustomPlan();} });
 canvas.addEventListener('pointerleave', () => { renderer.hover = null; $('map-tooltip').hidden = true; });
 canvas.addEventListener('dblclick', e => {
+  zoomInput.flush();
   if (suppressClick || mode || game.phase !== 'running') return;
   const tile = renderer.tileAt(...local(e));
   if (tile !== null && game.owners[tile] >= 0 && game.owners[tile] !== 1) { chooseTarget(game.owners[tile]); attack(); }
 });
-canvas.addEventListener('wheel', e => { e.preventDefault();if(drawing)return;renderer.zoomAt(e.deltaY < 0 ? 1.12 : 0.89, ...local(e)); updateUI(); }, { passive: false });
+canvas.addEventListener('wheel', e => { e.preventDefault();if(drawing)return;zoomInput.enqueue(e.deltaY < 0 ? 1.12 : 0.89, ...local(e)); }, { passive: false });
 
 function frame(now) {
+  zoomInput.flush();
   const elapsed = Math.min(0.25, (now - lastTime) / 1000); lastTime = now;
   if (!paused && game.phase === 'running') {
     accumulator += elapsed * speed;
@@ -448,6 +475,7 @@ function frame(now) {
   }
   if (now - lastUI > 200) { updateUI(); lastUI = now; }
   if (now > toastUntil) $('toast').hidden = true;
-  renderer.render(now); requestAnimationFrame(frame);
+  const renderStart=performance.now(),painted=!$('research-dialog').open&&!document.hidden&&renderer.render(now);
+  renderDiagnostics(now,painted?performance.now()-renderStart:null);requestAnimationFrame(frame);
 }
 updateUI(); requestAnimationFrame(frame);
