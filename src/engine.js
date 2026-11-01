@@ -56,9 +56,9 @@ export class Game {
 
   capacity(id) {
     const n = this.nations.get(id); if (!n) return 0;
-    let cities = 0;
-    for (const [tile, b] of this.buildings) if (this.owners[tile] === id && b.type === 'city'&&!(b.remaining>0)&&!(b.suppressedUntil>this.time)&&!this.radiationAt(tile)) cities += b.level;
-    return ((this.logistics?10000:RULES.baseCapacity) + n.tiles.size * this.cellArea * RULES.landCapacity + cities * RULES.cityCapacity)*(this.logistics?this.researchBonuses(id).populationCapacity:1);
+    let cities = this.economyTotals?.get(id)?.cities??0;
+    if(!this.economyTotals)for (const [tile, b] of this.buildings) if (this.owners[tile] === id && b.type === 'city'&&!(b.remaining>0)&&!(b.suppressedUntil>this.time)&&!this.radiationAt(tile)) cities += b.level;
+    return ((this.logistics?10000:RULES.baseCapacity) + (n.populationBase??0) + n.tiles.size * this.cellArea * RULES.landCapacity + cities * RULES.cityCapacity)*(this.logistics?this.researchBonuses(id).populationCapacity:1);
   }
 
   growth(id) {
@@ -69,7 +69,7 @@ export class Game {
   }
 
   income(id) {
-    const n = this.nations.get(id); if(!n?.alive)return 0;let ports=0;if(this.logistics)for(const [t,b] of this.buildings)if(this.owners[t]===id&&b.type==='port'&&!(b.remaining>0)&&!(b.suppressedUntil>this.time)&&!this.radiationAt(t))ports+=20*b.level;return (24+n.tiles.size*this.cellArea*.14+ports)*(this.logistics?this.researchBonuses(id).income:1);
+    const n = this.nations.get(id); if(!n?.alive)return 0;let ports=(this.economyTotals?.get(id)?.ports??0)*20;if(this.logistics&&!this.economyTotals)for(const [t,b] of this.buildings)if(this.owners[t]===id&&b.type==='port'&&!(b.remaining>0)&&!(b.suppressedUntil>this.time)&&!this.radiationAt(t))ports+=20*b.level;return (24+n.tiles.size*this.cellArea*.14+ports)*(this.logistics?this.researchBonuses(id).income:1);
   }
 
   claim(tile, owner) {
@@ -172,14 +172,17 @@ export class Game {
   }
 
   transport(owner, destination, ratio) {
+    return this.commitTransport(owner,destination,ratio,findSeaRoute(this,owner,destination));
+  }
+
+  commitTransport(owner, destination, ratio, path) {
     const n = this.nations.get(owner);
     if (this.phase !== 'running' || !n?.alive) return { ok: false, message: '当前无法下达海运命令' };
     if (!Number.isFinite(ratio) || ratio <= 0 || ratio > 1) return { ok: false, message: '无效的出兵比例' };
     if (this.transports.filter(f => f.owner === owner).length >= RULES.maxFleets) return { ok: false, message: '最多同时指挥 6 支运输船队' };
     const amount = Math.floor(n.troops * ratio);
     if (amount < 1) return { ok: false, message: '可用兵力不足' };
-    const path = findSeaRoute(this, owner, destination);
-    if (!path) return { ok: false, message: '请选择可从己方海岸抵达的非己方沿海陆地' };
+    if (!path || path.length<3 || path.at(-1)!==destination || this.owners[path[0]]!==owner || !(this.owners[destination]>=0) || this.owners[destination]===owner || path.some((t,i)=>!Number.isInteger(t)||!this.adjacent[t]||(i>0&&!this.adjacent[path[i-1]].includes(t))||(i>0&&i<path.length-1&&this.owners[t]!==-1))) return { ok: false, message: '请选择可从己方海岸抵达的非己方沿海陆地' };
     const contingent=takeTroops(n,amount);
     const fleet = { id: this.nextArmy++, owner, destination, target: this.owners[destination], troops: amount, militia:contingent.militia, path, distance: 0, speed: this.currentShipSpeed(owner) };
     this.transports.push(fleet);
@@ -205,7 +208,7 @@ export class Game {
       this.transports = this.transports.filter(f => f !== fleet);
       const target = this.owners[fleet.destination];
       if (target === fleet.owner) { addTroops(this.nations.get(fleet.owner),fleet); continue; }
-      this.armies.push({ id: fleet.id, owner: fleet.owner, target, troops: fleet.troops, militia:fleet.militia??0, committed: fleet.troops, defenderLosses: 0, progress: 0,
+      this.armies.push({ id: fleet.id, owner: fleet.owner, target, hostilityTargets:fleet.hostilityTargets, troops: fleet.troops, militia:fleet.militia??0, committed: fleet.troops, defenderLosses: 0, progress: 0,
         front: [fleet.destination], head: 0, queued: new Set([fleet.destination]), naval: true, landing: true, landingTile: fleet.destination });
       if (fleet.owner === 1 || target === 1) this.log(`${this.nations.get(fleet.owner).name}的 ${Math.floor(fleet.troops).toLocaleString()} 人已抵达海岸，开始登陆`, fleet.owner === 1 ? 'player' : 'war');
     }

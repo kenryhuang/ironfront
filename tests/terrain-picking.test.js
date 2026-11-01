@@ -27,6 +27,15 @@ test('small pans reuse terrain geometry rather than reallocating the entire reli
   assert.ok(s.ground.geometry===geometry);
 });
 
+test('returning to cached terrain or resizing invalidates an outstanding mesh build',()=>{
+ const s=fixture();s.syncGeometry();const installed=s.ground.geometry;let pending=null,cancelled=0;
+ s.meshJobs={request(key){pending=key;},cancel(){pending=null;cancelled++;}};
+ s.owner.panX+=2000;s.owner.originX+=2000;s.syncGeometry();assert.ok(pending);assert.equal(s.ground.geometry,installed);
+ s.owner.panX-=2000;s.owner.originX-=2000;s.syncGeometry();assert.equal(pending,null);assert.equal(s.ground.geometry,installed);
+ s.owner.panX+=2000;s.owner.originX+=2000;s.syncGeometry();assert.ok(pending);
+ s.resize();assert.equal(pending,null);assert.ok(cancelled>=2);
+});
+
 test('grid-column terrain picking matches the original full triangle raycast',()=>{
   const s=fixture();s.syncGeometry();installTerrainRaycast(s.ground,s.meshBounds);
   for(const [x,y] of [[400,300],[10,590],[700,90],[250,420]]){

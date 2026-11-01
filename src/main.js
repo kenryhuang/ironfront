@@ -2,10 +2,12 @@ import { createStrategicUI } from './strategic-ui.js';
 import { createResearchUI } from './research-ui.js';
 import { FACILITIES } from './facilities.js';
 import { CampaignGame as Game } from './campaign-game.js';
+import {createAirUI} from './air-ui.js';
 import {createArmsUI} from './arms-ui.js';
-import { createTheater } from './map.js';
+import {createHistoricalTheater,prepareHistoricalCampaign,COUNTRY_OPTIONS} from './historical-map.js';
 import { runAI } from './ai.js';
-import { CombinedArmsRenderer as Renderer } from './combined-arms-renderer.js';
+import {aiPosture,preparationRemaining,conflictTargets} from './campaign-pacing.js';
+import { AirRenderer as Renderer } from './air-renderer.js';
 import { updateBattleEvents } from './battle-events.js';
 import { createRenderDiagnostics } from './render-diagnostics.js';
 import { createZoomInput } from './navigation-input.js';
@@ -13,25 +15,38 @@ import { createZoomInput } from './navigation-input.js';
 const $ = id => document.getElementById(id);
 const number = n => Math.floor(n).toLocaleString('en-US');
 const time = n => `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(Math.floor(n % 60)).padStart(2, '0')}`;
-let game = new Game(createTheater());
+let countryCode=Number(new URLSearchParams(location.search).get('country'))||710;
+const newCampaign=()=>prepareHistoricalCampaign(new Game(createHistoricalTheater(countryCode)));
+let game = newCampaign();
+countryCode=game.nations.get(1).code;
+for(const n of COUNTRY_OPTIONS){const option=document.createElement('option');option.value=n.code;option.textContent=n.name;$('scenario-country').append(option);}
+$('scenario-country').value=String(countryCode);
 const renderer = new Renderer($('battlefield'), game);
 const renderDiagnostics=createRenderDiagnostics(renderer);
 let selected = null, selectedTile = null, selectedForLanding = false, mode = null, paused = false, speed = 1, accumulator = 0;
 let lastTime = performance.now(), lastUI = -1, lastAI = -1, toastUntil = 0, ended = false;
 let drag = null, suppressClick = false, helpWasPaused = false;
-let planState=null,drawing=null;
+let planState=null,drawing=null,airDrawing=null;
 const zoomInput=createZoomInput({getZoom:()=>renderer.zoom,zoomAt:(...args)=>{
   const px=renderer.panX,py=renderer.panY;
   renderer.zoomAt(...args);
   if(drag){drag.px+=renderer.panX-px;drag.py+=renderer.panY-py;}
   updateZoomLabel();
 }});
-const armsUI=createArmsUI({root:$('arms-section'),getGame:()=>game,command,isPaused:()=>paused,getMode:()=>mode,beginMode(value){if(planState)cancelCustomPlan();mode=value;renderer.plannedRoute=null;renderer.localMode=value==='arms:fire'?'barrage':value==='arms:place'?'relocate':null;if(value)toast(value==='arms:fire'?'点击陆地指定持续炮击区域。':'点击己方陆地选择炮兵阵地。');updateUI();}});
+const armsUI=createArmsUI({root:$('arms-section'),getGame:()=>game,command,isPaused:()=>paused,getMode:()=>mode,beginMode(value){groundView();clearAirDrawing();if(planState)cancelCustomPlan();mode=value;renderer.plannedRoute=null;renderer.localMode=value==='arms:fire'?'barrage':value==='arms:place'?'relocate':null;if(value)toast(value==='arms:fire'?'点击陆地指定持续炮击区域。':'点击己方陆地选择炮兵阵地。');updateUI();}});
 const researchUI=createResearchUI({getGame:()=>game,command,isPaused:()=>paused});
 const strategicUI=createStrategicUI({root:$('strategic-section'),getGame:()=>game,isPaused:()=>paused,command,
-  beginTarget(kind){if(planState)cancelCustomPlan();mode='strike:'+kind;renderer.plannedRoute=null;toast('点击敌方陆地预览打击范围，再确认发射。');updateUI();},
+  beginTarget(kind){groundView();clearAirDrawing();if(planState)cancelCustomPlan();mode='strike:'+kind;renderer.plannedRoute=null;toast('点击敌方陆地预览打击范围，再确认发射。');updateUI();},
   onPreview(preview){renderer.strikePreview=preview;},onExit(){if(mode?.startsWith('strike:'))mode=null;updateUI();}});
 
+const airUI=createAirUI({root:$('air-section'),events:$('air-events'),getGame:()=>game,command,isPaused:()=>paused,getMode:()=>mode,
+ beginMode(value){if(planState)cancelCustomPlan();mode=value;clearAirDrawing();renderer.localMode=null;renderer.plannedRoute=null;renderer.strikePreview=null;if(value)toast('点击目标或按住鼠标圈画航空任务区域；Esc取消，战役继续。');updateUI();},
+ focusFlight(id){const f=game.air.flights.find(f=>f.id===id);if(!f)return;zoomInput.flush();renderer.zoom=Math.max(renderer.zoom,60);const [x,y]=renderer.projectAir(f.x,f.y,renderer.airView?10:5);renderer.panX+=renderer.w/2-x;renderer.panY+=(renderer.h/2-y)/Math.cos(renderer.surface?.active?renderer.surface.tilt:0);renderer.updateReliefBounds();updateZoomLabel();}
+});
+function clearAirDrawing(){airDrawing=null;renderer.drawing=null;renderer.targetPreview=null;}
+function airViewLabels(){$('air-toggle').textContent=renderer.airView?'✈ 返回地面':'✈ 空中战场';$('air-toggle').setAttribute('aria-pressed',String(!!renderer.airView));$('air-legend').hidden=!renderer.airView;$('map-tooltip').hidden=true;}
+function groundView(){if(renderer.airView){renderer.toggleAir();airViewLabels();}}
+$('air-toggle').onclick=()=>{zoomInput.flush();if(planState)cancelCustomPlan();mode=null;clearAirDrawing();renderer.localMode=null;renderer.strikePreview=null;renderer.toggleAir();airViewLabels();airUI.open();const panel=$('air-section').closest('.command-panel');panel.scrollTop+=$('air-section').getBoundingClientRect().top-panel.getBoundingClientRect().top-12;updateUI();};
 
 function updateZoomLabel(){ $('zoom-level').textContent = `${Math.round(renderer.zoom * 100)}%`; }
 
@@ -51,6 +66,8 @@ function chooseTarget(id, tile = null, forLanding = false) {
   updateUI();
 }
 function attack(target = selected) {
+  groundView();clearAirDrawing();
+  if(target===null||target===1){toast('请先点击选中要进攻的国家，再确认出兵。',true);return;}
   if (paused) { toast('战役已暂停，请先继续战役', true); return; }
   command(armsUI.kind()==='armor'?game.armoredAttack(1,target,Number($('ratio').value)/100):game.attack(1,target,Number($('ratio').value)/100));
 }
@@ -66,6 +83,7 @@ function updatePlanPreview(refreshUI=true){
 }
 
 function startCustomPlan(){
+  groundView();clearAirDrawing();
   zoomInput.flush();
   if(game.phase!=='running'||!game.nations.get(1).alive)return;
   if(planState){cancelCustomPlan();return;}
@@ -105,14 +123,14 @@ function deploy(tile) {
 function reset() {
   zoomInput.flush();
   if(planState)cancelCustomPlan();
-  game = new Game(createTheater()); renderer.setGame(game); selected = null; selectedTile = null; selectedForLanding = false; renderer.selected = null; renderer.hover = null;
+  game = newCampaign(); renderer.setGame(game); selected = null; selectedTile = null; selectedForLanding = false; renderer.selected = null; renderer.hover = null;
   renderer.plannedRoute = null; renderer.destination = null;
   mode=null;
   $('facilities').replaceChildren();
-  researchUI.reset();strategicUI.reset();
+  researchUI.reset();strategicUI.reset();airUI.reset();clearAirDrawing();renderer.airView=false;airViewLabels();
   paused = false; speed = 1; accumulator = 0; lastAI = -1; lastUI = -1; ended = false;
-  $('end-card').hidden = true; $('deployment').hidden = false; $('toast').hidden = true; $('map-tooltip').hidden = true;
-  $('armies').replaceChildren(); $('fleets').replaceChildren();
+  $('end-card').hidden = true; $('deployment').hidden = true; $('toast').hidden = true; $('map-tooltip').hidden = true;
+  $('armies').replaceChildren(); $('fleets').replaceChildren(); $('ranking').replaceChildren();
   $('intelligence').classList.remove('open'); $('intel-toggle').setAttribute('aria-expanded', 'false');
   $('ratio').value = '30'; $('speed').textContent = '1×'; updateUI();
 }
@@ -196,7 +214,9 @@ function updateFleets(active) {
 function updateUI() {
   if(planState?.points.length>=3&&!drawing)updatePlanPreview(false);
   const n = game.nations.get(1), capacity = game.capacity(1), running = game.phase === 'running';
+  $('nation-name').textContent=n.name;$('deployment').hidden=game.phase!=='deployment';
   const active = running && n.alive && !paused;
+  $('air-toggle').disabled=game.phase==='deployment';
   const ownFleets = game.transports.filter(f => f.owner === 1);
   $('troops').textContent = number(n.troops); $('gold').textContent = number(game.logistics ? n.gold : ownFleets.reduce((s, f) => s + f.troops, 0)); $('land').textContent = number(n.tiles.size*game.cellArea);
   const population=game.logistics?game.population(1):n.troops;
@@ -209,7 +229,7 @@ function updateUI() {
   $('conscript').disabled=!active||!Number.isInteger(conscripts)||conscripts<1||conscripts>Math.floor(n.manpower??0);
   $('conscript-info').textContent=`可征 ${number(n.manpower??0)} 人 · 强征减少可用人力，不增加总人口`;
   updateFacilities(active);
-  armsUI.update();researchUI.update();strategicUI.setMode(mode?.startsWith('strike:')?mode.slice(7):null);strategicUI.update();
+  airUI.update();armsUI.update();researchUI.update();strategicUI.setMode(mode?.startsWith('strike:')?mode.slice(7):null);strategicUI.update();
   $('capacity-fill').style.width = `${Math.min(100, population / capacity * 100)}%`;
   const netIncome=game.logistics?game.income(1)-[...game.buildings].filter(([tile,b])=>game.owners[tile]===1&&b.type==='factory'&&b.enabled&&!(b.remaining>0)&&b.workers>0).reduce((sum,[,b])=>sum+game.factoryOperatingCost(1,b),0):0;
   $('income').textContent = `${game.logistics?(netIncome>=0?'+':'−')+number(Math.abs(netIncome))+'资金/秒 · ':''}海上 ${number(ownFleets.reduce((s,f)=>s+f.troops,0))} 人`;
@@ -223,8 +243,9 @@ function updateUI() {
   $('pause').disabled = !running; $('pause').innerHTML = paused ? '▶ <span>继续</span>' : 'Ⅱ <span>暂停</span>';
   $('pause').setAttribute('aria-label', paused ? '继续游戏' : '暂停游戏');
   $('paused-banner').hidden = !paused || !running;
-  $('plan-banner').hidden=!planState&&!mode?.startsWith('build:')&&!mode?.startsWith('strike:')&&!mode?.startsWith('arms:');
+  $('plan-banner').hidden=!planState&&!mode?.startsWith('build:')&&!mode?.startsWith('strike:')&&!mode?.startsWith('arms:')&&!mode?.startsWith('air:');
   $('plan-banner').textContent=mode==='custom-draw'?'按住鼠标圈画进攻区域 · 松开闭合 · Esc 取消':'选区已闭合 · 在左侧指定兵力并确认 · 拖动可平移地图';
+  if(mode==='air:target')$('plan-banner').textContent='航空任务 · 点击目标或按住鼠标圈画 · Esc取消 · 战役继续';
   if(mode?.startsWith('build:'))$('plan-banner').textContent=`建设${FACILITIES[mode.slice(6)].name} · 点击己方空地 · Esc 取消 · 战役继续`;
   if(mode?.startsWith('arms:'))$('plan-banner').textContent=mode==='arms:fire'?'点击炮击目标 · 持续齐射 · Esc 取消':'点击己方陆地放置或转移炮兵 · Esc 取消';
   if(mode?.startsWith('strike:'))$('plan-banner').textContent='点击敌方陆地选择打击中心 · 左侧确认发射 · Esc 取消';
@@ -240,12 +261,25 @@ function updateUI() {
     $('custom-confirm').disabled=!planState.preview?.ok||!validAmount;
   }
   $('map-state').textContent = game.phase === 'deployment' ? '等待部署' : game.phase === 'finished' ? '战役结束' : paused ? '模拟已暂停' : !n.alive ? '观战中' : `战役进行中 · ${speed}×`;
+  const preparation=preparationRemaining(game);
+  $('preparation-banner').hidden=preparation<=0||!n.alive||!running;
+  $('preparation-countdown').textContent=time(Math.ceil(preparation));
+  $('preparation-note').textContent=paused?'暂停中 · 发育期倒计时已冻结':conflictTargets(game,1).size?'已与部分国家交战 · 其他国家仍不会主动开战':'AI暂不主动开战 · 主动进攻会引起目标国反击';
   $('expand').disabled = !active || !game.neighbors(1).includes(0);
   const target = game.nations.get(selected), border = selected !== null && selected !== 1 && game.frontier(1, selected).length > 0;
   $('attack').disabled = !active || !border || dispatched < 1 || selectedForLanding;
   const targetTitle = selected === null ? '选择进攻目标' : selected === 0 ? '无主土地' : target?.name ?? '无效目标';
-  const targetDetail = selectedForLanding ? '沿海区域 · 圈选后自动海运' : selected === null ? '点击地图上的相邻领土' : selected === 1 ? '本国领土 · 沿海可出发运输船' : selected === 0 ? border ? '已接壤 · 可直接扩张' : '未接壤 · 圈选沿海区域可自动登陆' : !target?.alive ? '该国家已灭亡' : `${number(target.troops)} 全国守军 · ${border ? '已接壤' : '未接壤 · 圈选沿海区域自动海运'}`;
+  const targetCoastal=selected>1&&game.coastTiles.some(t=>game.owners[t]===selected);
+  const targetDetail = selectedForLanding ? '沿海区域 · 圈选后自动海运' : selected === null ? '点击地图上的相邻领土' : selected === 1 ? '本国领土 · 沿海可出发运输船' : selected === 0 ? border ? '已接壤 · 可直接扩张' : '未接壤 · 圈选沿海区域可自动登陆' : !target?.alive ? '该国家已灭亡' : `${number(target.troops)} 全国守军 · ${aiPosture(target).name}倾向 · ${border ? '已接壤' : targetCoastal?'未接壤 · 圈选沿海区域自动海运':'未接壤 · 无可登陆海岸'}`;
   $('selected-target').innerHTML = `<span class="target-dot" style="border-color:${target?.color ?? '#b9c2b0'}"></span><div><strong>${targetTitle}</strong><small>${targetDetail}</small></div>`;
+  const targetCard=$('map-target-card');targetCard.hidden=selected===null||selected===1||!!mode||!!planState||!!renderer.airView||!running;
+  $('map-target-name').textContent=targetTitle;
+  $('map-target-info').textContent=targetDetail;
+  $('map-target-troops').textContent=`投入 ${number(dispatched)} 人（${Math.round(ratio*100)}%） · 留守 ${number(n.troops-dispatched)} 人`;
+  $('map-attack').disabled=$('attack').disabled;
+  const attackLabel=selected===null?'先点击选择国家':selected===1?'已选中本国':selected===0?'扩张无主土地':`进攻 ${targetTitle}`;
+  $('attack').textContent='↗ '+attackLabel;$('map-attack').textContent='↗ '+attackLabel;
+  $('map-target-custom').hidden=border||!targetCoastal||!target?.alive;
   const ranking = [...game.nations.values()].sort((a, b) => b.tiles.size - a.tiles.size || a.id - b.id);
   $('alive-count').textContent = `${ranking.filter(x => x.alive).length} 国`;
   updateRanking(ranking);
@@ -262,7 +296,7 @@ function updateUI() {
   if (!ended && (game.phase === 'finished' || (running && !n.alive))) {
     ended = true; $('end-card').hidden = false;
     const won = game.winner === 1;
-    $('end-card').innerHTML = `<span class="eyebrow">${won ? 'VICTORY' : 'COMMAND LOST'}</span><h2>${won ? '战区已统一' : '共和国已陷落'}</h2><p>${won ? '你的国旗，已遍布整个大陆。' : '最后一块领土已失守。重新部署，改变战局。'}<br>战役时长 ${time(game.time)}</p><button class="primary-button" data-new-game>重新开始战役 →</button>${game.phase !== 'finished' ? '<button class="secondary-button" data-spectate>继续观战</button>' : ''}`;
+    $('end-card').innerHTML = `<span class="eyebrow">${won ? 'VICTORY' : 'COMMAND LOST'}</span><h2>${won ? '战区已统一' : '本国已陷落'}</h2><p>${won ? '你的国旗，已遍布整个大陆。' : '最后一块领土已失守。重新开始，改变战局。'}<br>战役时长 ${time(game.time)}</p><button class="primary-button" data-new-game>重新开始战役 →</button>${game.phase !== 'finished' ? '<button class="secondary-button" data-spectate>继续观战</button>' : ''}`;
   }
 }
 
@@ -273,7 +307,7 @@ for(const [type,f] of Object.entries(FACILITIES)){
   button.innerHTML=`<span class="build-icon">${f.icon}</span><span><b>${f.name} · ${f.seconds}秒</b><small>${(Array.isArray(f.effects)?f.effects.join(' · '):f.effects)??facilityEffects[type]??f.description??'科技解锁设施'}</small><small class="build-requirements"></small></span><em>${number(f.cost)}</em>`;
   $('build-options').append(button);
 }
-$('build-options').addEventListener('click',e=>{const b=e.target.closest('[data-build]');if(!b||b.disabled)return;if(planState)cancelCustomPlan();mode=mode===`build:${b.dataset.build}`?null:`build:${b.dataset.build}`;renderer.plannedRoute=null;updateUI();});
+$('build-options').addEventListener('click',e=>{const b=e.target.closest('[data-build]');if(!b||b.disabled)return;groundView();clearAirDrawing();if(planState)cancelCustomPlan();mode=mode===`build:${b.dataset.build}`?null:`build:${b.dataset.build}`;renderer.plannedRoute=null;updateUI();});
 $('conscript-amount').addEventListener('input',updateUI);
 $('conscript-amount').addEventListener('keydown',e=>{if(e.key==='Enter'&&!$('conscript').disabled)$('conscript').click();});
 $('conscript').addEventListener('click',()=>command(game.conscript(1,Number($('conscript-amount').value)),'强征军已入伍。'));
@@ -305,6 +339,9 @@ function updateFacilities(active){
 
 $('deploy-default').addEventListener('click', () => deploy(game.suggestedSpawn));
 $('attack').addEventListener('click', () => attack());
+$('map-attack').addEventListener('click',()=>attack());
+$('map-target-close').addEventListener('click',()=>chooseTarget(null));
+$('map-target-custom').addEventListener('click',startCustomPlan);
 $('custom-attack').addEventListener('click',startCustomPlan);
 $('custom-troops').addEventListener('input',updateUI);
 $('custom-troops').addEventListener('keydown',e=>{if(e.key==='Enter'&&!$('custom-confirm').disabled)confirmCustomPlan();});
@@ -315,6 +352,7 @@ for(const button of document.querySelectorAll('[data-plan-ratio]'))button.addEve
 $('expand').addEventListener('click', () => { if(planState)cancelCustomPlan();mode=null; chooseTarget(0); attack(0); });
 $('ratio').addEventListener('input', updateUI);
 $('restart').addEventListener('click', reset);
+$('scenario-start').addEventListener('click',()=>{countryCode=Number($('scenario-country').value);reset();toast(`已以${game.nations.get(1).name}重开1939战役。`);});
 $('pause').addEventListener('click', () => { paused = !paused; accumulator = 0; updateUI(); });
 $('speed').addEventListener('click', () => { speed = speed === 1 ? 2 : speed === 2 ? 4 : 1; $('speed').textContent = `${speed}×`; updateUI(); });
 $('zoom-in').addEventListener('click', () => { zoomInput.flush();renderer.zoomAt(1.25);updateZoomLabel(); });
@@ -360,8 +398,8 @@ $('help-dialog').addEventListener('close', () => { paused = helpWasPaused; accum
 document.addEventListener('keydown', e => {
   if ($('help-dialog').open||$('research-dialog').open) return;
   if(e.key==='Escape'&&planState){cancelCustomPlan();return;}
-  if (e.code === 'Space' && !['INPUT', 'BUTTON', 'A'].includes(document.activeElement.tagName)) { e.preventDefault(); if (game.phase === 'running') $('pause').click(); }
-  if (e.key === 'Escape' && mode) {mode=null;updateUI();}
+  if (e.code === 'Space' && !['INPUT', 'BUTTON', 'A', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) { e.preventDefault(); if (game.phase === 'running') $('pause').click(); }
+  if (e.key === 'Escape' && mode) {mode=null;clearAirDrawing();updateUI();}
 });
 
 const canvas = $('battlefield');
@@ -369,6 +407,7 @@ const local = e => { const r = canvas.getBoundingClientRect(); return [e.clientX
 canvas.addEventListener('pointerdown', e => {
   if (e.button !== 0) return;
   zoomInput.flush();
+  if(mode==='air:target'){e.preventDefault();airDrawing={id:e.pointerId,points:[renderer.worldAt(...local(e))],last:local(e),moved:false};renderer.drawing=airDrawing.points;canvas.setPointerCapture(e.pointerId);return;}
   if(mode==='custom-draw'&&planState){
     e.preventDefault();const point=renderer.worldAt(...local(e));
     drawing={id:e.pointerId,points:[point],last:local(e)};
@@ -379,6 +418,8 @@ canvas.addEventListener('pointerdown', e => {
   canvas.setPointerCapture(e.pointerId);
 });
 canvas.addEventListener('pointermove', e => {
+  if(airDrawing?.id===e.pointerId){const p=local(e);if(Math.hypot(p[0]-airDrawing.last[0],p[1]-airDrawing.last[1])>3){airDrawing.moved=true;airDrawing.points.push(renderer.worldAt(...p));airDrawing.last=p;if(airDrawing.points.length>1024)airDrawing.points=airDrawing.points.filter((_,i)=>i%2===0);renderer.drawing=airDrawing.points;}$('map-tooltip').hidden=true;return;}
+  if(mode==='air:target'){const [x,y]=renderer.worldAt(...local(e));renderer.targetPreview={x,y,radius:5};}
   if(drawing?.id===e.pointerId){
     e.preventDefault();const p=local(e);
     if(Math.hypot(p[0]-drawing.last[0],p[1]-drawing.last[1])>=2){
@@ -394,13 +435,14 @@ canvas.addEventListener('pointermove', e => {
     if (drag.moved) { renderer.panX = drag.px + dx; renderer.panY = drag.py + dy/(renderer.surface?.active?Math.cos(renderer.surface.tilt):1); }
     renderer.hover=null;$('map-tooltip').hidden=true;return;
   }
+  if(renderer.airView){const [x,y]=renderer.worldAt(...local(e)),control=game.air.controlAt(x,y);$('map-coordinates').textContent=control.state==='contested'?'空域争夺':control.owner===null?'无人制空':(game.nations.get(control.owner)?.name??'国家')+'制空';$('map-tooltip').hidden=true;return;}
   const [x, y] = local(e); const tile = renderer.tileAt(x, y); renderer.hover = tile;if(mode==='arms:fire')renderer.localTarget=tile;
   if (tile !== null && !drag?.moved) {
     const owner = game.owners[tile];
     const coastal = owner >= 0 && game.adjacent[tile].some(t => game.owners[t] === -1);
     const label = owner === -1 ? '海域 · 运兵船可航行' : owner === 0 ? '无主土地' : game.nations.get(owner).name;
     const terrain = game.terrain[tile] > 1.5 ? '山地 · 进攻消耗 ×1.8' : game.terrain[tile] > 1 ? '丘陵 · 进攻消耗 ×1.3' : '平原';
-    const facility=game.buildings.get(tile);
+    const facility=!renderer.airView&&game.air.facilityVisible(tile)?game.buildings.get(tile):null;
     const facilityInfo=facility?`<small>${FACILITIES[facility.type]?.name??facility.type} Lv.${facility.level??1} · ${facility.remaining>0?'建设中 '+Math.ceil(facility.remaining)+'秒':facility.status??(facility.enabled?'运作中':'已停产')}${facility.workers?' · 工人 '+number(facility.workers):''}${facility.queue?' · '+(facility.queue.mode==='reform'?'整编':'训练')+' '+number(facility.queue.amount)+'人 / '+Math.ceil(facility.queue.remaining)+'秒':''}</small>`:'';
     $('map-tooltip').innerHTML = `${label}${facilityInfo}${game.radiationAt(tile)?`<small>☢ 核污染 · ${Math.ceil(game.radiationAt(tile))}秒 · 不可清除</small>`:''}<small>${owner === -1 ? '选择沿海陆地作为登陆点' : terrain}${coastal ? ' · 沿海，可登陆' : ''}</small>`;
     $('map-tooltip').style.left = `${Math.max(5, Math.min(x + 15, renderer.w - 190))}px`; $('map-tooltip').style.top = `${Math.min(y + 18, renderer.h - 90)}px`;
@@ -410,6 +452,7 @@ canvas.addEventListener('pointermove', e => {
 });
 canvas.addEventListener('pointerup', e => {
   zoomInput.flush();
+  if(airDrawing?.id===e.pointerId){const p=renderer.worldAt(...local(e)),points=airDrawing.moved?airDrawing.points:[];clearAirDrawing();canvas.releasePointerCapture(e.pointerId);suppressClick=true;airUI.select(points,p);return;}
   if(drawing?.id===e.pointerId){
     drawing.points.push(renderer.worldAt(...local(e)));planState.points=drawing.points;drawing=null;
     canvas.releasePointerCapture(e.pointerId);mode='custom-ready';renderer.planDrawing=false;suppressClick=true;updatePlanPreview();return;
@@ -417,7 +460,7 @@ canvas.addEventListener('pointerup', e => {
   if (!drag || drag.id !== e.pointerId) return;
   suppressClick = drag.moved; drag = null; canvas.releasePointerCapture(e.pointerId);
   if (suppressClick) return;
-  if(planState)return;
+  if(planState||renderer.airView)return;
   const tile = renderer.tileAt(...local(e)); if (tile === null) return;
   if (game.phase === 'deployment') { deploy(tile); return; }
   if(mode?.startsWith('strike:')){strategicUI.selectTarget(tile);return;}
@@ -428,15 +471,10 @@ canvas.addEventListener('pointerup', e => {
   }
   if (game.owners[tile] >= 0) chooseTarget(game.owners[tile], tile);
 });
-canvas.addEventListener('pointercancel', () => { drag = null;if(drawing){drawing=null;if(planState)redrawCustomPlan();} });
+canvas.addEventListener('pointercancel', () => { drag = null;clearAirDrawing();if(drawing){drawing=null;if(planState)redrawCustomPlan();} });
 canvas.addEventListener('pointerleave', () => { renderer.hover = null; $('map-tooltip').hidden = true; });
-canvas.addEventListener('dblclick', e => {
-  zoomInput.flush();
-  if (suppressClick || mode || game.phase !== 'running') return;
-  const tile = renderer.tileAt(...local(e));
-  if (tile !== null && game.owners[tile] >= 0 && game.owners[tile] !== 1) { chooseTarget(game.owners[tile]); attack(); }
-});
-canvas.addEventListener('wheel', e => { e.preventDefault();if(drawing)return;zoomInput.enqueue(e.deltaY < 0 ? 1.12 : 0.89, ...local(e)); }, { passive: false });
+// Map gestures select only; dispatch requires an explicit command button.
+canvas.addEventListener('wheel', e => { e.preventDefault();if(drawing||airDrawing)return;zoomInput.enqueue(e.deltaY < 0 ? 1.12 : 0.89, ...local(e)); }, { passive: false });
 
 const campaignBench=new URLSearchParams(location.search).has('campaignBench')?
   (await import('../docs/bench/campaign.js')).installCampaignBench({renderer,prepare(){
@@ -459,6 +497,7 @@ function frame(now) {
       game.step(0.1); accumulator -= 0.1;
     }
   }
+  renderer.airRenderTime=paused||game.phase!=='running'?game.time:Math.max(0,game.time-.1+accumulator);
   const afterSimulation=performance.now();
   if (now - lastUI > 200) { updateUI(); lastUI = now; }
   if (now > toastUntil) $('toast').hidden = true;

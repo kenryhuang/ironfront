@@ -1,0 +1,93 @@
+"""Generate the 1939-08-31 scenario raster. Requires pyshp and shapely.
+
+Input: artifacts/cshapes/CShapes-2.0.shp from https://icr.ethz.ch/data/cshapes/
+The derived raster retains CC BY-NC-SA 4.0. See docs/historical-scenario.md.
+"""
+import datetime
+import json
+from pathlib import Path
+import shapefile
+from shapely.geometry import shape, box, Polygon
+from shapely.ops import unary_union
+
+ROOT = Path(__file__).resolve().parents[1]
+reader = shapefile.Reader(str(ROOT / 'artifacts/cshapes/CShapes-2.0.shp'), encoding='latin1')
+date = datetime.date(1939, 8, 31)
+records = [(s.record.as_dict(), shape(s.shape.__geo_interface__)) for s in reader.iterShapeRecords()]
+snapshot = [(d, g) for d, g in records if d['gwsdate'] <= date <= d['gwedate']]
+groups = {
+  2: [3,4,6,840], 200: [21,31,51,52,53,80,110,338,352,420,451,452,462,472,475,500,501,510,511,521,551,552,553,570,571,572,590,625,663,665,681,6812,694,696,750,775,780,781,821,822,823,824,827,835,940,950],
+  220: [65,66,120,1201,432,433,434,435,436,437,438,461,471,481,482,483,484,522,580,585,600,615,616,652,660,811,812,815,930,960],
+  210: [115,850], 211: [490,515], 235: [402,404,540,541,860], 230: [411,602,610],
+  325: [339,530,531,5200,620], 740: [713,730,7351], 900: [911,912], 560: [565], 255: [305], 710: [711],
+}
+controllers = {child: parent for parent, children in groups.items() for child in children}
+names = dict(zip(
+ [2,20,40,41,42,70,90,91,92,93,94,95,100,101,130,135,140,145,150,155,160,165,200,205,210,211,212,220,225,230,235,255,290,310,317,325,345,350,355,360,365,366,367,368,375,380,385,390,395,450,560,630,640,645,651,670,678,698,700,710,712,740,760,790,800,900,920],
+ ['美国','加拿大','古巴','海地','多米尼加','墨西哥','危地马拉','洪都拉斯','萨尔瓦多','尼加拉瓜','哥斯达黎加','巴拿马','哥伦比亚','委内瑞拉','厄瓜多尔','秘鲁','巴西','玻利维亚','巴拉圭','智利','阿根廷','乌拉圭','英国','爱尔兰','荷兰','比利时','卢森堡','法国','瑞士','西班牙','葡萄牙','德国','波兰','匈牙利','斯洛伐克','意大利','南斯拉夫','希腊','保加利亚','罗马尼亚','苏联','爱沙尼亚','拉脱维亚','立陶宛','芬兰','瑞典','挪威','丹麦','冰岛','利比里亚','南非','伊朗','土耳其','伊拉克','埃及','沙特阿拉伯','也门','阿曼','阿富汗','中国','蒙古','日本','不丹','尼泊尔','泰国','澳大利亚','新西兰']))
+geometries = {}
+metadata = {}
+slovakia = next(g for d,g in records if d['gwcode']==317)
+for d, g in snapshot:
+    code = controllers.get(d['gwcode'], d['gwcode'])
+    if d['gwcode']==315:
+        # 1938 southern cessions are already excluded by CShapes. The Czech /
+        # Slovak split uses the later shared boundary; Ruthenia is approximated.
+        ruthenia = g.intersection(box(22.15, -90, 180, 90))
+        slovak = g.intersection(slovakia).difference(ruthenia)
+        for k, part in [(255,g.difference(slovak).difference(ruthenia)),(317,slovak),(310,ruthenia)]:
+            geometries.setdefault(k, []).append(part)
+        metadata[317] = dict(code=317, name='斯洛伐克', lon=17.11, lat=48.15)
+        continue
+    geometries.setdefault(code, []).append(g)
+    if code == d['gwcode']:
+        metadata[code] = dict(code=code, name=names.get(code,d['cntry_name']), lon=d['caplong'], lat=d['caplat'])
+
+# Manchuria/Jehol: gameplay approximation of the Japanese-controlled area,
+# clipped to China's base outline (not recognition of annexation/sovereignty).
+china = unary_union(geometries[710])
+manchuria = china.intersection(Polygon([(115.4,49.8),(119,54),(136,54),(136,40),(125,39),(121,40),(118.2,41),(116,43),(115.4,49.8)]))
+geometries[710] = [china.difference(manchuria)]
+geometries[740].append(manchuria)
+# Memel's small 1939 transfer, approximate within the Lithuanian outline.
+lithuania = unary_union(geometries[368])
+memel = lithuania.intersection(Polygon([(20.8,55.1),(21.7,55.1),(21.5,56.1),(20.8,56.1)]))
+geometries[368] = [lithuania.difference(memel)]
+geometries[255].append(memel)
+metadata[710].update(lon=106.55, lat=29.56)
+metadata[255]['name']='德国'
+metadata[325]['name']='意大利'
+
+# Scanline rasterization happens OFFLINE, never in a render frame.
+W,H,S=1440,720,4
+pixels=[0]*(W*H)
+def paint(poly,code):
+    if poly.is_empty: return
+    if poly.geom_type != 'Polygon':
+        for part in getattr(poly,'geoms',[]): paint(part,code)
+        return
+    rings=[[( (x+180)*S, (90-y)*S) for x,y in ring.coords] for ring in [poly.exterior,*poly.interiors]]
+    low=max(0,int((90-poly.bounds[3])*S)); high=min(H-1,int((90-poly.bounds[1])*S)+1)
+    for y in range(low,high+1):
+        scan=y+.5; hits=[]
+        for ring in rings:
+            for a,b in zip(ring,ring[1:]):
+                if (a[1]>scan)!=(b[1]>scan): hits.append(a[0]+(scan-a[1])*(b[0]-a[0])/(b[1]-a[1]))
+        hits.sort()
+        import math
+        for a,b in zip(hits[::2],hits[1::2]):
+            for x in range(max(0,math.ceil(a-.5)),min(W-1,math.floor(b-.5))+1): pixels[y*W+x]=code
+for code,parts in sorted(geometries.items()):
+    paint(unary_union(parts),code)
+runs=[];start=0
+for i in range(1,len(pixels)+1):
+    if i==len(pixels) or pixels[i]!=pixels[start]:
+        if pixels[start]: runs.extend([start,i-start,pixels[start]])
+        start=i
+present=set(pixels)-{0}
+assert present <= metadata.keys(), present-metadata.keys()
+output='// Generated by scripts/generate-historical-map.py. CShapes 2.0 derivative: CC BY-NC-SA 4.0.\n// Sources, alterations and limitations: docs/historical-scenario.md\n'
+output+='export const HISTORICAL_NATIONS = '+json.dumps([metadata[k] for k in sorted(present)],ensure_ascii=False,separators=(',',':'))+';\n'
+output+='export const HISTORICAL_RUNS = '+json.dumps(runs,separators=(',',':'))+';\n'
+(ROOT/'src/historical-data.js').write_text(output,encoding='utf8')
+print(f'{len(present)} countries, {len(runs)//3} runs, {len(output.encode())} bytes')

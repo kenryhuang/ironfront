@@ -32,3 +32,8 @@ temp/
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+# Local performance investigation records
+docs/performance-*.md
+__pycache__/
+*.pyc

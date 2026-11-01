@@ -5,6 +5,8 @@ await copyFile('index.html', 'dist/index.html');
 await cp('src', 'dist/src', { recursive: true });
 await mkdir('dist/docs/research',{recursive:true});
 await copyFile('docs/research/research-browser.html','dist/docs/research/research-browser.html');
+await copyFile('docs/historical-scenario.md','dist/docs/historical-scenario.md');
+await copyFile('docs/historical-scenario.html','dist/docs/historical-scenario.html');
 await cp('docs/facilities','dist/docs/facilities',{recursive:true});
 await cp('docs/bench','dist/docs/bench',{recursive:true});
 console.log('Built IronFront → dist/ (static HTML, CSS and ES modules)');

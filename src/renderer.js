@@ -13,6 +13,7 @@ import { surfaceKey } from './render-policy.js';
 import { TerrainAtlas } from './terrain-atlas.js';
 import {TerritoryJobs} from './territory-jobs.js';
 import {tracePackedTerritory} from './territory-geometry.js';
+import {drawFlatAtlas} from './flat-atlas.js';
 
 const rgb = hex => [1,3,5].map(i => parseInt(hex.slice(i,i+2),16));
 const mix = (a,b,t) => a.map((v,i)=>Math.round(v*(1-t)+b[i]*t));
@@ -55,6 +56,7 @@ export class Renderer {
   fit() { this.zoom = 1; this.panX = 0; this.panY = 0; }
   initializeGeography(){
     const g=this.game;
+    this.ridgeTiles=[];for(let t=0;t<g.owners.length;t+=13)if(g.owners[t]>=0&&g.terrain[t]>1.5)this.ridgeTiles.push(t);
     this.coastPath=g.world?traceCoastline(new Path2D(),g.width,g.height):null;
     this.hitContext=document.createElement('canvas').getContext('2d');
     this.climate=document.createElement('canvas');this.climate.width=g.width;this.climate.height=g.height;
@@ -207,7 +209,8 @@ export class Renderer {
     const rebuiltAt=performance.now();
     this.scorchLayer.update();
     const scale = this.scale, ox = this.originX, oy = this.originY;
-    if(this.surface?.active){this.surface.updateCoverage();this.atlas.update();this.baseVersion=this.atlas.presented?.baseVersion??this.atlas.canvasBaseVersion??this.atlas.baseVersion;}
+    if(this.surface?.active)this.surface.updateCoverage();
+    if(this.coastPath||this.surface?.active){this.atlas.update();this.baseVersion=this.atlas.presented?.baseVersion??this.atlas.canvasBaseVersion??this.atlas.baseVersion;}
     const atlasAt=performance.now();
     const baseKey=surfaceKey(this);
     if(!this.surface?.active){
@@ -222,13 +225,14 @@ export class Renderer {
     const seaLabel = (text, x, y) => c.fillText(text, ox + x * g.gridScale * scale, oy + y * g.gridScale * scale);
     seaLabel('P A C I F I C', 33, 100); seaLabel('A T L A N T I C', 143, 96); seaLabel('I N D I A N   O C E A N', 257, 117);
     c.imageSmoothingEnabled = true;c.imageSmoothingQuality='high';
-    if(this.coastPath)this.drawGeography(c,ox,oy,scale);
+    if(this.coastPath){if(!drawFlatAtlas(this,c))this.drawGeography(c,ox,oy,scale);else{c.save();c.translate(ox,oy);c.scale(scale,scale);drawRivers(c,g);c.restore();}}
     else{c.drawImage(this.climate,ox,oy,g.width*scale,g.height*scale);c.save();c.translate(ox,oy);c.scale(scale,scale);for(const {path,color} of this.territoryPaths.values()){c.fillStyle=color;c.fill(path,'evenodd');}c.restore();}
     if(this.scorchLayer.active)c.drawImage(this.scorchLayer.canvas,ox,oy,g.width*scale,g.height*scale);
     // Topographic ridges use original procedural markings rather than borrowed assets.
     c.strokeStyle = '#81735350'; c.lineWidth = 0.7;
-    if(!this.surface?.active)for (let t = 0; t < g.owners.length; t += 13) if (g.owners[t] >= 0 && g.terrain[t] > 1.5 && this.zoom>1.5) {
-      const [x, y] = this.point(t); c.beginPath(); c.moveTo(x - scale * 0.6, y + scale * 0.4); c.lineTo(x, y - scale * 0.5); c.lineTo(x + scale * 0.6, y + scale * 0.4); c.stroke();
+    if(!this.surface?.active&&this.zoom>1.5)for (const t of this.ridgeTiles) {
+      const x=ox+(t%g.width+.5)*scale,y=oy+(Math.floor(t/g.width)+.5)*scale;if(x<-scale||x>this.w+scale||y<-this.overscan-scale||y>this.h+this.overscan+scale)continue;
+      c.beginPath(); c.moveTo(x - scale * 0.6, y + scale * 0.4); c.lineTo(x, y - scale * 0.5); c.lineTo(x + scale * 0.6, y + scale * 0.4); c.stroke();
     }
     this.drawPlans(c,ox,oy,scale);
     c.restore();this.baseKey=baseKey;this.baseVersion++;
@@ -241,17 +245,19 @@ export class Renderer {
     this.timings={rebuild:rebuiltAt-stageStart,atlas:atlasAt-rebuiltAt,surface:performance.now()-atlasAt};
     c.textAlign = 'center';
     const labelBoxes = [];
-    for (const { nation: n, tile } of this.labels) {
+    const visibleLabels=g.historical?[...this.labels].sort((a,b)=>Number(b.nation.id===1)-Number(a.nation.id===1)||Number(b.nation.id===this.selected)-Number(a.nation.id===this.selected)||b.nation.tiles.size-a.nation.tiles.size):this.labels;
+    for (const { nation: n, tile } of visibleLabels) {
       if(this.airView)continue;
       let [x, y] = this.point(tile);
       if (x < -80 || x > this.w + 80 || y < -this.overscan || y > this.h + this.overscan) continue;
-      const anchor = [x, y];
+      const anchor = [x, y];let placed=false;
       for (const [dx, dy] of [[0,0],[0,-31],[0,31],[52,0],[-52,0]]) {
         const box = {x:anchor[0]+dx-39,y:anchor[1]+dy-16,w:78,h:34};
         if (!labelBoxes.some(b => box.x < b.x+b.w && box.x+box.w > b.x && box.y < b.y+b.h && box.y+box.h > b.y)) {
-          x = anchor[0]+dx; y = anchor[1]+dy; labelBoxes.push(box); break;
+          x = anchor[0]+dx; y = anchor[1]+dy; labelBoxes.push(box);placed=true; break;
         }
       }
+      if(g.historical&&!placed)continue;
       if (x !== anchor[0] || y !== anchor[1]) { c.strokeStyle = '#526c7680'; c.lineWidth = 0.5; c.beginPath(); c.moveTo(...anchor); c.lineTo(x,y); c.stroke(); }
       c.lineJoin='round';c.strokeStyle='#f8fbefeb';c.lineWidth=3;
       c.fillStyle = n.id === 1 ? '#6b4707' : '#243f4a'; c.font = `${n.id === 1 ? 700 : 600} ${Math.min(14, 11 + this.zoom)}px "Noto Sans SC", "Microsoft YaHei", sans-serif`;

@@ -2,7 +2,7 @@ import { drawRivers } from './rivers.js';
 
 /** Padded world-space textures. Density is rounded UP, never reduced in close view. */
 export function planAtlas(v,previous){
-  const coverage=v.surface?.coverage;
+  const coverage=v.surface?.active===false?null:v.surface?.coverage;
   const left=coverage?.left??-v.originX/v.scale,right=coverage?.right??(v.w-v.originX)/v.scale;
   const top=coverage?.top??(-v.overscan-v.originY)/v.scale,bottom=coverage?.bottom??(v.h+v.overscan-v.originY)/v.scale;
   const moving=v.surface?.navigating;

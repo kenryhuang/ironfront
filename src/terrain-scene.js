@@ -1,4 +1,6 @@
 import * as THREE from './vendor/three.module.js';
+import {buildTerrainMesh} from './terrain-mesh.js';
+import {TerrainMeshJobs} from './terrain-mesh-jobs.js';
 import { buildElevation, sampleElevation, reliefHeight, meshResolution, projectGround } from './terrain-relief.js';
 import { createFacilityModel, disposeFacilityModel } from './facility-models.js';
 import { createTerrainMaterial } from './terrain-material.js';
@@ -47,6 +49,20 @@ export class TerrainScene {
   setGame(){
     for(const {model} of this.models.values()){model.removeFromParent();disposeFacilityModel(model);}this.models.clear();
     this.elevation=buildElevation(this.owner.game);this.geometryKey=null;this.gridKey=null;this.renderKey=null;this.shadowDirty=true;this.baseVersion=-1;
+    this.meshJobs?.dispose();this.meshJobs=null;
+    if(typeof Worker!=='undefined'){
+      const g=this.owner.game;
+      this.meshJobs=new TerrainMeshJobs({elevation:this.elevation,width:g.width,height:g.height,gridScale:g.gridScale},data=>{
+        const geometry=new THREE.BufferGeometry();
+        for(const [name,a] of Object.entries(data.attributes))geometry.setAttribute(name,new THREE.BufferAttribute(a.array,a.itemSize));
+        geometry.setIndex(new THREE.BufferAttribute(data.index,1));
+        geometry.boundingSphere=new THREE.Sphere(new THREE.Vector3().fromArray(data.sphere.center),data.sphere.radius);
+        this.installMesh(geometry,data.key,data.bounds);this.geometryKey=null;this.renderKey=null;this.owner.lastRender=0;
+      },()=>{this.geometryKey=null;this.owner.lastRender=0;},undefined,(data,latest)=>{
+        const b=data.bounds,c=this.updateCoverage();
+        return b.step===latest.bounds.step&&b.x0<=c.left&&b.y0<=c.top&&b.x0+b.columns*b.step>=c.right&&b.y0+b.rows*b.step>=c.bottom;
+      });
+    }
     this.maxElevation=this.elevation.reduce((max,h)=>Math.max(max,h),0);
     this.heightBounds=new ElevationBounds(this.elevation,this.owner.game.width,this.owner.game.height);this.coverageKey=null;
   }
@@ -67,6 +83,7 @@ export class TerrainScene {
   }
   resize(){
     const {w,h}=this.owner;if(!w||!h)return;
+    this.meshJobs?.cancel();
     this.syncBaseTexture();
     this.renderer.setSize(w,h,false);
     this.hud.width=Math.round(w*this.owner.dpr);this.hud.height=Math.round(h*this.owner.dpr);
@@ -115,28 +132,25 @@ export class TerrainScene {
     const neededColumns=Math.ceil((coverage.right-left)/step)+1,neededRows=Math.ceil((coverage.bottom-top)/step)+1;
     const cached=this.meshBounds;
     const reuse=this.gridKey&&cached?.step===step&&left>=cached.x0&&top>=cached.y0&&left+neededColumns*step<=(cached.x0+cached.columns*step)&&top+neededRows*step<=(cached.y0+cached.rows*step);
-    const x0=reuse?cached.x0:Math.floor(left/step)*step-16*step,y0=reuse?cached.y0:Math.floor(top/step)*step-16*step;
-    const columns=reuse?cached.columns:neededColumns+32,rows=reuse?cached.rows:neededRows+32;
+    // Keep enough full-detail terrain beyond the viewport to cover worker
+    // latency during a drag. Never lower tessellation to build the guard band.
+    const padding=Math.max(16,Math.ceil(160/(step*o.scale)));
+    const x0=reuse?cached.x0:Math.floor(left/step)*step-padding*step,y0=reuse?cached.y0:Math.floor(top/step)*step-padding*step;
+    const columns=reuse?cached.columns:neededColumns+2*padding,rows=reuse?cached.rows:neededRows+2*padding;
     const gridKey=[x0,y0,step,columns,rows].join(':');
     if(gridKey!==this.gridKey){
-      this.shadowDirty=true;
-      this.ground.geometry.dispose();this.ground.geometry=new THREE.PlaneGeometry(columns*step,rows*step,columns,rows);
-      const geometry=this.ground.geometry,p=geometry.attributes.position,surface=new Float32Array(p.count*2);
-      for(let row=0;row<=rows;row++)for(let col=0;col<=columns;col++){
-        const i=row*(columns+1)+col,x=x0+col*step,y=y0+row*step,z=sampleElevation(this.elevation,g.width,g.height,x,y);
-        p.setXYZ(i,x,-y,z);
-        const dx=sampleElevation(this.elevation,g.width,g.height,x+.5,y)-sampleElevation(this.elevation,g.width,g.height,x-.5,y);
-        const dy=sampleElevation(this.elevation,g.width,g.height,x,y+.5)-sampleElevation(this.elevation,g.width,g.height,x,y-.5);
-        surface[i*2]=Math.min(.98,Math.max(0,z/(g.gridScale||4)-1.5)*3+Math.max(0,Math.hypot(dx,dy)-.6)*.45);
-        surface[i*2+1]=Math.min(.85,Math.max(0,z/(g.gridScale||4)-3.8)*.5);
-      }
-      geometry.setAttribute('terrainSurface',new THREE.BufferAttribute(surface,2));geometry.computeVertexNormals();geometry.computeBoundingSphere();this.gridKey=gridKey;
-      this.meshBounds={x0,y0,step,columns,rows};
-      installTerrainRaycast(this.ground,this.meshBounds);
-    }
+      const bounds={x0,y0,step,columns,rows};
+      if(this.gridKey&&this.meshJobs&&!this.meshJobs.failed)this.meshJobs.request(gridKey,bounds);
+      else{this.meshJobs?.cancel();this.installMesh(buildTerrainMesh(this.elevation,g.width,g.height,g.gridScale,bounds),gridKey,bounds);}
+    }else this.meshJobs?.cancel();
+
     this.worldRoot.position.set(o.originX-o.w/2,o.h/2-o.originY,0);this.worldRoot.scale.setScalar(o.scale);
     this.worldRoot.updateMatrixWorld(true);this.geometryKey=key;
     if((!this.navigating&&this.shadowScale!==o.scale)||Math.abs(this.worldRoot.position.x-(this.shadowX??0))>200||Math.abs(this.worldRoot.position.y-(this.shadowY??0))>200)this.shadowDirty=true;
+  }
+  installMesh(geometry,key,bounds){
+    this.ground.geometry.dispose();this.ground.geometry=geometry;this.gridKey=key;this.meshBounds=bounds;
+    this.shadowDirty=true;installTerrainRaycast(this.ground,bounds);
   }
   pick(x,y,includeModels=false){
     this.syncGeometry();const o=this.owner;

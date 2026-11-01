@@ -1,3 +1,4 @@
+import {registerHostilities} from './campaign-pacing.js';
 import {SCORCH_RECOVERY_SECONDS} from './contamination-visual.js';
 import {takeTroops} from './troops.js';
 
@@ -97,6 +98,7 @@ export const strategicMethods={
   resolveStrike(strike){
     const d=STRATEGIC_WEAPONS[strike.kind],tiles=blastTiles(this,strike.target,d.radius),area=new Set(tiles),counts=new Map();
     for(const t of tiles)if(this.owners[t]>0)counts.set(this.owners[t],(counts.get(this.owners[t])??0)+1);
+    registerHostilities(this,strike.owner,counts.keys());
     let losses=0,friendlyLosses=0,destroyed=0,damaged=0;
     for(const [id,count]of counts){const n=this.nations.get(id),amount=Math.floor(n.troops*count/Math.max(1,n.tiles.size)*d.casualties);takeTroops(n,amount);losses+=amount;if(id===strike.owner)friendlyLosses+=amount;}
     for(const a of [...this.armies])if(area.has(armyPosition(this,a))){const amount=Math.floor(a.troops*d.armyDamage);takeTroops(a,amount);losses+=amount;if(a.owner===strike.owner)friendlyLosses+=amount;if(a.troops<1)this.finishArmy(a,false);}

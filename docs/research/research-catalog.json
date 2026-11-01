@@ -246,7 +246,7 @@
       "countryOrContext": "多国",
       "historicalPeriod": "1930年代，基础领域",
       "historicalNote": "飞机制造与无线电探测成为空战基础。",
-      "effect": "游戏设计：解锁机场Ⅰ级、基础侦察与雷达站Ⅰ级。",
+      "effect": "游戏设计：解锁机场Ⅰ级、战斗机、攻击机、侦察机生产和雷达站Ⅰ级；可执行制空巡逻、护航、前线支援、海上打击与侦察。",
       "requirements": [
         {
           "type": "factory",
@@ -267,7 +267,7 @@
       ],
       "researchCost": 50000,
       "researchSeconds": 240,
-      "implementationStatus": "live-bonuses-and-facility-licenses",
+      "implementationStatus": "live-air-operations",
       "parentIds": [
         "T03"
       ],
@@ -503,7 +503,7 @@
       "countryOrContext": "多国",
       "historicalPeriod": "1930年代，技术类别",
       "historicalNote": "活塞与喷气动力是不同航空技术路线。",
-      "effect": "游戏设计：解锁机场Ⅱ级升级许可和先进飞机研究类别。",
+      "effect": "游戏设计：解锁机场Ⅱ级升级许可、战术轰炸机和运输机生产；可执行设施轰炸、兵力空运和敌后空降。",
       "requirements": [
         {
           "type": "factory",
@@ -530,7 +530,7 @@
       ],
       "researchCost": 120000,
       "researchSeconds": 480,
-      "implementationStatus": "live-bonuses-and-facility-licenses",
+      "implementationStatus": "live-air-operations",
       "parentIds": [
         "T07"
       ],
@@ -821,7 +821,7 @@
       "historicalPeriod": "1942年底首舰服役、1943年投入作战；1940年起服役；1941年起量产；1942年起服役；1943年起服役，U 995为保存实例；1944—1945年建造；战末有限出航；1942年起使用；二战，1941—1943年扩大运用；1944年大量投入欧洲战场；1944年投入作战；1942年首飞、1944年投入作战；1942年首次作战；1944年前后投入作战；1941—1942年研制、1943年使用；1944年首次作战发射",
       "countryOrContext": "多国历史技术综合研究",
       "historicalNote": "汇集“埃塞克斯”级航空母舰、“光辉”级航空母舰、“自由轮”标准货船等已有历史项目；不是同名的单一历史发明。",
-      "effect": "游戏设计：解锁V-2常规导弹制造、储备与范围打击，并解锁B-29原子弹轰炸投送（另需S20与Ⅱ级机场）。其他航母、潜艇及独立飞机单位仍记录许可。各枚弹药单独消耗资金、装备、人力和时间。",
+      "effect": "游戏设计：解锁V-2常规导弹制造、储备与范围打击；解锁B-29战略轰炸机生产与出动（需Ⅱ级机场），并解锁原子弹航空投送（另需S20与弹药）。航母、潜艇仍记录许可。各装备单独消耗资金、装备和时间。",
       "requirements": [
         {
           "type": "factory",
@@ -866,7 +866,7 @@
         "https://www.nationalmuseum.af.mil/Visit/Museum-Exhibits/Fact-Sheets/Display/Article/196684/AFmuseum/flying-bomb-and-rocket-development/",
         "https://www.rafmuseum.org.uk/research/collections/german-army-v2-assembly-4/"
       ],
-      "implementationStatus": "live-strategic-weapons",
+      "implementationStatus": "live-air-operations-and-strategic-weapons",
       "prerequisiteMode": "all"
     },
     {

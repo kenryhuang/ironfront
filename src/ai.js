@@ -1,8 +1,12 @@
 import {FACILITIES} from './facilities.js';
+import {runAirAI} from './air-ai.js';
+import {runHistoricalAI} from './historical-ai.js';
 export function runAI(game) {
   if (game.phase !== 'running') return;
+  if(game.historical)return runHistoricalAI(game);
   for (const n of game.nations.values()) {
     if (!n.ai || !n.alive) continue;
+    runAirAI(game,n);
     if(game.logistics){
       if(n.troops<300&&n.manpower>=200)game.conscript(n.id,Math.min(500,Math.floor(n.manpower*.25)));
       if(game.time>=(n.nextConstruction??0)){

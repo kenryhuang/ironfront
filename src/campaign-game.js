@@ -1,15 +1,22 @@
 import {Game} from './engine.js';
 import {CombinedArmsGame} from './combined-arms-game.js';
+import {AirOperations} from './air-operations.js';
+import {advanceHistoricalNavigation} from './deferred-navigation.js';
+import {registerHostilities,registerOrderTargets} from './campaign-pacing.js';
 
 export class CampaignGame extends CombinedArmsGame {
- constructor(config){super(config);this.mergeAttacks=false;for(const n of this.nations.values())if(n.tiles.size)this.startingBarracks(n.id);}
+ constructor(config){super(config);this.air=new AirOperations(this);this.facilityVisible=tile=>this.air.facilityVisible(tile);this.mergeAttacks=false;for(const n of this.nations.values())if(n.tiles.size)this.startingBarracks(n.id);}
+ step(dt,options){if(!Number.isFinite(dt)||dt<=0||dt>10)return;let left=dt;while(left>1e-8&&this.phase==='running'){const tick=Math.min(.1,left);left-=tick;super.step(tick,options);this.air.step(tick);advanceHistoricalNavigation(this);}}
  startingBarracks(owner,preferred){const n=this.nations.get(owner);if(!n?.tiles.size)return;const tile=preferred??n.tiles.values().next().value;if(!this.buildings.has(tile))this.buildings.set(tile,{type:'barracks',level:1,remaining:0,enabled:false,workers:0,trainingMode:'recruit',queue:null,status:'初始兵营 · 停训'});if(owner===1)this.battery.tile=tile;}
  deploy(tile){const result=super.deploy(tile);if(result.ok){this.startingBarracks(1,tile);this.log('初始兵营已建立。步兵与海运开局可用；坦克需T08，炮兵需T11。','player');}return result;}
  usableFacility(owner,tile,type){const b=this.buildings.get(tile);return this.owners[tile]===owner&&b?.type===type&&!(b.remaining>0)&&!(b.suppressedUntil>this.time)&&(b.integrity??100)>0&&!this.radiationAt(tile);}
  armsAccess(kind){const n=this.nations.get(1),id=kind==='armor'?'T08':'T11',missing=[];if(this.phase!=='running'||!n?.alive)missing.push('请先部署国家');if(!this.researchState(1).completed.has(id))missing.push(kind==='armor'?'需T08「中型坦克生产工艺」':'需T11「火炮弹药与重装运输」');const factory=[...this.buildings.keys()].find(t=>this.usableFacility(1,t,'factory')&&this.buildings.get(t).enabled!==false);if(factory===undefined)missing.push('需一座正在运作的已建成工厂');return {ok:!missing.length,missing,factory};}
  commitAttack(owner,target,amount,front,allowedTiles=null,planPolygon=null){if(this.armies.filter(a=>a.owner===owner).length>=6)return {ok:false,message:'最多同时指挥6支陆军任务，请先撤回部分部队。'};const armored=owner===1&&this.dispatchKind==='armor';if(armored&&(!this.researchState(1).completed.has('T08')||this.armorReserve<12))return {ok:false,message:'装甲进攻需要完成T08，并有12辆库存坦克。'};
-  this.deployingArmor=true;let result;try{result=super.commitAttack(owner,target,amount,front,allowedTiles,planPolygon);}finally{this.deployingArmor=false;}const a=this.armies.find(a=>a.id===result.armyId);if(result.ok&&a){if(armored){this.armorReserve-=12;a.armor={initial:12,remaining:12,motion:a.frontline.lanes[0]};}else a.infantry={motion:a.frontline.lanes[0]};}return result;
+  this.deployingArmor=true;let result;try{result=super.commitAttack(owner,target,amount,front,allowedTiles,planPolygon);}finally{this.deployingArmor=false;}const a=this.armies.find(a=>a.id===result.armyId);if(result.ok&&a){registerOrderTargets(this,a,allowedTiles??front);if(armored){this.armorReserve-=12;a.armor={initial:12,remaining:12,motion:a.frontline.lanes[0]};}else a.infantry={motion:a.frontline.lanes[0]};}return result;
  }
+ dispatchTransport(owner,destination,ratio,path,base){const result=super.dispatchTransport(owner,destination,ratio,path,base);if(result.ok)registerHostilities(this,owner,[this.owners[destination]]);return result;}
+ fireBarrage(tile){const result=super.fireBarrage(tile);if(result.ok)registerHostilities(this,1,[this.owners[tile]]);return result;}
+ launchWeapon(owner,kind,tile){const result=super.launchWeapon(owner,kind,tile);if(result.ok)registerHostilities(this,owner,[this.owners[tile]]);return result;}
  armoredAttack(owner,target,ratio){this.dispatchKind='armor';try{return this.attack(owner,target,ratio);}finally{this.dispatchKind=null;}}
  armoredCustomAttack(owner,target,points,amount){if(!this.researchState(owner).completed.has('T08')||this.armorReserve<12)return {ok:false,message:'装甲进攻需要完成T08，并有12辆库存坦克。'};this.dispatchKind='armor';try{const result=this.customAttack(owner,target,points,amount);if(result.ok&&result.fleetId){this.armorReserve-=12;this.transports.find(f=>f.id===result.fleetId).armor={initial:12,remaining:12};}return result;}finally{this.dispatchKind=null;}}
  reinforceCustom(owner,id,amount){const a=this.armies.find(a=>a.id===id&&a.owner===owner&&a.allowedTiles);if(!a)return {ok:false,message:'区域进攻已结束'};return this.customAttack(owner,a.target,a.planPolygon,amount);}
