@@ -3,7 +3,7 @@ import * as THREE from './vendor/three.module.js';
 /** Shared low-poly geometries, grouped by material rather than by tiny parts. */
 export function createAirModels(){
  const geometries=new Set(),materials=new Set(),templates=new Map();
- const mat=(color,extra={})=>{const m=new THREE.MeshStandardMaterial({color,roughness:.65,...extra});materials.add(m);return m;};
+ const mat=(color,extra={})=>{const m=new THREE.MeshStandardMaterial({color,roughness:.65,transparent:true,...extra});materials.add(m);return m;};
  const body=mat('#bfcbd0'),glass=mat('#254858',{metalness:.35}),friendly=mat('#27789c'),enemy=mat('#bc554f'),dark=mat('#313c42');
  function combined(parts){const vertices=[],normals=[];for(const {geo,scale=[1,1,1],position=[0,0,0],rotation=[0,0,0]}of parts){const matrix=new THREE.Matrix4().compose(new THREE.Vector3(...position),new THREE.Quaternion().setFromEuler(new THREE.Euler(...rotation)),new THREE.Vector3(...scale));const copy=(geo.index?geo.toNonIndexed():geo.clone()).applyMatrix4(matrix);vertices.push(...copy.attributes.position.array);normals.push(...copy.attributes.normal.array);copy.dispose();geo.dispose();}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));g.computeBoundingSphere();geometries.add(g);return g;}
  const box=(scale,position)=>({geo:new THREE.BoxGeometry(1,1,1),scale,position});
