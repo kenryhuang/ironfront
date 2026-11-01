@@ -1,12 +1,11 @@
 import { createStrategicUI } from './strategic-ui.js';
 import { createResearchUI } from './research-ui.js';
 import { FACILITIES } from './facilities.js';
-import { Game } from './engine.js';
+import { CampaignGame as Game } from './campaign-game.js';
+import {createArmsUI} from './arms-ui.js';
 import { createTheater } from './map.js';
 import { runAI } from './ai.js';
-import { Renderer } from './renderer.js';
-import { findSeaRoute } from './naval.js';
-import { buildAttackPlan } from './attack-plan.js';
+import { CombinedArmsRenderer as Renderer } from './combined-arms-renderer.js';
 import { updateBattleEvents } from './battle-events.js';
 import { createRenderDiagnostics } from './render-diagnostics.js';
 import { createZoomInput } from './navigation-input.js';
@@ -27,6 +26,7 @@ const zoomInput=createZoomInput({getZoom:()=>renderer.zoom,zoomAt:(...args)=>{
   if(drag){drag.px+=renderer.panX-px;drag.py+=renderer.panY-py;}
   updateZoomLabel();
 }});
+const armsUI=createArmsUI({root:$('arms-section'),getGame:()=>game,command,isPaused:()=>paused,getMode:()=>mode,beginMode(value){if(planState)cancelCustomPlan();mode=value;renderer.plannedRoute=null;renderer.localMode=value==='arms:fire'?'barrage':value==='arms:place'?'relocate':null;if(value)toast(value==='arms:fire'?'点击陆地指定持续炮击区域。':'点击己方陆地选择炮兵阵地。');updateUI();}});
 const researchUI=createResearchUI({getGame:()=>game,command,isPaused:()=>paused});
 const strategicUI=createStrategicUI({root:$('strategic-section'),getGame:()=>game,isPaused:()=>paused,command,
   beginTarget(kind){if(planState)cancelCustomPlan();mode='strike:'+kind;renderer.plannedRoute=null;toast('点击敌方陆地预览打击范围，再确认发射。');updateUI();},
@@ -47,26 +47,18 @@ function command(result, message) {
 }
 function chooseTarget(id, tile = null, forLanding = false) {
   selected = id; selectedTile = tile; selectedForLanding = forLanding; renderer.selected = id; renderer.destination = tile;
-  renderer.plannedRoute = tile !== null && id !== 1 && game.nations.get(1).alive ? findSeaRoute(game, 1, tile) : null;
+  renderer.plannedRoute = null;
   updateUI();
 }
 function attack(target = selected) {
   if (paused) { toast('战役已暂停，请先继续战役', true); return; }
-  command(game.attack(1, target, Number($('ratio').value) / 100));
+  command(armsUI.kind()==='armor'?game.armoredAttack(1,target,Number($('ratio').value)/100):game.attack(1,target,Number($('ratio').value)/100));
 }
-function toggleMode() {
-  if(planState)cancelCustomPlan();
-  mode = mode === 'naval' ? null : 'naval';
-  $('naval-mode').classList.toggle('active', Boolean(mode));
-  $('naval-hint').textContent = mode ? '点击海外沿海陆地选择登陆点。Esc 取消。' : '沿用上方出兵比例。无需港口或研发。';
-  if (mode) toast('点击海外海岸，预览航线后派遣船队。');
-}
-
 function updatePlanPreview(refreshUI=true){
   if(!planState)return;
   planState.target=null;
-  planState.preview=planState.points.length>=3?buildAttackPlan(game,1,planState.target,planState.points):null;
-  renderer.planPolygon=planState.points;
+  planState.preview=planState.points.length>=3?game.planAttack(1,planState.target,planState.points):null;
+  renderer.planPolygon=planState.points;renderer.plannedRoute=planState.preview?.kind==='naval'?planState.preview.route:null;
   renderer.planStatus=planState.preview?.ok?'valid':planState.points.length?'invalid':'drawing';
   renderer.planTiles=planState.preview?.allowedTiles??null;
   renderer.setPlanPreview(planState.preview);
@@ -89,7 +81,7 @@ function startCustomPlan(){
 function cancelCustomPlan(){
   if(!planState)return;
   planState=null;drawing=null;mode=null;
-  renderer.planPolygon=null;renderer.planTiles=null;renderer.planPreviewPath=null;renderer.planDrawing=false;
+  renderer.plannedRoute=null;renderer.planPolygon=null;renderer.planTiles=null;renderer.planPreviewPath=null;renderer.planDrawing=false;
   $('attack-plan').hidden=true;updateUI();
 }
 
@@ -102,10 +94,10 @@ function redrawCustomPlan(){
 
 function confirmCustomPlan(){
   if(!planState)return;
-  const result=game.customAttack(1,null,planState.points,Number($('custom-troops').value));
+  const result=armsUI.kind()==='armor'?game.armoredCustomAttack(1,null,planState.points,Number($('custom-troops').value)):game.customAttack(1,null,planState.points,Number($('custom-troops').value));
   if(!result.ok){toast(result.message,true);updatePlanPreview();return;}
   const target=planState.target;cancelCustomPlan();renderer.cacheTime=-1;
-  toast(`自定义任务已下达，投入 ${number(result.committed)} 人，只在圈内推进。`);updateUI();
+  toast(`${result.kind==='naval'?'自动海运任务':'自定义任务'}已下达，投入 ${number(result.committed)} 人，只在圈内推进。`);updateUI();
 }
 function deploy(tile) {
   if (command(game.deploy(tile), '部署完成。先扩张空地，再发展国力。')) { chooseTarget(0); $('deployment').hidden = true; }
@@ -195,7 +187,7 @@ function updateFleets(active) {
     }
     const target = game.owners[f.destination];
     card.querySelector('.army-title strong').textContent = number(f.troops);
-    card.querySelector('.army-detail').textContent = `前往${target === 0 ? '无主海岸' : game.nations.get(target).name} · ${Math.ceil((f.path.length - 1 - f.distance) / f.speed)} 秒抵达`;
+    card.querySelector('.army-detail').textContent = f.embark?'兵营出发 · 正前往海岸登船':`前往${target === 0 ? '无主海岸' : game.nations.get(target).name} · ${Math.ceil((f.path.length - 1 - f.distance) / f.speed)} 秒抵达`;
     card.querySelector('.fleet-progress span').style.width = `${f.distance / (f.path.length - 1) * 100}%`;
     const button = card.querySelector('button'); if (button) button.disabled = game.phase!=='running'||!game.nations.get(1).alive;
   }
@@ -217,7 +209,7 @@ function updateUI() {
   $('conscript').disabled=!active||!Number.isInteger(conscripts)||conscripts<1||conscripts>Math.floor(n.manpower??0);
   $('conscript-info').textContent=`可征 ${number(n.manpower??0)} 人 · 强征减少可用人力，不增加总人口`;
   updateFacilities(active);
-  researchUI.update();strategicUI.setMode(mode?.startsWith('strike:')?mode.slice(7):null);strategicUI.update();
+  armsUI.update();researchUI.update();strategicUI.setMode(mode?.startsWith('strike:')?mode.slice(7):null);strategicUI.update();
   $('capacity-fill').style.width = `${Math.min(100, population / capacity * 100)}%`;
   const netIncome=game.logistics?game.income(1)-[...game.buildings].filter(([tile,b])=>game.owners[tile]===1&&b.type==='factory'&&b.enabled&&!(b.remaining>0)&&b.workers>0).reduce((sum,[,b])=>sum+game.factoryOperatingCost(1,b),0):0;
   $('income').textContent = `${game.logistics?(netIncome>=0?'+':'−')+number(Math.abs(netIncome))+'资金/秒 · ':''}海上 ${number(ownFleets.reduce((s,f)=>s+f.troops,0))} 人`;
@@ -231,31 +223,28 @@ function updateUI() {
   $('pause').disabled = !running; $('pause').innerHTML = paused ? '▶ <span>继续</span>' : 'Ⅱ <span>暂停</span>';
   $('pause').setAttribute('aria-label', paused ? '继续游戏' : '暂停游戏');
   $('paused-banner').hidden = !paused || !running;
-  $('plan-banner').hidden=!planState&&!mode?.startsWith('build:')&&!mode?.startsWith('strike:');
+  $('plan-banner').hidden=!planState&&!mode?.startsWith('build:')&&!mode?.startsWith('strike:')&&!mode?.startsWith('arms:');
   $('plan-banner').textContent=mode==='custom-draw'?'按住鼠标圈画进攻区域 · 松开闭合 · Esc 取消':'选区已闭合 · 在左侧指定兵力并确认 · 拖动可平移地图';
   if(mode?.startsWith('build:'))$('plan-banner').textContent=`建设${FACILITIES[mode.slice(6)].name} · 点击己方空地 · Esc 取消 · 战役继续`;
+  if(mode?.startsWith('arms:'))$('plan-banner').textContent=mode==='arms:fire'?'点击炮击目标 · 持续齐射 · Esc 取消':'点击己方陆地放置或转移炮兵 · Esc 取消';
   if(mode?.startsWith('strike:'))$('plan-banner').textContent='点击敌方陆地选择打击中心 · 左侧确认发射 · Esc 取消';
-  $('naval-mode').classList.toggle('active',mode==='naval');
   $('custom-attack').disabled=!running||!n.alive;
   $('custom-attack').setAttribute('aria-pressed',String(Boolean(planState)));
   $('custom-attack').classList.toggle('active',Boolean(planState));
   if(planState){
     const amount=Number($('custom-troops').value),validAmount=Number.isInteger(amount)&&amount>0&&amount<=Math.floor(n.troops);
     $('custom-troops').max=String(Math.floor(n.troops));
-    $('custom-status').textContent=planState.preview?.ok?`可推进 ${number(planState.preview.allowedTiles.size*game.cellArea)} 领土${planState.preview.unreachable?' · 已排除圈内不可达区域':''}`:planState.preview?.message??'按住鼠标圈画区域，松开自动闭合。';
+    $('custom-status').textContent=planState.preview?.ok?`${planState.preview.kind==='naval'?'自动海运登陆':'陆路全线进攻'} · 可推进 ${number(planState.preview.allowedTiles.size*game.cellArea)} 领土${planState.preview.unreachable?' · 已排除圈内不可达区域':''}`:planState.preview?.message??'按住鼠标圈画区域，松开自动闭合。';
     $('custom-status').classList.toggle('error',Boolean(planState.preview&&!planState.preview.ok));
     $('custom-reserve').textContent=validAmount?`投入 ${number(amount)} 人 · 留守 ${number(n.troops-amount)} 人`:'请输入不超过留守兵力的正整数';
     $('custom-confirm').disabled=!planState.preview?.ok||!validAmount;
   }
   $('map-state').textContent = game.phase === 'deployment' ? '等待部署' : game.phase === 'finished' ? '战役结束' : paused ? '模拟已暂停' : !n.alive ? '观战中' : `战役进行中 · ${speed}×`;
-  $('naval-mode').disabled = !active;
-  $('transport').disabled = !active || !renderer.plannedRoute || selectedTile === null || game.owners[selectedTile] === 1 || dispatched < 1;
-  $('landing-info').textContent = renderer.plannedRoute && selectedTile !== null ? `登陆点 ${selectedTile % game.width} / ${Math.floor(selectedTile / game.width)} · 航程 ${Math.ceil((renderer.plannedRoute.length - 1) / game.currentShipSpeed(1))} 秒` : '选择可抵达的非己方海岸以预览航线';
   $('expand').disabled = !active || !game.neighbors(1).includes(0);
   const target = game.nations.get(selected), border = selected !== null && selected !== 1 && game.frontier(1, selected).length > 0;
   $('attack').disabled = !active || !border || dispatched < 1 || selectedForLanding;
   const targetTitle = selected === null ? '选择进攻目标' : selected === 0 ? '无主土地' : target?.name ?? '无效目标';
-  const targetDetail = selectedForLanding ? '登陆海岸 · 使用下方海运指令' : selected === null ? '点击地图上的相邻领土' : selected === 1 ? '本国领土 · 沿海可出发运输船' : selected === 0 ? border ? '已接壤 · 可直接扩张' : '未接壤 · 可选择海岸登陆' : !target?.alive ? '该国家已灭亡' : `${number(target.troops)} 全国守军 · ${border ? '已接壤' : '未接壤 · 可海运'}`;
+  const targetDetail = selectedForLanding ? '沿海区域 · 圈选后自动海运' : selected === null ? '点击地图上的相邻领土' : selected === 1 ? '本国领土 · 沿海可出发运输船' : selected === 0 ? border ? '已接壤 · 可直接扩张' : '未接壤 · 圈选沿海区域可自动登陆' : !target?.alive ? '该国家已灭亡' : `${number(target.troops)} 全国守军 · ${border ? '已接壤' : '未接壤 · 圈选沿海区域自动海运'}`;
   $('selected-target').innerHTML = `<span class="target-dot" style="border-color:${target?.color ?? '#b9c2b0'}"></span><div><strong>${targetTitle}</strong><small>${targetDetail}</small></div>`;
   const ranking = [...game.nations.values()].sort((a, b) => b.tiles.size - a.tiles.size || a.id - b.id);
   $('alive-count').textContent = `${ranking.filter(x => x.alive).length} 国`;
@@ -325,13 +314,6 @@ $('custom-redraw').addEventListener('click',redrawCustomPlan);
 for(const button of document.querySelectorAll('[data-plan-ratio]'))button.addEventListener('click',()=>{$('custom-troops').value=String(Math.max(1,Math.floor(game.nations.get(1).troops*Number(button.dataset.planRatio))));updateUI();});
 $('expand').addEventListener('click', () => { if(planState)cancelCustomPlan();mode=null; chooseTarget(0); attack(0); });
 $('ratio').addEventListener('input', updateUI);
-$('naval-mode').addEventListener('click', toggleMode);
-$('transport').addEventListener('click', () => {
-  if (!paused && command(game.transport(1, selectedTile, Number($('ratio').value) / 100), '船队已启航，载兵数与剩余航程见地图和海运列表。')) {
-    if (mode) toggleMode();
-    renderer.plannedRoute = null; updateUI();
-  }
-});
 $('restart').addEventListener('click', reset);
 $('pause').addEventListener('click', () => { paused = !paused; accumulator = 0; updateUI(); });
 $('speed').addEventListener('click', () => { speed = speed === 1 ? 2 : speed === 2 ? 4 : 1; $('speed').textContent = `${speed}×`; updateUI(); });
@@ -359,6 +341,7 @@ $('armies').addEventListener('click', e => {
 });
 $('battle-events').addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b||b.disabled)return;
+  if(b.dataset.stopBarrage)command(game.stopBarrage(),'已停止炮击。');
   if(b.dataset.stopArmy)command(game.stopAttack(1,Number(b.dataset.stopArmy)));
   if(b.dataset.stopFleet)command(game.stopTransport(1,Number(b.dataset.stopFleet)));
   if(b.dataset.eventCounter)attack(Number(b.dataset.eventCounter));
@@ -411,7 +394,7 @@ canvas.addEventListener('pointermove', e => {
     if (drag.moved) { renderer.panX = drag.px + dx; renderer.panY = drag.py + dy/(renderer.surface?.active?Math.cos(renderer.surface.tilt):1); }
     renderer.hover=null;$('map-tooltip').hidden=true;return;
   }
-  const [x, y] = local(e); const tile = renderer.tileAt(x, y); renderer.hover = tile;
+  const [x, y] = local(e); const tile = renderer.tileAt(x, y); renderer.hover = tile;if(mode==='arms:fire')renderer.localTarget=tile;
   if (tile !== null && !drag?.moved) {
     const owner = game.owners[tile];
     const coastal = owner >= 0 && game.adjacent[tile].some(t => game.owners[t] === -1);
@@ -438,17 +421,10 @@ canvas.addEventListener('pointerup', e => {
   const tile = renderer.tileAt(...local(e)); if (tile === null) return;
   if (game.phase === 'deployment') { deploy(tile); return; }
   if(mode?.startsWith('strike:')){strategicUI.selectTarget(tile);return;}
+  if(mode?.startsWith('arms:')){armsUI.selectTile(tile);return;}
   if(mode?.startsWith('build:')){
     if(paused){toast('请先继续战役再建设',true);return;}
     const type=mode.slice(6);if(command(game.build(1,tile,type),`${FACILITIES[type].name}已开工。`)){mode=null;updateUI();}return;
-  }
-  if (mode) {
-    if (paused) { toast('请先继续战役再选择海岸', true); return; }
-    if (game.owners[tile] < 0 || game.owners[tile] === 1 || !game.adjacent[tile].some(t => game.owners[t] === -1)) { toast('请选择非己方的沿海陆地', true); return; }
-    chooseTarget(game.owners[tile], tile, true);
-    if (renderer.plannedRoute) { toggleMode(); toast('航线已就绪，点击“派遣运兵船”确认出兵。'); }
-    else toast('目前没有从己方海岸通往此处的水路，请先扩张至海岸。', true);
-    return;
   }
   if (game.owners[tile] >= 0) chooseTarget(game.owners[tile], tile);
 });

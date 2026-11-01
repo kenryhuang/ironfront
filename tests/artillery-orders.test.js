@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {LocalArmsGame} from '../src/local-arms-game.js';
+function scene(){const g=new LocalArmsGame({width:60,height:20,owners:Array.from({length:1200},(_,t)=>t%60<30?1:2),terrain:Array(1200).fill(1),logistics:true,nations:[{id:1,troops:20000,gold:10000,equipment:500},{id:2,troops:20000}]});g.battery.tile=610;return g;}
+const advance=(g,s)=>{for(let i=0;i<s*10;i++)g.step(.1,{economy:false});};
+test('one order repeats salvos and stopping preserves shells already airborne',()=>{const g=scene();g.deployBattery();advance(g,3.1);assert.equal(g.startBarrage(635).ok,true);advance(g,8.2);assert.equal(g.battery.ammo,12);g.stopBarrage();const count=g.localShells.length;assert.ok(count>0);advance(g,10);assert.equal(g.battery.ammo,12);assert.equal(g.localShells.length,0);});
+test('automatic fire waits for ammo and resumes after paid reload',()=>{const g=scene();g.deployBattery();advance(g,3.1);g.battery.ammo=3;g.startBarrage(635);advance(g,10);assert.equal(g.battery.ammo,0);assert.equal(g.battery.autoTarget,635);g.reloadBattery();advance(g,5.2);assert.equal(g.battery.ammo,15);});
+test('automatic fire stops when the target is captured',()=>{const g=scene();g.deployBattery();advance(g,3.1);g.startBarrage(635);g.claim(635,1);advance(g,9);assert.equal(g.battery.autoTarget,null);assert.equal(g.battery.ammo,15);});
+test('relocation moves on friendly land without teleporting or shooting in transit',()=>{const g=scene();const source=g.battery.tile;assert.equal(g.relocateBattery(620).ok,true);assert.equal(g.battery.tile,source);advance(g,.5);assert.ok(g.battery.motion.x>10.5&&g.battery.motion.x<20.5);assert.equal(g.battery.deployed,false);assert.equal(g.fireBarrage(635).ok,false);advance(g,12);assert.equal(g.battery.tile,620);assert.equal(g.battery.deployed,true);assert.equal(g.battery.motion,null);});
+test('cannot teleport artillery across disconnected friendly islands',()=>{const g=scene();for(let y=0;y<20;y++)g.owners[y*60+15]=-1;const source=g.battery.tile;assert.equal(g.relocateBattery(620).ok,false);assert.equal(g.battery.tile,source);});

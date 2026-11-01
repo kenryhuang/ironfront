@@ -28,6 +28,7 @@
       <div id="logistics-resources" class="logistics-resources"><div><span>总人口 / 上限</span><strong id="population">—</strong></div><div><span>可用人力</span><strong id="manpower">—</strong></div><div><span>装备库存</span><strong id="equipment">—</strong></div><div><span>生产工人</span><strong id="workers">—</strong></div></div>
       <section id="conscription-section" class="command-section"><div class="section-label"><h2>紧急强征</h2><span>人力 → 兵力</span></div><label for="conscript-amount" class="resource-detail">立即 1:1 转为强征军 · 战斗效能 40%</label><div class="conscript-controls"><input id="conscript-amount" type="number" min="1" step="1" value="100" inputmode="numeric" aria-label="强征人数"><button id="conscript">强征入伍</button></div><p id="conscript-info" class="build-hint"></p></section>
       <section id="research-section" class="command-section"><div class="section-label"><h2>国家研发</h2><span>TECHNOLOGY</span></div><div id="research-summary" aria-live="polite"></div><button id="open-research" class="secondary-button">⌘ 打开科技树</button><p class="build-hint">42项科技 · 研发消耗资金与时间，科技树打开时战役继续。</p></section>
+      <section id="arms-section" class="command-section"></section>
       <section id="strategic-section" class="command-section"></section>
       <section id="facilities-section" class="command-section"><div class="section-label"><h2>国家建设</h2><span id="facility-count">0 座</span></div><div class="build-options" id="build-options"></div><p id="build-hint" class="build-hint">点击己方空地建设，设施间隔至少2地理单位。战役继续，Esc 取消。</p><div id="facilities" class="facility-list"></div></section>
       <section class="command-section"><div class="section-label"><h2>进攻指令</h2><span>01</span></div>
@@ -45,21 +46,14 @@
           <p id="custom-reserve" class="plan-status"></p>
           <button id="custom-confirm" class="primary-button" disabled>确认自定义进攻</button>
           <div class="plan-actions"><button id="custom-redraw">重新圈画</button><button id="custom-cancel">取消</button></div>
-          <small>圈画期间战役继续。跨越圈内多个国家推进，完成后余兵归队。</small>
+          <small>圈画期间战役继续。不接壤的沿海区域自动海运，登陆后仍只在圈内推进，完成后余兵归队。</small>
         </div>
         <button id="expand" class="secondary-button" disabled>＋ 扩张无主土地</button>
-      </section>
-      <section class="command-section naval-section"><div class="section-label"><h2>跨海登陆</h2><span>02</span></div>
-        <p class="naval-intro">从己方海岸直接出发，驶向海外海岸。</p>
-        <button id="naval-mode" class="secondary-button" disabled>⌖ 选择登陆海岸</button>
-        <div id="landing-info" class="landing-info">尚未选择登陆点</div>
-        <button id="transport" class="primary-button naval-button" disabled>⚓ 派遣运兵船</button>
-        <p class="build-hint" id="naval-hint">沿用上方出兵比例。无需港口或研发。</p>
       </section>
       <div class="doctrine"><span>指挥官提示</span><p>金色为我方部队，红色为来袭敌军。出征兵力不参与本土防守；登陆后从滩头向内陆推进。</p></div>
     </aside>
     <section class="map-panel" aria-label="战区地图">
-      <canvas id="battlefield" tabindex="0" aria-label="全球交互地图。点击选择目标，拖动平移，滚轮缩放。选择登陆海岸后可派遣运兵船。"></canvas>
+      <canvas id="battlefield" tabindex="0" aria-label="全球交互地图。点击选择目标，拖动平移，滚轮缩放。圈选海外沿海区域自动派遣运兵船。"></canvas>
       <div class="map-heading"><span class="map-cross">⌖</span><div><span class="eyebrow">GLOBAL THEATER OF OPERATIONS</span><strong>全球陆海战区</strong></div></div>
       <div class="map-top-right"><span class="live-dot"></span><span id="map-state">等待部署</span><button id="terrain-view" aria-pressed="true">2.5D 沙盘</button><button id="intel-toggle" aria-expanded="false" aria-controls="intelligence">态势 / 前线</button></div>
       <div id="deployment" class="deployment-card"><span class="eyebrow">A WORLD TO CONQUER</span><h2>选择你的起点</h2><p>点击全球任一无主陆地或岛屿部署。<br>越过海洋，开辟新的战线。</p><button id="deploy-default" class="primary-button">在推荐位置部署 <span>→</span></button><small>浅灰为无主土地 · 彩色为其他国家</small></div>
@@ -82,7 +76,7 @@
     </aside>
   </main>
   <dialog id="research-dialog" aria-labelledby="research-title"><div class="research-dialog-heading"><div><span class="eyebrow">RESEARCH & DEVELOPMENT</span><h2 id="research-title">国家科技树</h2></div><span>战役继续运行 · 研发完成后效果立即生效</span><button id="close-research" aria-label="关闭科技树">关闭 ×</button></div><iframe id="research-frame" title="国家研发科技树" src="/docs/research/research-browser.html?game=1"></iframe></dialog>
-  <dialog id="help-dialog"><div class="dialog-heading"><span class="eyebrow">FIELD MANUAL</span><button id="close-help" aria-label="关闭操作手册">×</button></div><h2>全球作战手册</h2><ol><li><b>建立国家</b>：点击无主陆地或岛屿部署。人口自然增长；城市提升人口上限与增长，兵力通过训练或强征补充。</li><li><b>国家建设</b>：选择城市、工厂、兵营或要塞，再点击己方空地，每格一座，设施间隔至少2地理单位。建设消耗资金和时间，选址时战役继续，Esc 取消。城市花费2400、20秒建成，增加5000人口上限和每秒12人口；其余设施15秒建成。</li><li><b>国家研发</b>：打开科技树选择项目，满足前置科技与设施要求后支付资金开始研发。研发可暂停与恢复，已支付项目保留进度；打开科技树不会暂停战役。科技解锁新设施与设施等级，完成后加成立即生效。设施卡显示升级费用、时间与要求。</li><li><b>生产与训练</b>：工厂花费1800，占用200工人，每秒消耗8资金生产6装备，停产释放工人。兵营花费1600，每批100人、100装备、10秒训练正规军；可切换整编留守强征军。停产或切换模式退回预留资源，资源不足等待。</li><li><b>强征与防御</b>：输入人数可立即将可用人力1:1强征入伍，效能为正规军40%。要塞花费1600，附近5地理单位敌军推进消耗×2.4。被占设施保留在建进度，新国接管默认停产。</li><li><b>陆地进攻</b>：选择接壤目标、调整出兵比例并进攻；重复下令可以增援。扩张按钮自动攻击无主边界。</li><li><b>自定义进攻</b>：点击自定义进攻后按住鼠标圈画，松开闭合。输入投入人数，再确认执行。规划期间战役继续，无需指定国家，部队推进圈内可达的非己方陆地，任务完成后余兵归队；Esc取消不扣兵。</li><li><b>跨海登陆</b>：点击“选择登陆海岸”，再点击非己方沿海陆地。确认预览航线后派遣运兵船。无需研发或建筑，兵力直接从守军扣除。</li><li><b>航行与登陆</b>：船队沿水路航行，不会穿越陆地。到达无主海岸后建立据点；敌岸先进行登陆战，再向内陆推进。</li><li><b>兵力显示</b>：地图箭头显示攻击兵力和目标全国守军；船只显示载兵数与倒计时。金色为我方，红色为来袭敌军，灰色为其他国家作战。</li><li><b>部队管理</b>：前线和海运列表可撤回部队，返还全部剩余兵力。小屏点击“态势 / 前线”展开列表。</li></ol><div class="manual-note">使用 Natural Earth 陆地轮廓与架空国家，不代表历史国界。当前不含舰队拦截与多人联机。运输撤回会直接返还兵力；地面战斗仍采用全国守军模型。</div><p class="shortcut-hint">空格：暂停 / 继续　Esc：取消建设 / 选岸 / 自定义规划　滚轮：缩放</p></dialog>
+  <dialog id="help-dialog"><div class="dialog-heading"><span class="eyebrow">FIELD MANUAL</span><button id="close-help" aria-label="关闭操作手册">×</button></div><h2>全球作战手册</h2><ol><li><b>建立国家</b>：点击无主陆地或岛屿部署。人口自然增长；城市提升人口上限与增长，兵力通过训练或强征补充。</li><li><b>国家建设</b>：选择城市、工厂、兵营或要塞，再点击己方空地，每格一座，设施间隔至少2地理单位。建设消耗资金和时间，选址时战役继续，Esc 取消。城市花费2400、20秒建成，增加5000人口上限和每秒12人口；其余设施15秒建成。</li><li><b>国家研发</b>：打开科技树选择项目，满足前置科技与设施要求后支付资金开始研发。研发可暂停与恢复，已支付项目保留进度；打开科技树不会暂停战役。科技解锁新设施与设施等级，完成后加成立即生效。设施卡显示升级费用、时间与要求。</li><li><b>生产与训练</b>：工厂花费1800，占用200工人，每秒消耗8资金生产6装备，停产释放工人。兵营花费1600，每批100人、100装备、10秒训练正规军；可切换整编留守强征军。停产或切换模式退回预留资源，资源不足等待。</li><li><b>强征与防御</b>：输入人数可立即将可用人力1:1强征入伍，效能为正规军40%。要塞花费1600，附近5地理单位敌军推进消耗×2.4。被占设施保留在建进度，新国接管默认停产。</li><li><b>陆地进攻</b>：选择兵种、接壤目标和出兵比例后，从最近的连通兵营出发，全线推进。初始领地配有一座兵营，增派部队也会重新行军。</li><li><b>自定义进攻</b>：点击自定义进攻后按住鼠标圈画，松开闭合。输入投入人数，再确认执行。规划期间战役继续，无需指定国家，部队推进圈内可达的非己方陆地，任务完成后余兵归队；Esc取消不扣兵。</li><li><b>跨海登陆</b>：直接在自定义进攻中圈选不接壤的沿海区域，系统预览自动海运路线。确认后，步兵或装甲从最近兵营走到岸边登船；无需单独点击运兵船按钮。没有可达海岸的选区不能海运。</li><li><b>航行与登陆</b>：船队沿水路航行，不会穿越陆地。到达无主海岸后建立据点；敌岸先进行登陆战，再只在原圈选区域内推进。</li><li><b>兵力显示</b>：地图箭头显示攻击兵力和目标全国守军；船只显示载兵数与倒计时。金色为我方，红色为来袭敌军，灰色为其他国家作战。</li><li><b>部队管理</b>：前线和海运列表可撤回部队，返还全部剩余兵力。小屏点击“态势 / 前线”展开列表。</li></ol><div class="manual-note">使用 Natural Earth 陆地轮廓与架空国家，不代表历史国界。当前不含舰队拦截与多人联机。运输撤回会直接返还兵力；地面战斗仍采用全国守军模型。</div><p class="shortcut-hint">空格：暂停 / 继续　Esc：取消建设 / 选岸 / 自定义规划　滚轮：缩放</p></dialog>
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>

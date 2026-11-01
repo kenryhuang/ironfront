@@ -2,7 +2,7 @@
 // shore reached is the nearest valid departure point, including dateline wrap.
 export function findSeaRoute(game, owner, destination) {
   if (!Number.isInteger(destination) || destination < 0 || destination >= game.owners.length || game.owners[destination] < 0 || game.owners[destination] === owner) return null;
-  const starts = game.adjacent[destination].filter(t => game.owners[t] === -1);
+  const departure=game.seaDepartureTiles?.(owner),starts = game.adjacent[destination].filter(t => game.owners[t] === -1);
   if (!starts.length) return null;
   const previous = new Int32Array(game.owners.length).fill(-1);
   const queue = new Int32Array(game.owners.length); let head = 0, tail = 0;
@@ -10,7 +10,7 @@ export function findSeaRoute(game, owner, destination) {
   while (head < tail) {
     const tile = queue[head++];
     for (const next of game.adjacent[tile]) {
-      if (game.owners[next] === owner) {
+      if (game.owners[next] === owner&&(!departure||departure.has(next))) {
         const path = [next]; let t = tile;
         while (t !== destination) { path.push(t); t = previous[t]; }
         path.push(destination); return path;

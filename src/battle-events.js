@@ -2,12 +2,14 @@ const number=n=>Math.floor(n).toLocaleString('en-US');
 export function updateBattleEvents(container,game,active){
   const relevant=a=>a.owner===1||game.armyTargets(a,1);
   const rows=[...game.armies.filter(relevant).map(a=>({key:`army-${a.id}`,a})),...game.transports.filter(f=>f.owner===1||game.owners[f.destination]===1).map(f=>({key:`fleet-${f.id}`,f}))];
+  if(game.battery?.autoTarget!==null&&game.battery?.autoTarget!==undefined)rows.push({key:'battery-player',battery:game.battery});
   const keys=new Set(rows.map(r=>r.key));
   for(const node of container.querySelectorAll('[data-battle]'))if(!keys.has(node.dataset.battle))node.remove();
   if(!rows.length){if(!container.querySelector('.battle-empty'))container.innerHTML='<p class="battle-empty">暂无我方进攻或敌方来袭</p>';return;}
   container.querySelector('.battle-empty')?.remove();
   const name=id=>id===null?'圈定区域':id===0?'无主土地':game.nations.get(id)?.name??'未知';
-  for(const {key,a,f} of rows){
+  for(const {key,a,f,battery} of rows){
+    if(battery){let card=container.querySelector(`[data-battle="${key}"]`);if(!card){card=document.createElement('article');card.dataset.battle=key;card.className='battle-event outgoing';card.innerHTML='<div class="battle-event-title"><b>炮兵持续炮击</b><strong></strong></div><p></p><button data-stop-barrage="1">停止炮击</button>';container.append(card);}card.querySelector('strong').textContent=`${battery.ammo} 发`;card.querySelector('p').textContent=`目标 ${battery.autoTarget%game.width},${Math.floor(battery.autoTarget/game.width)} · ${battery.ammo<3?'等待补弹':`下轮齐射 ${Math.max(0,Math.ceil(battery.cooldown-game.time))} 秒`}`;card.querySelector('button').disabled=!active;continue;}
     const unit=a??f,own=unit.owner===1;
     let card=container.querySelector(`[data-battle="${key}"]`);
     if(!card){card=document.createElement('article');card.dataset.battle=key;card.className=`battle-event ${own?'outgoing':'incoming'}`;card.innerHTML='<div class="battle-event-title"><b></b><strong></strong></div><p class="battle-event-detail"></p><progress max="100"></progress><small></small><button></button>';container.append(card);}
@@ -15,8 +17,9 @@ export function updateBattleEvents(container,game,active){
     card.querySelector('strong').textContent=`${number(unit.troops)} 人`;
     card.title=`正规军 ${number(unit.troops-(unit.militia??0))} · 强征军 ${number(unit.militia??0)}（40%效能）`;
     const detail=card.querySelector('p'),bar=card.querySelector('progress'),small=card.querySelector('small');
-    if(f){const percent=Math.min(100,f.distance/Math.max(1,f.path.length-1)*100);bar.hidden=false;bar.value=percent;detail.textContent=`航程 ${Math.floor(percent)}% · ${Math.ceil((f.path.length-1-f.distance)/f.speed)} 秒抵达`;small.textContent='停止海运后剩余兵力立即归队';}
+    if(f){const percent=Math.min(100,f.distance/Math.max(1,f.path.length-1)*100);bar.hidden=false;bar.value=percent;detail.textContent=f.embark?'兵营出发 · 前往海岸登船':`航程 ${Math.floor(percent)}% · ${Math.ceil((f.path.length-1-f.distance)/f.speed)} 秒抵达`;small.textContent=`${f.plan?'自动登陆 · 仅在原圈选区推进 · ':''}${f.armor?'携带12辆坦克 · ':''}撤回返还余兵`;}
     else{const captured=a.captured??a.planCaptured??0;detail.textContent=a.allowedTiles?`区域推进 · 已占领 ${number(captured*game.cellArea)} / ${number(a.allowedTiles.size*game.cellArea)}`:`持续推进 · 已占领 ${number(captured*game.cellArea)} 领土`;bar.hidden=!a.allowedTiles;if(a.allowedTiles)bar.value=Math.min(100,captured/Math.max(1,a.allowedTiles.size)*100);small.textContent=`攻方损失 ${number(Math.max(0,a.committed-a.troops))} · 守方损失 ${number(a.defenderLosses??0)} · 强征 ${number(a.militia??0)}`;}
+    if(a?.frontline)detail.textContent=`${a.armor?'装甲':'步兵'} · 全线${a.frontline.lanes.length}路 · ${detail.textContent}`;
     const button=card.querySelector('button');button.disabled=!active;
     if(own){button.textContent='停止进攻 · 返还余兵';if(f)button.dataset.stopFleet=String(f.id);else button.dataset.stopArmy=String(a.id);}
     else if(f){button.hidden=true;}else{button.textContent='反攻来袭国家';button.dataset.eventCounter=String(a.owner);}

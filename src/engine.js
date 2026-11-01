@@ -157,7 +157,7 @@ export class Game {
       takeTroops(contingent,power/effectiveness(contingent));takeTroops(opposing,power/effectiveness(opposing));amount=contingent.troops;
     }
     this.armies = this.armies.filter(a => a.troops > 0);
-    let army = allowedTiles?null:this.armies.find(a => a.owner === owner && a.target === target && !a.naval&&!a.allowedTiles);
+    let army = allowedTiles||this.mergeAttacks===false?null:this.armies.find(a => a.owner === owner && a.target === target && !a.naval&&!a.allowedTiles);
     if (amount > 0) {
       if (army) { addTroops(army,contingent); army.committed += amount; army.front = front; army.head = 0; army.queued = new Set(front); }
       else {

@@ -198,7 +198,7 @@ export class Renderer {
     const navigationTime=now||performance.now();
     if(this.lastViewKey&&viewKey!==this.lastViewKey)this.navigationUntil=navigationTime+180;
     this.surface?.setNavigating(navigationTime<(this.navigationUntil??0));
-    if(now&&this.lastRender&&now-this.lastRender<(viewKey===this.lastViewKey?32:16))return false;
+    if(now&&this.lastRender&&now-this.lastRender<(viewKey===this.lastViewKey?(this.animationFrameInterval??32):16))return false;
     this.lastViewKey=viewKey;
     this.lastRender=now;
     let c=this.ctx;const g=this.game,sourceContext=c;
@@ -363,9 +363,9 @@ export class Renderer {
     }
   }
 
-  drawBattles(boxes = []) {
+  drawBattles(boxes = [], activeArmies = this.game.armies) {
     const {game:g,ctx:c} = this;
-    const armies = [...g.armies].sort((a,b)=>Number(b.owner===1||b.target===1)-Number(a.owner===1||a.target===1));
+    const armies = [...activeArmies].sort((a,b)=>Number(b.owner===1||b.target===1)-Number(a.owner===1||a.target===1));
     let otherShown = 0;
     for (const a of armies) {
       const important = a.owner===1||a.target===1;
