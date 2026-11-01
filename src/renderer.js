@@ -242,6 +242,7 @@ export class Renderer {
     c.textAlign = 'center';
     const labelBoxes = [];
     for (const { nation: n, tile } of this.labels) {
+      if(this.airView)continue;
       let [x, y] = this.point(tile);
       if (x < -80 || x > this.w + 80 || y < -this.overscan || y > this.h + this.overscan) continue;
       const anchor = [x, y];
@@ -262,6 +263,7 @@ export class Renderer {
       c.shadowBlur = 0; c.shadowOffsetY = 0;
     }
     for (const [tile, b] of g.buildings) {
+      if(this.airView||g.facilityVisible?.(tile)===false)continue;
       const [x, y] = this.point(tile); const owner = g.owners[tile];
       if(x < -100 || x > this.w+100 || y < -this.overscan || y > this.h+this.overscan)continue;
       c.textAlign='center';c.globalAlpha=b.remaining>0?.7:1;

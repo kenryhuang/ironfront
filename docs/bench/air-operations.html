@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>IRONFRONT · 空军双战场</title><link rel="stylesheet" href="./air-operations.css"></head>
+<body><header><a class="brand" href="/" target="_blank" rel="noopener">IF<span>IRONFRONT</span></a><div><div class="eyebrow">AIR OPERATIONS / 局部试验</div><h1>空军双战场</h1></div><div class="resources"><b id="resources"></b><span>独立模拟 · 研发预解锁 · 不影响正式战役</span></div></header>
+<main><aside class="left"><div class="section-caption">01 / 航空指挥</div><h2>部署航空任务</h2><p class="muted">先选机型与任务，再点击目标或按住鼠标圈画区域。</p>
+<label for="aircraft">航空兵种</label><select id="aircraft"></select><div id="aircraft-info" class="muted"></div>
+<div class="two"><div><label for="count">出动数量</label><select id="count"><option value="4">4 架</option><option value="2">2 架</option><option value="8">8 架</option></select></div><div><label for="mission">任务</label><select id="mission"></select></div></div>
+<div id="escort-picker" hidden><label for="escort-flight">护航对象</label><select id="escort-flight"></select></div>
+<div id="cargo-picker" hidden><label for="cargo">运输兵力（每架上限300）</label><input id="cargo" type="number" min="1" max="2400" step="100" value="1000"></div>
+<label class="check"><input type="checkbox" id="continuous">持续执行 · 返航整备后再次出动</label>
+<button id="order" class="primary">在地图指定任务</button><button id="cancel-order" hidden>取消指定</button>
+<p id="mission-help" class="muted"></p>
+<div class="divider"></div><div class="section-caption">02 / 机场生产</div><div id="stock"></div><button id="produce">生产4架飞机</button><div id="production" class="muted"></div>
+<div class="divider"></div><div class="section-caption">公开兵力</div><div id="forces" class="muted"></div><button id="ground-advance">步兵全线进攻</button><button id="armor-advance">装甲全线进攻</button>
+</aside>
+<section class="battle"><div class="toolbar"><span class="live-dot"></span><strong id="clock">00:00</strong><button id="pause">暂停</button><button id="speed">速度 ×1</button><span class="spacer"></span><button id="fit">战区全景</button><button id="closeup">编队近景</button><button id="reset">重置</button></div>
+<div class="map-panel"><canvas id="battlefield" aria-label="局部战场地图：拖动平移，滚轮缩放，指定任务时点击或按住圈选"></canvas><div class="map-label"><span id="view-caption">GROUND THEATER</span><strong id="view-title">地面战场</strong><small id="view-note">国土与兵力公开 / 设施情报需侦察</small></div>
+<button id="air-toggle" class="view-toggle" aria-pressed="false" title="切换空中战场"><span>✈</span><span id="toggle-label">进入空中战场</span></button>
+<div id="air-legend" hidden><i class="blue"></i>蓝方制空 <i class="red"></i>红方制空 <i class="amber"></i>争夺空域<br><small>战斗机实际在场才有制空权 · 自动接敌</small></div>
+<div id="hint" role="status">先派侦察机发现敌方设施，或点击右上角进入空中战场部署巡逻。</div><div class="map-footer"><span>拖动平移 · 滚轮缩放 · Esc 取消</span><span id="cursor-control">无战斗机覆盖的空域不属于任何一方</span></div></div>
+<div class="bottom-bar"><b id="operation-count">暂无航空任务</b><span>巡逻争夺制空 → 护航轰炸 → 地面推进</span></div></section>
+<aside class="right"><div class="section-caption">LIVE OPERATIONS</div><h2>空中任务</h2><div id="flights" aria-live="polite"></div><div class="divider"></div><h3>试验敌情</h3><p class="muted">按需触发敌军，观察自动空战与轰炸。没有手动拦截按钮。</p><button id="enemy-fighter">敌方战斗机巡逻</button><button id="enemy-bomber">敌方轰炸机来袭</button><button id="enemy-convoy">敌方运兵船出航</button><button id="demo">演示：巡逻抵御轰炸</button><div class="divider"></div><h3>设施情报</h3><div id="intel"></div><div class="divider"></div><h3>战场事件</h3><div id="events"></div></aside></main>
+<script type="module" src="./air-operations.js"></script></body></html>

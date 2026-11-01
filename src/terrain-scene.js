@@ -153,6 +153,7 @@ export class TerrainScene {
   syncModels(){
     const o=this.owner,g=o.game,seen=new Set();
     for(const [tile,b] of g.buildings){
+      if(o.airView||g.facilityVisible?.(tile)===false)continue;
       const [x,y]=o.point(tile),padding=Math.max(160,o.overscan||0);if(x<-160||x>o.w+160||y<-padding||y>o.h+padding)continue;
       seen.add(tile);let item=this.models.get(tile);
       const detail=facilityDetail(FACILITY_SIZE*o.scale,item?.detail),signature=[b.type,b.level,g.owners[tile],detail].join(':');
