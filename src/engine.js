@@ -16,6 +16,7 @@ export class Game {
     this.width = width; this.height = height; this.wrapX = wrapX; this.spawnRadius = spawnRadius; this.world = world;
     this.gridScale = gridScale; this.cellArea = 1 / (gridScale * gridScale); this.shipSpeed = RULES.shipSpeed * gridScale;
     this.owners = Array.from(owners); this.terrain = Array.from(terrain);
+    this.landTileCount=this.owners.reduce((sum,id)=>sum+(id>=0?1:0),0);
     this.seed = seed >>> 0; this.time = 0; this.nextArmy = 1;
     this.phase = deployment ? 'deployment' : 'running'; this.winner = null;
     this.suggestedSpawn = suggestedSpawn;

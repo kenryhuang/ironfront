@@ -46,6 +46,12 @@ test('unchanged surface frames do not re-upload the base map or render WebGL aga
   s.owner.baseVersion++;s.render();assert.equal(draws,2);
 });
 
+test('pending atlas rasterization keeps the presented texture geographic coordinates',()=>{
+  const s=fixture();s.owner.atlas={bounds:{x0:100,y0:200,width:30,height:40},presented:{bounds:{x0:10,y0:20,width:50,height:60}}};
+  s.syncGeometry();assert.deepEqual(s.mapTransform.value.toArray(),[1/50,1/60,-10/50,1+20/60]);
+  s.ground.geometry.dispose();s.material.dispose();
+});
+
 test('short drags reuse the shadow depth image; zoom and construction refresh it',()=>{
   const s=fixture(),o=s.owner;o.game.buildings=new Map();o.baseVersion=1;
   s.texture=new THREE.Texture();s.renderer.shadowMap={};const updates=[];
@@ -60,6 +66,37 @@ test('short drags reuse the shadow depth image; zoom and construction refresh it
   o.game.buildings.set(4242,{type:'city',level:1,remaining:10,constructionTotal:20});
   o.game.owners=Array(10000).fill(1);o.game.nations=new Map();s.render();
   assert.equal(updates.at(-1),true);
+  s.ground.geometry.dispose();s.material.dispose();
+});
+
+test('navigation quality restores its drawing buffer and keeps zoomed cached shadows aligned',()=>{
+  const s=fixture(),o=s.owner;o.game.buildings=new Map();o.baseVersion=1;o.zoom=40;
+  s.texture=new THREE.Texture();s.renderer.shadowMap={};s.renderer.render=()=>{};
+  const ratios=[];s.nativePixelRatio=2;s.pixelRatio=2;s.renderer.setPixelRatio=v=>ratios.push(v);
+  s.render();const geometry=s.ground.geometry,point=new THREE.Vector3(40,-40,6);
+  const before=s.worldRoot.localToWorld(point.clone()).applyMatrix4(s.sun.shadow.matrix);
+  s.setNavigating(true);s.render();o.scale*=1.001;s.render();
+  assert.equal(s.ground.geometry,geometry);assert.equal(s.renderer.shadowMap.needsUpdate,false);
+  const after=s.worldRoot.localToWorld(point.clone()).applyMatrix4(s.sun.shadow.matrix);
+  assert.ok(before.distanceTo(after)<1e-10);
+  s.setNavigating(false);s.render();assert.deepEqual(ratios,[1.25,2]);
+  assert.equal(s.renderer.shadowMap.needsUpdate,true);
+  s.ground.geometry.dispose();s.material.dispose();
+});
+
+test('quality changes never clear the canvas before a skipped or delayed draw',()=>{
+  const s=fixture(),o=s.owner;o.game.buildings=new Map();o.baseVersion=1;o.zoom=40;
+  s.texture=new THREE.Texture();s.renderer.shadowMap={};s.nativePixelRatio=2;s.pixelRatio=2;
+  const operations=[];let visible=true;
+  s.renderer.setPixelRatio=()=>{visible=false;operations.push('resize');};
+  s.renderer.render=()=>{visible=true;operations.push('draw');};
+  s.render();operations.length=0;
+  s.setNavigating(true);
+  assert.equal(visible,true,'requesting navigation must keep the previous frame visible');
+  assert.deepEqual(operations,[],'a throttled frame must not resize its drawing buffer');
+  s.render();assert.deepEqual(operations,['resize','draw']);assert.equal(visible,true);
+  operations.length=0;s.setNavigating(false);
+  assert.equal(visible,true);s.render();assert.deepEqual(operations,['resize','draw']);
   s.ground.geometry.dispose();s.material.dispose();
 });
 

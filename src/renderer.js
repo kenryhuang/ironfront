@@ -11,6 +11,8 @@ import { requiredOverscan } from './terrain-relief.js';
 import { drawRivers } from './rivers.js';
 import { surfaceKey } from './render-policy.js';
 import { TerrainAtlas } from './terrain-atlas.js';
+import {TerritoryJobs} from './territory-jobs.js';
+import {tracePackedTerritory} from './territory-geometry.js';
 
 const rgb = hex => [1,3,5].map(i => parseInt(hex.slice(i,i+2),16));
 const mix = (a,b,t) => a.map((v,i)=>Math.round(v*(1-t)+b[i]*t));
@@ -59,13 +61,25 @@ export class Renderer {
     const ctx=this.climate.getContext('2d'),pixels=ctx.createImageData(g.width,g.height);
     for(let i=0;i<g.owners.length;i++){
       pixels.data[i*4]=this.baseColors[i*3];pixels.data[i*4+1]=this.baseColors[i*3+1];pixels.data[i*4+2]=this.baseColors[i*3+2];pixels.data[i*4+3]=255;
-    }ctx.putImageData(pixels,0,0);
+    }ctx.putImageData(pixels,0,0);this.climatePixels=pixels.data;
     this.geography=document.createElement('canvas');this.landMask=document.createElement('canvas');
     this.coastInk=document.createElement('canvas');this.states=document.createElement('canvas');
     this.geographyKey=null;this.statesKey=null;this.revision=0;
     this.baseKey=null;this.baseVersion=0;this.planPreviewRevision=0;
     this.territoryPaths=new Map();this.planPolygon=null;this.planTiles=null;this.planDrawing=false;
-    this.atlas=new TerrainAtlas(this);this.scorchLayer=new ScorchLayer(this);
+    this.atlas?.dispose();this.atlas=new TerrainAtlas(this);this.scorchLayer=new ScorchLayer(this);
+    this.territoryWorker?.dispose();this.territoryWorker=null;
+    if(typeof Worker!=='undefined')this.territoryWorker=new TerritoryJobs(g,results=>{
+      let changed=false;
+      for(const result of results){
+        const n=g.nations.get(result.id);if(!n?.alive||!n.tiles.size)continue;
+        if((this.territoryPaths.get(n.id)?.version??-1)>result.version)continue;
+        const color=rgb(n.color).map(v=>Math.round(v*.85+255*.15));
+        this.territoryPaths.set(n.id,{path:tracePackedTerritory(new Path2D(),result),geometry:{points:result.points,offsets:result.offsets},version:result.version,tile:result.tile,bounds:result.bounds,color:`rgb(${color.join(',')})`});changed=true;
+      }
+      if(changed){this.revision++;this.labels=[...this.territoryPaths].map(([id,entry])=>({nation:g.nations.get(id),tile:entry.tile}));}
+      this.cacheTime=-1;
+    },()=>{this.cacheTime=-1;});
   }
   resize() {
     this.baseKey=null;
@@ -89,7 +103,8 @@ export class Renderer {
   }
   setPlanPreview(plan){
     this.planPreviewRevision++;
-    this.planPreviewPath=plan?.ok?traceSmoothTerritory(new Path2D(),territoryContours(this.game.owners,this.game.width,this.game.height,0,plan.allowedTiles)):null;
+    this.planPreviewLoops=plan?.ok?territoryContours(this.game.owners,this.game.width,this.game.height,0,plan.allowedTiles):null;
+    this.planPreviewPath=this.planPreviewLoops?traceSmoothTerritory(new Path2D(),this.planPreviewLoops):null;
   }
   tileAt(x, y) {
     [x,y]=this.sourceAt(x,y,true);
@@ -121,27 +136,30 @@ export class Renderer {
 
   rebuild() {
     const g=this.game;let changed=false;
+    if(this.territoryWorker&&!this.territoryWorker.failed&&this.territoryPaths.size){
+      for(const [id] of this.territoryPaths){const n=g.nations.get(id);if(!n?.alive||!n.tiles.size){this.territoryPaths.delete(id);changed=true;}}
+      if(changed){this.revision++;this.labels=this.labels.filter(entry=>entry.nation.alive&&entry.nation.tiles.size);}
+      this.territoryWorker.update(this.territoryPaths);this.cacheTime=g.time;return;
+    }
     for(const n of g.nations.values()){
       if(!n.alive||!n.tiles.size){if(this.territoryPaths.delete(n.id))changed=true;continue;}
       const version=g.territoryVersions.get(n.id),cached=this.territoryPaths.get(n.id);
       if(cached?.version===version)continue;
       const region=new Set(n.tiles);
-      for(const t of n.tiles)for(const next of g.adjacent[t])if(g.owners[next]<0)region.add(next);
-      const path=traceSmoothTerritory(new Path2D(),territoryContours(g.owners,g.width,g.height,n.id,region));
+      let sumX=0,sumY=0,left=Infinity,top=Infinity,right=-Infinity,bottom=-Infinity;
+      for(const t of n.tiles){
+        const x=t%g.width,y=Math.floor(t/g.width);sumX+=x;sumY+=y;left=Math.min(left,x);right=Math.max(right,x+1);top=Math.min(top,y);bottom=Math.max(bottom,y+1);
+        for(const next of g.adjacent[t])if(g.owners[next]<0)region.add(next);
+      }
+      const cx=sumX/n.tiles.size,cy=sumY/n.tiles.size;let tile,dist=Infinity;
+      for(const t of n.tiles){const d=(t%g.width-cx)**2+(Math.floor(t/g.width)-cy)**2;if(d<dist){tile=t;dist=d;}}
+      const loops=territoryContours(g.owners,g.width,g.height,n.id,region),path=traceSmoothTerritory(new Path2D(),loops);
       const color=rgb(n.color).map(v=>Math.round(v*.85+255*.15));
-      this.territoryPaths.set(n.id,{path,version,color:`rgb(${color.join(',')})`});changed=true;
+      this.territoryPaths.set(n.id,{path,geometry:{loops},version,color:`rgb(${color.join(',')})`,tile,bounds:{left:left-1,top:top-1,right:right+1,bottom:bottom+1}});changed=true;
     }
     if(changed)this.revision++;
     if(!changed&&this.labels?.length){this.cacheTime=g.time;return;}
-    this.labels = [];
-    for (const n of g.nations.values()) if (n.alive && n.tiles.size) {
-      let x = 0, y = 0;
-      for (const t of n.tiles) { x += t % g.width; y += Math.floor(t / g.width); }
-      x /= n.tiles.size; y /= n.tiles.size;
-      let best, dist = Infinity;
-      for (const t of n.tiles) { const d = (t % g.width - x) ** 2 + (Math.floor(t / g.width) - y) ** 2; if (d < dist) { best = t; dist = d; } }
-      this.labels.push({ nation: n, tile: best });
-    }
+    this.labels = [...this.territoryPaths].map(([id,entry])=>({nation:g.nations.get(id),tile:entry.tile}));
     this.cacheTime = g.time;
   }
 
@@ -177,14 +195,20 @@ export class Renderer {
 
   render(now = 0) {
     const viewKey=[this.w,this.h,this.scale,this.panX,this.panY].join(':');
+    const navigationTime=now||performance.now();
+    if(this.lastViewKey&&viewKey!==this.lastViewKey)this.navigationUntil=navigationTime+180;
+    this.surface?.setNavigating(navigationTime<(this.navigationUntil??0));
     if(now&&this.lastRender&&now-this.lastRender<(viewKey===this.lastViewKey?32:16))return false;
     this.lastViewKey=viewKey;
     this.lastRender=now;
     let c=this.ctx;const g=this.game,sourceContext=c;
+    const stageStart=performance.now();
     if (this.cacheTime !== g.time) this.rebuild();
+    const rebuiltAt=performance.now();
     this.scorchLayer.update();
     const scale = this.scale, ox = this.originX, oy = this.originY;
-    if(this.surface?.active){this.surface.updateCoverage();this.atlas.update();this.baseVersion=this.atlas.baseVersion;}
+    if(this.surface?.active){this.surface.updateCoverage();this.atlas.update();this.baseVersion=this.atlas.presented?.baseVersion??this.atlas.canvasBaseVersion??this.atlas.baseVersion;}
+    const atlasAt=performance.now();
     const baseKey=surfaceKey(this);
     if(!this.surface?.active){
     c.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); c.clearRect(0, 0, this.w, this.h+2*this.overscan);c.translate(0,this.overscan);
@@ -214,6 +238,7 @@ export class Renderer {
       c=this.surface.hudContext;this.ctx=c;this.overlayDrawing=true;
       c.setTransform(this.dpr,0,0,this.dpr,0,0);c.clearRect(0,0,this.w,this.h);c.save();
     }else c.save();
+    this.timings={rebuild:rebuiltAt-stageStart,atlas:atlasAt-rebuiltAt,surface:performance.now()-atlasAt};
     c.textAlign = 'center';
     const labelBoxes = [];
     for (const { nation: n, tile } of this.labels) {

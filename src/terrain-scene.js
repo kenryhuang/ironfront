@@ -3,7 +3,7 @@ import { buildElevation, sampleElevation, reliefHeight, meshResolution, projectG
 import { createFacilityModel, disposeFacilityModel } from './facility-models.js';
 import { createTerrainMaterial } from './terrain-material.js';
 import { FACILITY_SIZE, placeFacility } from './facility-placement.js';
-import { facilityDetail } from './render-policy.js';
+import { facilityDetail, navigationPixelRatio } from './render-policy.js';
 import { installTerrainRaycast } from './terrain-raycast.js';
 import { ElevationBounds, visibleTerrainBounds } from './terrain-coverage.js';
 
@@ -12,7 +12,8 @@ export class TerrainScene {
   constructor(owner){
     this.owner=owner;this.active=true;this.tilt=Math.PI*.22;this.models=new Map();
     this.renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+    this.nativePixelRatio=Math.min(window.devicePixelRatio||1,2);this.pixelRatio=this.nativePixelRatio;
+    this.renderer.setPixelRatio(this.pixelRatio);
     this.renderer.setClearColor('#bddce8');
     this.renderer.outputColorSpace=THREE.SRGBColorSpace;
     this.renderer.toneMapping=THREE.NoToneMapping;
@@ -54,6 +55,16 @@ export class TerrainScene {
     this.renderKey=null;
     this.element.hidden=this.hud.hidden=!this.active;this.owner.canvas.style.opacity=this.active?'0':'1';
   }
+  setNavigating(moving){
+    this.navigating=moving;
+    const ratio=navigationPixelRatio(this.nativePixelRatio??1,this.owner.zoom,moving);
+    this.requestedPixelRatio=ratio;
+    if(this.pixelRatio===ratio)return;
+    // setPixelRatio clears the WebGL canvas. Defer it until a real draw;
+    // Renderer may still throttle this animation frame after this request.
+    this.renderKey=null;
+    if(!moving)this.shadowDirty=true;
+  }
   resize(){
     const {w,h}=this.owner;if(!w||!h)return;
     this.syncBaseTexture();
@@ -85,7 +96,7 @@ export class TerrainScene {
   }
   syncGeometry(){
     this.mapTransform??={value:new THREE.Vector4()};
-    const atlas=this.owner.atlas?.bounds;
+    const atlas=this.owner.atlas?.presented?.bounds??this.owner.atlas?.canvasBounds??this.owner.atlas?.bounds;
     if(atlas)this.mapTransform.value.set(1/atlas.width,1/atlas.height,-atlas.x0/atlas.width,1+atlas.y0/atlas.height);
     else{const o=this.owner,h=o.h+2*(o.overscan||0);this.mapTransform.value.set(o.scale/o.w,o.scale/h,o.originX/o.w,1-(o.originY+(o.overscan||0))/h);}
     const o=this.owner,key=[o.w,o.h,o.scale,o.panX,o.panY].join(':');if(key===this.geometryKey)return;
@@ -125,7 +136,7 @@ export class TerrainScene {
     }
     this.worldRoot.position.set(o.originX-o.w/2,o.h/2-o.originY,0);this.worldRoot.scale.setScalar(o.scale);
     this.worldRoot.updateMatrixWorld(true);this.geometryKey=key;
-    if(this.shadowScale!==o.scale||Math.abs(this.worldRoot.position.x-(this.shadowX??0))>200||Math.abs(this.worldRoot.position.y-(this.shadowY??0))>200)this.shadowDirty=true;
+    if((!this.navigating&&this.shadowScale!==o.scale)||Math.abs(this.worldRoot.position.x-(this.shadowX??0))>200||Math.abs(this.worldRoot.position.y-(this.shadowY??0))>200)this.shadowDirty=true;
   }
   pick(x,y,includeModels=false){
     this.syncGeometry();const o=this.owner;
@@ -175,10 +186,17 @@ export class TerrainScene {
     // Translate light and shadow camera with a cached map during short pans.
     // The depth image stays identical; only its world-to-shadow matrix moves.
     if(this.shadowDirty){this.shadowX=this.worldRoot.position.x;this.shadowY=this.worldRoot.position.y;this.shadowScale=this.owner.scale;}
-    const dx=this.worldRoot.position.x-this.shadowX,dy=this.worldRoot.position.y-this.shadowY;
-    this.sun.position.set(-this.owner.w*.45+dx,this.owner.h*.35+dy,650);this.sun.target.position.set(dx,dy,0);
+    const factor=this.owner.scale/this.shadowScale;
+    const dx=this.worldRoot.position.x-this.shadowX*factor,dy=this.worldRoot.position.y-this.shadowY*factor;
+    this.sun.position.set(-this.owner.w*.45*factor+dx,this.owner.h*.35*factor+dy,650*factor);this.sun.target.position.set(dx,dy,0);
+    const radius=Math.max(this.owner.w,this.owner.h)*factor;
+    Object.assign(this.sun.shadow.camera,{left:-radius,right:radius,top:radius,bottom:-radius,near:factor,far:4000*factor});
+    this.sun.shadow.camera.updateProjectionMatrix();
     this.sun.updateMatrixWorld();this.sun.target.updateMatrixWorld();this.sun.shadow.updateMatrices(this.sun);
     if(this.renderer.shadowMap)this.renderer.shadowMap.needsUpdate=!!this.shadowDirty;
+    if(this.requestedPixelRatio!==undefined&&this.pixelRatio!==this.requestedPixelRatio){
+      this.pixelRatio=this.requestedPixelRatio;this.renderer.setPixelRatio?.(this.pixelRatio);
+    }
     this.renderer.render(this.scene,this.camera);
     this.renderKey=key;this.shadowDirty=false;
   }
@@ -194,24 +212,26 @@ export class TerrainScene {
     if(this.scorchVersion!==layer.version){this.scorchTexture.needsUpdate=true;this.scorchVersion=layer.version;}
   }
   syncTerritories(){
-    const source=this.owner.atlas?.ownership??this.owner.states;if(!source)return;
-    if(!this.ownershipTexture||this.ownershipTexture.image!==source||this.ownershipWidth!==source.width||this.ownershipHeight!==source.height){
+    const source=this.owner.atlas?.presented?.ownership??this.owner.atlas?.ownership??this.owner.states;if(!source)return;
+    if(!this.ownershipTexture||(this.ownershipTexture.image!==source&&typeof source.close!=='function')||this.ownershipWidth!==source.width||this.ownershipHeight!==source.height){
       this.ownershipTexture?.dispose();this.ownershipTexture=new THREE.CanvasTexture(source);
       this.ownershipTexture.colorSpace=THREE.SRGBColorSpace;this.ownershipTexture.generateMipmaps=false;
       this.ownershipTexture.minFilter=THREE.LinearFilter;this.ownershipTexture.anisotropy=this.texture.anisotropy;
       this.ownershipWidth=source.width;this.ownershipHeight=source.height;this.territoryUniform.value=this.ownershipTexture;this.ownershipKey=null;
     }
-    const key=this.owner.atlas?.ownershipVersion??this.owner.statesKey;
+    if(this.ownershipTexture.image!==source){this.ownershipTexture.image=source;this.ownershipKey=null;}
+    const key=this.owner.atlas?.presented?.ownershipVersion??this.owner.atlas?.canvasOwnershipVersion??this.owner.atlas?.ownershipVersion??this.owner.statesKey;
     if(this.ownershipKey!==key){this.ownershipTexture.needsUpdate=true;this.ownershipKey=key;}
   }
   syncBaseTexture(){
-    const source=this.owner.atlas?.base??this.owner.canvas;
-    if(this.texture&&source&&(this.texture.image!==source||this.textureWidth!==source.width||this.textureHeight!==source.height)){
+    const source=this.owner.atlas?.presented?.base??this.owner.atlas?.base??this.owner.canvas;
+    if(this.texture&&source&&((this.texture.image!==source&&typeof source.close!=='function')||this.textureWidth!==source.width||this.textureHeight!==source.height)){
       const previous=this.texture;this.texture=new THREE.CanvasTexture(source);
       this.texture.colorSpace=THREE.SRGBColorSpace;this.texture.generateMipmaps=false;
       this.texture.minFilter=THREE.LinearFilter;this.texture.anisotropy=previous.anisotropy;
       this.material.map=this.texture;this.material.needsUpdate=true;this.renderKey=null;
       this.textureWidth=source.width;this.textureHeight=source.height;previous.dispose();
     }
+    if(this.texture&&source&&this.texture.image!==source){this.texture.image=source;this.texture.needsUpdate=true;this.renderKey=null;}
   }
 }

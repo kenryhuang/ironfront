@@ -23,6 +23,22 @@ test('territory texture is replaced after resize and game reset and releases old
   second.addEventListener('dispose',()=>disposed++);s.owner.states={width:1600,height:2600};s.syncTerritories();
   assert.notEqual(second,s.ownershipTexture);assert.equal(disposed,2);s.ownershipTexture.dispose();
 });
+
+test('prepared same-size ownership bitmaps reuse the GPU texture allocation',()=>{
+  const s=fixture(),image=()=>({width:1600,height:2200,close(){}});
+  s.owner.atlas={presented:{ownership:image(),ownershipVersion:1}};s.syncTerritories();
+  const texture=s.ownershipTexture,version=texture.version;let disposed=false;texture.addEventListener('dispose',()=>{disposed=true;});
+  const next=image();s.owner.atlas.presented={ownership:next,ownershipVersion:2};s.syncTerritories();
+  assert.equal(s.ownershipTexture,texture);assert.equal(texture.image,next);assert.ok(texture.version>version);assert.equal(disposed,false);texture.dispose();
+});
+
+test('a pending worker version never uploads the unchanged bootstrap canvas again',()=>{
+  const s=fixture();s.owner.atlas={ownership:s.owner.states,canvasOwnershipVersion:1,ownershipVersion:1};s.syncTerritories();
+  const texture=s.ownershipTexture,version=texture.version;
+  s.owner.atlas.ownershipVersion=2;s.syncTerritories();assert.equal(texture.version,version);
+  s.owner.atlas.presented={ownership:{width:1600,height:2200,close(){}},ownershipVersion:2};
+  s.syncTerritories();assert.ok(texture.version>version);texture.dispose();
+});
 test('rock and snow cannot overwrite political color, which is applied before lighting',()=>{
   const map=new THREE.Texture(),political={value:new THREE.Texture()},material=createTerrainMaterial(map,political);
   const shader={uniforms:{},vertexShader:'#include <begin_vertex>',fragmentShader:'#include <color_fragment>\n// lighting starts here'};

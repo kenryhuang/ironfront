@@ -222,7 +222,7 @@ function updateUI() {
   const netIncome=game.logistics?game.income(1)-[...game.buildings].filter(([tile,b])=>game.owners[tile]===1&&b.type==='factory'&&b.enabled&&!(b.remaining>0)&&b.workers>0).reduce((sum,[,b])=>sum+game.factoryOperatingCost(1,b),0):0;
   $('income').textContent = `${game.logistics?(netIncome>=0?'+':'−')+number(Math.abs(netIncome))+'资金/秒 · ':''}海上 ${number(ownFleets.reduce((s,f)=>s+f.troops,0))} 人`;
   $('income').title=`${ownFleets.length} 支运输船队 · 资金收入已扣运行工厂支出`; 
-  const land = game.owners.reduce((s, id) => s + (id >= 0 ? 1 : 0), 0);
+  const land = game.landTileCount;
   $('land-share').textContent = n.tiles.size ? `战区陆地 ${(n.tiles.size / land * 100).toFixed(1)}%` : game.phase === 'deployment' ? '尚未部署' : '国家已灭亡';
   const ratio = Number($('ratio').value) / 100, dispatched = Math.floor(n.troops * ratio);
   $('ratio-value').textContent = `${Math.round(ratio * 100)}%`; $('dispatch').textContent = number(dispatched); $('reserve').textContent = number(n.troops - dispatched);
@@ -462,8 +462,18 @@ canvas.addEventListener('dblclick', e => {
 });
 canvas.addEventListener('wheel', e => { e.preventDefault();if(drawing)return;zoomInput.enqueue(e.deltaY < 0 ? 1.12 : 0.89, ...local(e)); }, { passive: false });
 
+const campaignBench=new URLSearchParams(location.search).has('campaignBench')?
+  (await import('../docs/bench/campaign.js')).installCampaignBench({renderer,prepare(){
+    reset();game.deploy(game.suggestedSpawn);
+    for(const n of game.nations.values())if(n.alive){n.troops=8000;n.gold=100000;}
+    for(let i=0;i<600;i++){if(i%30===0)runAI(game);game.step(.1);}
+    for(const n of game.nations.values())if(n.alive){n.troops=8000;game.attack(n.id,0,.5);}
+    accumulator=0;lastTime=performance.now();lastAI=Math.floor(game.time/3);updateUI();
+  }}):null;
 function frame(now) {
+  const frameStart=performance.now();campaignBench?.before();
   zoomInput.flush();
+  const afterNavigation=performance.now();
   const elapsed = Math.min(0.25, (now - lastTime) / 1000); lastTime = now;
   if (!paused && game.phase === 'running') {
     accumulator += elapsed * speed;
@@ -473,9 +483,12 @@ function frame(now) {
       game.step(0.1); accumulator -= 0.1;
     }
   }
+  const afterSimulation=performance.now();
   if (now - lastUI > 200) { updateUI(); lastUI = now; }
   if (now > toastUntil) $('toast').hidden = true;
   const renderStart=performance.now(),painted=!$('research-dialog').open&&!document.hidden&&renderer.render(now);
-  renderDiagnostics(now,painted?performance.now()-renderStart:null);requestAnimationFrame(frame);
+  const phases={total:performance.now()-frameStart,navigation:afterNavigation-frameStart,simulation:afterSimulation-afterNavigation,ui:renderStart-afterSimulation,render:performance.now()-renderStart};
+  campaignBench?.after({...phases,...(painted?renderer.timings:{rebuild:0,atlas:0,surface:0})});
+  renderDiagnostics(now,painted?phases.render:null,phases);requestAnimationFrame(frame);
 }
 updateUI(); requestAnimationFrame(frame);

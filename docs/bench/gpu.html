@@ -1,0 +1,11 @@
+<!doctype html><html lang="zh"><meta charset="utf-8"><title>渲染设备诊断</title>
+<style>body{font:16px monospace;background:#18252b;color:#e3ece9;padding:24px}pre{white-space:pre-wrap}canvas{width:320px;height:180px}</style>
+<h1>渲染设备诊断</h1><pre id="info"></pre><canvas width="320" height="180"></canvas>
+<script type="module">
+const gl=document.querySelector('canvas').getContext('webgl2',{powerPreference:'high-performance'}),info=document.querySelector('#info');
+if(!gl)info.textContent='WebGL2 不可用';else{
+  const debug=gl.getExtension('WEBGL_debug_renderer_info');
+  info.textContent=JSON.stringify({renderer:debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),vendor:debug?gl.getParameter(debug.UNMASKED_VENDOR_WEBGL):gl.getParameter(gl.VENDOR),pixelRatio:devicePixelRatio,maxTexture:gl.getParameter(gl.MAX_TEXTURE_SIZE),timerQuery:!!gl.getExtension('EXT_disjoint_timer_query_webgl2')},null,2);
+  gl.clearColor(.15,.35,.42,1);gl.clear(gl.COLOR_BUFFER_BIT);
+}
+</script></html>

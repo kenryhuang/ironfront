@@ -1,6 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { facilityDetail, surfaceKey } from '../src/render-policy.js';
+import { facilityDetail, surfaceKey, navigationPixelRatio } from '../src/render-policy.js';
+
+test('navigation reduces fill rate temporarily and restores full resolution at rest',()=>{
+  assert.equal(navigationPixelRatio(2,20,true),1);
+  assert.equal(navigationPixelRatio(2,240,true),1.25);
+  assert.equal(navigationPixelRatio(1,240,true),.9);
+  assert.equal(navigationPixelRatio(2,240,false),2);
+  assert.equal(facilityDetail(100,'high'),'high');
+});
 
 test('facility LOD retains detail near thresholds without zoom flickering',()=>{
   assert.equal(facilityDetail(90),'high');assert.equal(facilityDetail(65,'high'),'high');

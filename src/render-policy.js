@@ -4,6 +4,13 @@ export function facilityDetail(pixels,previous='low'){
   return 'low';
 }
 
+// Keep mesh/texture detail intact. Reduce only the temporary WebGL drawing
+// buffer during navigation, and restore native quality once input settles.
+export function navigationPixelRatio(nativeRatio,zoom,moving){
+  if(!moving)return nativeRatio;
+  return zoom>=32?Math.min(nativeRatio*.9,1.25):Math.min(nativeRatio*.75,1);
+}
+
 export function surfaceKey(renderer){
   const g=renderer.game,plans=(g.armies??[]).filter(a=>a.owner===1&&a.planPolygon);
   return JSON.stringify([renderer.w,renderer.h,renderer.dpr,renderer.overscan,renderer.originX,renderer.originY,renderer.scale,
