@@ -80,7 +80,7 @@ test('dragging does not repaint either atlas, while conquest updates only owners
   const base=a.baseVersion,political=a.ownershipVersion;
   o.originX+=100;a.update();assert.equal(a.baseVersion,base);assert.equal(a.ownershipVersion,political);
   o.revision++;a.update();assert.equal(a.baseVersion,base);assert.equal(a.ownershipVersion,political+1);
-  o.planPolygon=[[0,0],[1,1],[2,0]];a.update();assert.equal(a.baseVersion,base+1);
+  o.planPolygon=[[0,0],[1,1],[2,0]];a.update();assert.equal(a.baseVersion,base,'drawing must not regenerate terrain textures');
 });
 
 test('offscreen conquests do not repaint or upload the visible ownership texture',()=>{
@@ -92,4 +92,13 @@ test('offscreen conquests do not repaint or upload the visible ownership texture
   far.version++;o.revision++;a.update();assert.equal(a.ownershipVersion,version);
   near.version++;o.revision++;a.update();assert.equal(a.ownershipVersion,version+1);
   far.bounds={left:5,top:5,right:20,bottom:20};far.version++;a.update();assert.equal(a.ownershipVersion,version+2);
+});
+
+test('global navigation fallback is geographic and is not rasterized again for camera movement',()=>{
+  const context=new Proxy({}, {get:(o,key)=>o[key]??(()=>{}),set:(o,key,value)=>(o[key]=value,true)});
+  const o={...view(),game:{width:1440,height:720},territoryPaths:new Map(),revision:1};
+  const a=new TerrainAtlas(o,()=>({width:1,height:1,getContext:()=>context}));
+  a.updateOverview();assert.equal(a.overview.width,1440);assert.equal(a.overview.height,720);const v=a.overviewVersion;
+  o.originX-=2000;o.scale*=2;a.updateOverview();assert.equal(a.overviewVersion,v);
+  o.revision++;a.updateOverview();assert.equal(a.overviewVersion,v+1);
 });

@@ -27,6 +27,27 @@ test('small pans reuse terrain geometry rather than reallocating the entire reli
   assert.ok(s.ground.geometry===geometry);
 });
 
+test('a fast pan beyond pending detailed geometry is covered by a bounded world mesh',()=>{
+  const s=fixture();s.texture=new THREE.Texture();s.owner.game.world=true;s.owner.game.gridScale=1;
+  s.overviewUniforms={map:{value:null},size:{value:new THREE.Vector2(100,100)},ready:{value:1},detail:{value:new THREE.Vector4()},coarse:{value:0}};
+  s.owner.scale=64;s.owner.originX=-3000;s.owner.originY=-3000;s.syncGeometry();
+  const detail=s.ground.geometry;s.meshJobs={request(){},cancel(){}};
+  s.owner.originX=-300;s.owner.originY=-300;s.owner.panX=2700;s.owner.panY=2700;s.syncGeometry();
+  assert.equal(s.ground.geometry,detail,'old detailed mesh stays intact while worker runs');
+  assert.equal(s.fallbackGround.visible,true);
+  assert.ok(s.fallbackGround.geometry.attributes.position.count<=26000);
+  s.pointer.set(0,0);s.raycaster.setFromCamera(s.pointer,s.camera);
+  const visual=s.worldRoot.worldToLocal(s.raycaster.intersectObject(s.fallbackGround)[0].point.clone());
+  const picked=s.pick(400,300);
+  assert.ok(Math.abs((picked[0]-s.owner.originX)/s.owner.scale-visual.x)<1e-5);
+  assert.ok(Math.abs((picked[1]-s.owner.originY)/s.owner.scale+visual.y)<1e-5,'picking must follow the visible fallback, not the sea plane');
+  const projected=s.project(...picked);assert.ok(Math.hypot(projected[0]-400,projected[1]-300)<1e-4,'zoom anchor and HUD must project the same visible fallback elevation');
+  const fallback=s.fallbackGround;
+  s.meshJobs=null;s.geometryKey=null;s.syncGeometry();
+  assert.equal(s.fallbackGround,fallback,'fallback geometry is reused');
+  assert.equal(fallback.visible,false,'hide coarse coverage when detailed mesh arrives');
+});
+
 test('returning to cached terrain or resizing invalidates an outstanding mesh build',()=>{
  const s=fixture();s.syncGeometry();const installed=s.ground.geometry;let pending=null,cancelled=0;
  s.meshJobs={request(key){pending=key;},cancel(){pending=null;cancelled++;}};

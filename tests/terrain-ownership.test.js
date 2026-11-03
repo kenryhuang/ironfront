@@ -56,4 +56,6 @@ test('atlas vertex coordinates do not overwrite Three native mapTransform unifor
   material.onBeforeCompile(shader);
   assert.equal(shader.uniforms.mapTransform,native);assert.equal(shader.uniforms.worldAtlasTransform,transform);
   assert.ok(shader.vertexShader.includes('position.xy*worldAtlasTransform.xy'));assert.ok(!shader.vertexShader.includes('uniform vec4 mapTransform'));
+  assert.ok(!shader.vertexShader.includes('vMapUv=clamp('),'clamped vertex UV stretches atlas edges across new terrain');
+  assert.ok(shader.fragmentShader.includes('overviewMap'),'outside coverage must use geographically anchored overview');
 });

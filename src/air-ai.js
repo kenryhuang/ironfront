@@ -13,7 +13,7 @@ function develop(g,n,target){
   if(lower){if(n.gold>FACILITIES[type].cost*desired+1000)acted=g.upgradeFacility(n.id,lower[0]).ok;return false;}
   if(!g.facilityAccess(n.id,type).ok||n.gold<FACILITIES[type].cost+1000)return false;
   // Keep a rotating iterator instead of copying/scanning a whole country every decision.
-  n.airBuildCursor??=n.tiles.values();for(let i=0;i<128;i++){let next=n.airBuildCursor.next();if(next.done){n.airBuildCursor=n.tiles.values();next=n.airBuildCursor.next();}if(next.done)break;const t=next.value;if(g.owners[t]!==n.id||g.buildings.has(t)||g.radiationAt(t))continue;if([...g.buildings.keys()].some(other=>Math.hypot(other%g.width-t%g.width,Math.floor(other/g.width)-Math.floor(t/g.width))<2*g.gridScale))continue;if(g.build(n.id,t,type).ok){acted=true;break;}}return false;
+  n.airBuildCursor??=n.tiles.values();for(let i=0;i<128;i++){let next=n.airBuildCursor.next();if(next.done){n.airBuildCursor=n.tiles.values();next=n.airBuildCursor.next();}if(next.done)break;const t=next.value;if(g.owners[t]!==n.id||g.buildings.has(t)||g.radiationAt(t))continue;if(g.build(n.id,t,type).ok){acted=true;break;}}return false;
  }
  if(state.completed.has('T07')&&!g.air.bases(n.id).length)facility('airfield');else technology(target);
 }

@@ -1,5 +1,6 @@
 import {ScorchLayer} from './contamination-visual.js';
-import {clampMapZoom} from './navigation-input.js';
+import {clampMapZoom,worldViewLimits} from './navigation-input.js';
+import {drawPlanOverlay} from './plan-overlay.js';
 import {drawStrategic} from './strategic-overlay.js';
 import {FACILITY_SIZE} from './facility-placement.js';
 import { FACILITIES } from './facilities.js';
@@ -43,7 +44,7 @@ export class Renderer {
     this.selected = null; this.hover = null; this.cacheTime = -1; this.labels = [];
     this.observer = new ResizeObserver(() => this.resize()); this.observer.observe(canvas);
     this.resize();
-    try{this.surface=new TerrainScene(this);}catch(error){console.warn('立体地形不可用，使用俯视地图。',error);}
+    try{this.surface=new TerrainScene(this);this.resize();}catch(error){console.warn('立体地形不可用，使用俯视地图。',error);}
   }
 
   setGame(game) {
@@ -53,7 +54,13 @@ export class Renderer {
     this.cacheTime = -1; this.fit(); this.resize();
     this.surface?.setGame();
   }
-  fit() { this.zoom = 1; this.panX = 0; this.panY = 0; }
+  fit() { this.zoom = 1; this.panX = 0; this.panY = 0; this.constrainView();this.updateReliefBounds(); }
+  constrainView(){
+    if(!this.game.world)return;
+    this.zoom=clampMapZoom(this.zoom);
+    const b=worldViewLimits(this.w,this.h,this.game.width,this.game.height,this.surface?.active?this.surface.tilt:0,this.zoom);
+    this.baseScale=b.baseScale;this.panX=Math.max(-b.panX,Math.min(b.panX,this.panX));this.panY=Math.max(-b.panY,Math.min(b.panY,this.panY));
+  }
   initializeGeography(){
     const g=this.game;
     this.ridgeTiles=[];for(let t=0;t<g.owners.length;t+=13)if(g.owners[t]>=0&&g.terrain[t]>1.5)this.ridgeTiles.push(t);
@@ -87,6 +94,7 @@ export class Renderer {
     this.baseKey=null;
     const rect = this.canvas.getBoundingClientRect(); this.w = rect.width; this.h = rect.height;
     this.baseScale = Math.min((this.w - 44) / this.game.width, (this.h - 110) / this.game.height);
+    this.constrainView();
     this.overscan=this.surface?.active?requiredOverscan(this.h,this.surface.tilt,this.surface.maxElevation*this.scale):Math.ceil(this.h*.2+110);
     this.dpr = Math.max(2,Math.min(window.devicePixelRatio || 1, 3));
     this.canvas.width = Math.round(this.w * this.dpr); this.canvas.height = Math.round((this.h+2*this.overscan) * this.dpr);
@@ -94,7 +102,7 @@ export class Renderer {
   }
   get scale() { return this.baseScale * this.zoom; }
   get originX() { return (this.w - this.game.width * this.scale) / 2 + this.panX; }
-  get originY() { return (this.h - this.game.height * this.scale) / 2 + this.panY + 8; }
+  get originY() { return (this.h - this.game.height * this.scale) / 2 + this.panY + (this.game.world?0:8); }
   point(tile) { return this.displayPoint(this.originX + (tile % this.game.width + 0.5) * this.scale, this.originY + (Math.floor(tile / this.game.width) + 0.5) * this.scale); }
   displayPoint(x,y){return this.overlayDrawing?this.surface.project(x,y):[x,y];}
   sourceAt(x,y,models=false){return this.surface?.active?this.surface.pick(x,y,models):[x,y];}
@@ -105,8 +113,7 @@ export class Renderer {
   }
   setPlanPreview(plan){
     this.planPreviewRevision++;
-    this.planPreviewLoops=plan?.ok?territoryContours(this.game.owners,this.game.width,this.game.height,0,plan.allowedTiles):null;
-    this.planPreviewPath=this.planPreviewLoops?traceSmoothTerritory(new Path2D(),this.planPreviewLoops):null;
+    this.planPreviewLoops=null;this.planPreviewPath=null;
   }
   tileAt(x, y) {
     [x,y]=this.sourceAt(x,y,true);
@@ -133,7 +140,7 @@ export class Renderer {
     const nx=this.originX+mx*this.scale,ny=this.originY+my*this.scale;
     const [px,py]=this.surface?.active?this.surface.project(nx,ny):[nx,ny];
     this.panX+=x-px;this.panY+=(y-py)/(this.surface?.active?Math.cos(this.surface.tilt):1);
-    this.updateReliefBounds();
+    this.constrainView();this.updateReliefBounds();
   }
 
   rebuild() {
@@ -234,7 +241,7 @@ export class Renderer {
       const x=ox+(t%g.width+.5)*scale,y=oy+(Math.floor(t/g.width)+.5)*scale;if(x<-scale||x>this.w+scale||y<-this.overscan-scale||y>this.h+this.overscan+scale)continue;
       c.beginPath(); c.moveTo(x - scale * 0.6, y + scale * 0.4); c.lineTo(x, y - scale * 0.5); c.lineTo(x + scale * 0.6, y + scale * 0.4); c.stroke();
     }
-    this.drawPlans(c,ox,oy,scale);
+
     c.restore();this.baseKey=baseKey;this.baseVersion++;
     }
     if(this.surface?.active){
@@ -243,6 +250,7 @@ export class Renderer {
       c.setTransform(this.dpr,0,0,this.dpr,0,0);c.clearRect(0,0,this.w,this.h);c.save();
     }else c.save();
     this.timings={rebuild:rebuiltAt-stageStart,atlas:atlasAt-rebuiltAt,surface:performance.now()-atlasAt};
+    if(!this.airView)drawPlanOverlay(this,c);
     c.textAlign = 'center';
     const labelBoxes = [];
     const visibleLabels=g.historical?[...this.labels].sort((a,b)=>Number(b.nation.id===1)-Number(a.nation.id===1)||Number(b.nation.id===this.selected)-Number(a.nation.id===this.selected)||b.nation.tiles.size-a.nation.tiles.size):this.labels;

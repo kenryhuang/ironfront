@@ -1,0 +1,30 @@
+<!doctype html><meta charset="utf-8"><title>地图导航与圈选回归</title>
+<style>html,body{margin:0;background:#14232d;color:#dce9ef;font:12px system-ui;height:100%;overflow:hidden}header{height:36px;display:flex;align-items:center;gap:16px;padding:0 12px}button{background:#355564;color:white;border:0;padding:5px 12px;cursor:pointer}iframe{border:0;width:100%;height:calc(100% - 36px)}</style>
+<header><button id="run">运行自由圈选回归</button><output id="result">等待地图初始化</output></header>
+<iframe id="game" src="/?build=navigation-regression&country=255"></iframe>
+<script type="module">
+const frame=document.querySelector('#game'),result=document.querySelector('#result'),run=document.querySelector('#run');
+const tick=()=>new Promise(requestAnimationFrame);
+frame.onload=()=>{result.textContent='就绪：测试真实输入处理、选区预览、可见线条和战役计时';};
+run.onclick=async()=>{
+  run.disabled=true;
+  const doc=frame.contentDocument,win=frame.contentWindow,canvas=doc.querySelector('#battlefield'),r=canvas.getBoundingClientRect();
+  // Synthetic events cannot own native pointer capture; isolate the workaround to this test frame.
+  const capture=canvas.setPointerCapture,release=canvas.releasePointerCapture;
+  canvas.setPointerCapture=canvas.releasePointerCapture=()=>{};
+  try{
+    if(doc.querySelector('#attack-plan').hidden)doc.querySelector('#custom-attack').click();else doc.querySelector('#custom-redraw').click();
+    const start=doc.querySelector('#clock').textContent,times=[];let last=performance.now();
+    const point=i=>{const a=i/180*Math.PI*2;return [r.left+r.width*.56+Math.cos(a)*r.width*.16,r.top+r.height*.3+Math.sin(a)*r.height*.17];};
+    const send=(type,i)=>{const [x,y]=point(i);canvas.dispatchEvent(new win.PointerEvent(type,{pointerId:91,pointerType:'mouse',button:0,buttons:type==='pointerup'?0:1,clientX:x,clientY:y,bubbles:true}));};
+    send('pointerdown',0);result.textContent='圈画中：战役持续运行';
+    for(let i=1;i<=180;i++){await tick();const now=performance.now();times.push(now-last);last=now;send('pointermove',i);}
+    const t=performance.now();send('pointerup',180);const releaseMs=performance.now()-t;
+    await tick();await tick();
+    const hud=[...doc.querySelectorAll('canvas.terrain-webgl')].at(-1),ctx=hud.getContext('2d'),pixels=ctx.getImageData(0,0,hud.width,hud.height).data;let blue=0;
+    for(let i=0;i<pixels.length;i+=4)if(pixels[i]<40&&pixels[i+1]>90&&pixels[i+1]<155&&pixels[i+2]>155&&pixels[i+3]>150)blue++;
+    times.sort((a,b)=>a-b);result.textContent=`${blue>100?'PASS':'FAIL'} · 可见蓝线 ${blue} 像素 · 帧间隔P95 ${times[Math.floor(times.length*.95)].toFixed(1)}ms · 松手计算 ${releaseMs.toFixed(1)}ms · 战役 ${start} → ${doc.querySelector('#clock').textContent} · ${doc.querySelector('#custom-status').textContent}`;
+  }catch(e){result.textContent='FAIL · '+e.message;}
+  finally{canvas.setPointerCapture=capture;canvas.releasePointerCapture=release;run.disabled=false;}
+};
+</script>

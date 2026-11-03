@@ -21,14 +21,7 @@ function drawBase(job){
   for(const [label,x,y] of [['P A C I F I C',33,100],['A T L A N T I C',143,96],['I N D I A N   O C E A N',257,117]])c.fillText(label,x*s,y*s);
   c.save();c.clip(coast,'evenodd');c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';c.drawImage(climate,0,0);drawRivers(c,game);c.restore();
   c.lineWidth=.85/a.mapScale;c.strokeStyle='#528496';c.lineJoin='round';c.stroke(coast);
-  const outline=(points,color,drawing=false)=>{
-    if(!points||points.length<2)return;c.beginPath();c.moveTo(...points[0]);for(let i=1;i<points.length;i++)c.lineTo(...points[i]);if(!drawing)c.closePath();
-    c.strokeStyle=color;c.lineWidth=2/a.mapScale;c.setLineDash(drawing?[]:[6/a.mapScale,4/a.mapScale]);c.stroke();c.setLineDash([]);
-    if(drawing&&points.length>2){c.beginPath();c.moveTo(...points.at(-1));c.lineTo(...points[0]);c.lineWidth=1/a.mapScale;c.setLineDash([4/a.mapScale,4/a.mapScale]);c.stroke();c.setLineDash([]);}
-  };
-  for(const polygon of job.plans.armies)outline(polygon,'#326c9dbb');
-  if(job.plans.preview){c.save();c.clip(coast,'evenodd');c.fillStyle='#2a6ca93b';c.fill(traceSmoothTerritory(new Path2D(),job.plans.preview),'evenodd');c.restore();}
-  outline(job.plans.polygon,job.plans.status==='invalid'?'#b54c37':'#215f9b',job.plans.drawing);
+
 }
 function drawOwnership(job){
   const a=job.bounds,c=prepare(ownership,a);c.save();c.clip(coast,'evenodd');c.lineJoin='round';

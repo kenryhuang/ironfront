@@ -15,7 +15,7 @@ export function runAI(game) {
         const count=type=>owned.filter(([,b])=>b.type===type).length;
         const type=!count('factory')?'factory':!count('barracks')?'barracks':!count('city')?'city':!count('fort')?'fort':count('factory')<2?'factory':count('barracks')<2?'barracks':null;
         if(type&&n.gold>FACILITIES[type].cost+300){
-          const tile=[...n.tiles].find(t=>!game.buildings.has(t)&&[...game.buildings.keys()].every(other=>Math.hypot(other%game.width-t%game.width,Math.floor(other/game.width)-Math.floor(t/game.width))>=2*game.gridScale));
+          const tile=[...n.tiles].find(t=>!game.buildings.has(t));
           if(tile!==undefined)game.build(n.id,tile,type);
         }
         for(const [t,b] of owned)if(!b.enabled&&['factory','barracks'].includes(b.type))game.toggleFacility(n.id,t);

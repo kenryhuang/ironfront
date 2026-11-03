@@ -3,6 +3,17 @@ import assert from 'node:assert/strict';
 import {Game} from '../src/engine.js';
 function fixture(){return new Game({width:6,height:1,owners:[1,1,1,1,2,2],terrain:Array(6).fill(1),logistics:true,nations:[{id:1,name:'A',troops:1000,gold:20000},{id:2,name:'B',troops:1000,gold:20000}]});}
 function step(g,seconds){for(let t=0;t<seconds;t++)g.step(1);}
+test('adjacent facilities can be constructed, but one tile cannot be charged twice',()=>{
+  const g=fixture(),n=g.nations.get(1),gold=n.gold;
+  assert.equal(g.build(1,0,'city').ok,true);
+  assert.equal(g.build(1,1,'factory').ok,true);
+  assert.equal(g.build(1,2,'barracks').ok,true);
+  assert.equal(n.gold,gold-2400-1800-1600);
+  const paid=n.gold;
+  assert.equal(g.build(1,1,'fort').ok,false);
+  assert.equal(n.gold,paid);
+  assert.equal(g.buildings.get(1).type,'factory');
+});
 test('population grows without creating soldiers; conscription converts manpower exactly',()=>{const g=fixture(),n=g.nations.get(1);const p=g.population(1);step(g,2);assert.equal(n.troops,1000);assert.ok(g.population(1)>p);const m=n.manpower;assert.equal(g.conscript(1,200).ok,true);assert.equal(n.manpower,m-200);assert.equal(n.troops,1200);assert.equal(n.militia,200);assert.equal(g.conscript(1,1e9).ok,false);});
 test('city must finish before increasing population capacity and growth',()=>{const g=fixture(),cap=g.capacity(1),growth=g.populationGrowth(1);assert.equal(g.build(1,0,'city').ok,true);assert.equal(g.capacity(1),cap);step(g,20);assert.equal(g.capacity(1),cap+5000);assert.ok(g.populationGrowth(1)>growth);});
 test('factory occupies workers and spends funds; shutdown releases all workers',()=>{const g=fixture(),n=g.nations.get(1);g.build(1,0,'factory');step(g,16);assert.equal(g.workers(1),200);const e=n.equipment;step(g,2);assert.ok(n.equipment>e);g.toggleFacility(1,0);assert.equal(g.workers(1),0);const off=n.equipment;step(g,2);assert.equal(n.equipment,off);});

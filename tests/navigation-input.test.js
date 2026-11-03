@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createZoomInput } from '../src/navigation-input.js';
+import { createZoomInput, worldViewLimits } from '../src/navigation-input.js';
 
 function zoomHarness(initialZoom = 1) {
   let zoom = initialZoom;
@@ -32,7 +32,17 @@ test('zoom limits are applied in event order before reversing direction', () => 
   low.input.enqueue(0.89, 4, 5);
   low.input.enqueue(1.12, 4, 5);
   low.input.flush();
-  assert.equal(low.zoom, 0.75 * 1.12);
+  assert.equal(low.zoom, 1.12);
+});
+
+test('world minimum scale covers the viewport without stretching, and pan cannot leave the world',()=>{
+  for(const [w,h]of [[1280,720],[390,844],[800,400]])for(const tilt of [0,Math.PI*.22]){
+    const bounds=worldViewLimits(w,h,1440,720,tilt,1);
+    assert.ok(bounds.scale*1440>=w-1e-8);
+    assert.ok(bounds.scale*720*Math.cos(tilt)>=h-1e-8);
+    const close=worldViewLimits(w,h,1440,720,tilt,4);
+    assert.ok(close.panX>bounds.panX&&close.panY>bounds.panY);
+  }
 });
 
 test('explicit flush separates input before an intervening navigation action', () => {

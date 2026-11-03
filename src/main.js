@@ -1,3 +1,4 @@
+import {createMapCommandUI} from './map-command-ui.js';
 import { createStrategicUI } from './strategic-ui.js';
 import { createResearchUI } from './research-ui.js';
 import { FACILITIES } from './facilities.js';
@@ -26,7 +27,7 @@ const renderDiagnostics=createRenderDiagnostics(renderer);
 let selected = null, selectedTile = null, selectedForLanding = false, mode = null, paused = false, speed = 1, accumulator = 0;
 let lastTime = performance.now(), lastUI = -1, lastAI = -1, toastUntil = 0, ended = false;
 let drag = null, suppressClick = false, helpWasPaused = false;
-let planState=null,drawing=null,airDrawing=null;
+let planState=null,drawing=null,airDrawing=null,mapUI=null;
 const zoomInput=createZoomInput({getZoom:()=>renderer.zoom,zoomAt:(...args)=>{
   const px=renderer.panX,py=renderer.panY;
   renderer.zoomAt(...args);
@@ -41,12 +42,12 @@ const strategicUI=createStrategicUI({root:$('strategic-section'),getGame:()=>gam
 
 const airUI=createAirUI({root:$('air-section'),events:$('air-events'),getGame:()=>game,command,isPaused:()=>paused,getMode:()=>mode,
  beginMode(value){if(planState)cancelCustomPlan();mode=value;clearAirDrawing();renderer.localMode=null;renderer.plannedRoute=null;renderer.strikePreview=null;if(value)toast('点击目标或按住鼠标圈画航空任务区域；Esc取消，战役继续。');updateUI();},
- focusFlight(id){const f=game.air.flights.find(f=>f.id===id);if(!f)return;zoomInput.flush();renderer.zoom=Math.max(renderer.zoom,60);const [x,y]=renderer.projectAir(f.x,f.y,renderer.airView?10:5);renderer.panX+=renderer.w/2-x;renderer.panY+=(renderer.h/2-y)/Math.cos(renderer.surface?.active?renderer.surface.tilt:0);renderer.updateReliefBounds();updateZoomLabel();}
+ focusFlight(id){const f=game.air.flights.find(f=>f.id===id);if(!f)return;zoomInput.flush();renderer.zoom=Math.max(renderer.zoom,60);const [x,y]=renderer.projectAir(f.x,f.y,renderer.airView?10:5);renderer.panX+=renderer.w/2-x;renderer.panY+=(renderer.h/2-y)/Math.cos(renderer.surface?.active?renderer.surface.tilt:0);renderer.constrainView();renderer.updateReliefBounds();updateZoomLabel();}
 });
 function clearAirDrawing(){airDrawing=null;renderer.drawing=null;renderer.targetPreview=null;}
 function airViewLabels(){$('air-toggle').textContent=renderer.airView?'✈ 返回地面':'✈ 空中战场';$('air-toggle').setAttribute('aria-pressed',String(!!renderer.airView));$('air-legend').hidden=!renderer.airView;$('map-tooltip').hidden=true;}
 function groundView(){if(renderer.airView){renderer.toggleAir();airViewLabels();}}
-$('air-toggle').onclick=()=>{zoomInput.flush();if(planState)cancelCustomPlan();mode=null;clearAirDrawing();renderer.localMode=null;renderer.strikePreview=null;renderer.toggleAir();airViewLabels();airUI.open();const panel=$('air-section').closest('.command-panel');panel.scrollTop+=$('air-section').getBoundingClientRect().top-panel.getBoundingClientRect().top-12;updateUI();};
+$('air-toggle').onclick=()=>{zoomInput.flush();if(planState)cancelCustomPlan();mode=null;clearAirDrawing();renderer.localMode=null;renderer.strikePreview=null;renderer.toggleAir();airViewLabels();airUI.open();mapUI?.openDrawer('air');updateUI();};
 
 function updateZoomLabel(){ $('zoom-level').textContent = `${Math.round(renderer.zoom * 100)}%`; }
 
@@ -121,6 +122,7 @@ function deploy(tile) {
   if (command(game.deploy(tile), '部署完成。先扩张空地，再发展国力。')) { chooseTarget(0); $('deployment').hidden = true; }
 }
 function reset() {
+  mapUI?.reset();
   zoomInput.flush();
   if(planState)cancelCustomPlan();
   game = newCampaign(); renderer.setGame(game); selected = null; selectedTile = null; selectedForLanding = false; renderer.selected = null; renderer.hover = null;
@@ -212,7 +214,7 @@ function updateFleets(active) {
 }
 
 function updateUI() {
-  if(planState?.points.length>=3&&!drawing)updatePlanPreview(false);
+  // Preview is computed once on release; confirmation revalidates live territory.
   const n = game.nations.get(1), capacity = game.capacity(1), running = game.phase === 'running';
   $('nation-name').textContent=n.name;$('deployment').hidden=game.phase!=='deployment';
   const active = running && n.alive && !paused;
@@ -228,6 +230,7 @@ function updateUI() {
   const conscripts=Number($('conscript-amount').value); $('conscript-amount').max=String(Math.floor(n.manpower??0));
   $('conscript').disabled=!active||!Number.isInteger(conscripts)||conscripts<1||conscripts>Math.floor(n.manpower??0);
   $('conscript-info').textContent=`可征 ${number(n.manpower??0)} 人 · 强征减少可用人力，不增加总人口`;
+  mapUI?.update();
   updateFacilities(active);
   airUI.update();armsUI.update();researchUI.update();strategicUI.setMode(mode?.startsWith('strike:')?mode.slice(7):null);strategicUI.update();
   $('capacity-fill').style.width = `${Math.min(100, population / capacity * 100)}%`;
@@ -244,11 +247,11 @@ function updateUI() {
   $('pause').setAttribute('aria-label', paused ? '继续游戏' : '暂停游戏');
   $('paused-banner').hidden = !paused || !running;
   $('plan-banner').hidden=!planState&&!mode?.startsWith('build:')&&!mode?.startsWith('strike:')&&!mode?.startsWith('arms:')&&!mode?.startsWith('air:');
-  $('plan-banner').textContent=mode==='custom-draw'?'按住鼠标圈画进攻区域 · 松开闭合 · Esc 取消':'选区已闭合 · 在左侧指定兵力并确认 · 拖动可平移地图';
+  $('plan-banner').textContent=mode==='custom-draw'?'按住鼠标圈画进攻区域 · 松开闭合 · Esc 取消':'选区已闭合 · 在浮动面板指定兵力并确认 · 拖动可平移地图';
   if(mode==='air:target')$('plan-banner').textContent='航空任务 · 点击目标或按住鼠标圈画 · Esc取消 · 战役继续';
   if(mode?.startsWith('build:'))$('plan-banner').textContent=`建设${FACILITIES[mode.slice(6)].name} · 点击己方空地 · Esc 取消 · 战役继续`;
   if(mode?.startsWith('arms:'))$('plan-banner').textContent=mode==='arms:fire'?'点击炮击目标 · 持续齐射 · Esc 取消':'点击己方陆地放置或转移炮兵 · Esc 取消';
-  if(mode?.startsWith('strike:'))$('plan-banner').textContent='点击敌方陆地选择打击中心 · 左侧确认发射 · Esc 取消';
+  if(mode?.startsWith('strike:'))$('plan-banner').textContent='点击敌方陆地选择打击中心 · 战略面板确认发射 · Esc 取消';
   $('custom-attack').disabled=!running||!n.alive;
   $('custom-attack').setAttribute('aria-pressed',String(Boolean(planState)));
   $('custom-attack').classList.toggle('active',Boolean(planState));
@@ -301,24 +304,16 @@ function updateUI() {
 }
 
 
-const facilityEffects={city:'人口上限 +5,000 · 人口 +12/秒',factory:'200工人 · 8资金/秒 → 6装备/秒',barracks:'100人 + 100装备 · 10秒/批',fort:'附近5地理单位 · 敌军推进消耗 ×2.4'};
-for(const [type,f] of Object.entries(FACILITIES)){
-  const button=document.createElement('button');button.className='build-button';button.dataset.build=type;
-  button.innerHTML=`<span class="build-icon">${f.icon}</span><span><b>${f.name} · ${f.seconds}秒</b><small>${(Array.isArray(f.effects)?f.effects.join(' · '):f.effects)??facilityEffects[type]??f.description??'科技解锁设施'}</small><small class="build-requirements"></small></span><em>${number(f.cost)}</em>`;
-  $('build-options').append(button);
-}
-$('build-options').addEventListener('click',e=>{const b=e.target.closest('[data-build]');if(!b||b.disabled)return;groundView();clearAirDrawing();if(planState)cancelCustomPlan();mode=mode===`build:${b.dataset.build}`?null:`build:${b.dataset.build}`;renderer.plannedRoute=null;updateUI();});
 $('conscript-amount').addEventListener('input',updateUI);
 $('conscript-amount').addEventListener('keydown',e=>{if(e.key==='Enter'&&!$('conscript').disabled)$('conscript').click();});
 $('conscript').addEventListener('click',()=>command(game.conscript(1,Number($('conscript-amount').value)),'强征军已入伍。'));
 $('facilities').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;if(b.dataset.facilityToggle!==undefined)command(game.toggleFacility(1,Number(b.dataset.facilityToggle)));if(b.dataset.facilityRepair!==undefined)command(game.repairFacility(1,Number(b.dataset.facilityRepair)),'设施修复已开始。');if(b.dataset.facilityUpgrade!==undefined)command(game.upgradeFacility(1,Number(b.dataset.facilityUpgrade)),'设施升级已开工。');});
 $('facilities').addEventListener('change',e=>{if(e.target.matches('[data-training-mode]'))command(game.setTrainingMode(1,Number(e.target.dataset.trainingMode),e.target.value));});
 function updateFacilities(active){
-  const container=$('facilities'),owned=[...game.buildings].filter(([tile])=>game.owners[tile]===1),tiles=new Set(owned.map(([tile])=>String(tile)));
-  $('facility-count').textContent=`${owned.length} 座`;
-  for(const row of container.querySelectorAll('[data-facility]'))if(!tiles.has(row.dataset.facility))row.remove();
-  for(const button of $('build-options').children){const access=game.facilityAccess(1,button.dataset.build),affordable=game.nations.get(1).gold>=FACILITIES[button.dataset.build].cost;button.disabled=!active||!access.ok||!affordable;button.classList.toggle('active',mode===`build:${button.dataset.build}`);button.querySelector('.build-requirements').textContent=access.missing?.length?'需 '+access.missing.join('、'):!affordable?'资金不足':'';button.title=access.missing?.join('、')??'';}
-  $('build-hint').textContent=mode?.startsWith('build:')?`正在选址：${FACILITIES[mode.slice(6)].name}。点击己方空地，Esc 取消。`:'点击己方空地建设，设施间隔至少2地理单位。战役继续，Esc 取消。';
+  const container=$('facilities'),tile=mapUI?.facilityTile;
+  if(tile==null){if(container.childElementCount)container.replaceChildren();return;}
+  const b=game.buildings.get(tile),owned=b&&game.owners[tile]===1?[[tile,b]]:[];
+  for(const row of container.children)if(row.dataset.facility!==String(tile))row.remove();
   for(const [tile,b] of owned){
     let row=container.querySelector(`[data-facility="${tile}"]`);
     if(!row){row=document.createElement('article');row.className='facility-card';row.dataset.facility=String(tile);row.innerHTML='<div class="facility-heading"><strong></strong><span></span></div><small class="facility-status"></small><progress max="1"></progress><div class="facility-controls"><select aria-label="兵营训练模式"><option value="recruit">训练正规军</option><option value="reform">整编强征军</option></select><button class="facility-toggle"></button></div><div class="facility-upgrade"><button class="facility-upgrade-button"></button><small class="facility-upgrade-requirements"></small><button class="facility-repair" hidden>修复设施</button></div>';container.append(row);}
@@ -432,7 +427,7 @@ canvas.addEventListener('pointermove', e => {
   if (drag?.id === e.pointerId) {
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
     if (Math.hypot(dx, dy) > 5) drag.moved = true;
-    if (drag.moved) { renderer.panX = drag.px + dx; renderer.panY = drag.py + dy/(renderer.surface?.active?Math.cos(renderer.surface.tilt):1); }
+    if (drag.moved) { renderer.panX = drag.px + dx; renderer.panY = drag.py + dy/(renderer.surface?.active?Math.cos(renderer.surface.tilt):1);const px=renderer.panX,py=renderer.panY;renderer.constrainView();if(px!==renderer.panX){drag.px=renderer.panX;drag.x=e.clientX;}if(py!==renderer.panY){drag.py=renderer.panY;drag.y=e.clientY;} }
     renderer.hover=null;$('map-tooltip').hidden=true;return;
   }
   if(renderer.airView){const [x,y]=renderer.worldAt(...local(e)),control=game.air.controlAt(x,y);$('map-coordinates').textContent=control.state==='contested'?'空域争夺':control.owner===null?'无人制空':(game.nations.get(control.owner)?.name??'国家')+'制空';$('map-tooltip').hidden=true;return;}
@@ -506,4 +501,8 @@ function frame(now) {
   campaignBench?.after({...phases,...(painted?renderer.timings:{rebuild:0,atlas:0,surface:0})});
   renderDiagnostics(now,painted?phases.render:null,phases);requestAnimationFrame(frame);
 }
+mapUI=createMapCommandUI({getGame:()=>game,isPaused:()=>paused,command,
+  prepareContext(){zoomInput.flush();if(planState)cancelCustomPlan();mode=null;clearAirDrawing();renderer.localMode=null;renderer.strikePreview=null;renderer.plannedRoute=null;$('map-tooltip').hidden=true;},
+  advance(id,tile){groundView();chooseTarget(id,tile);},custom:startCustomPlan});
+canvas.addEventListener('contextmenu',e=>{e.preventDefault();const [x,y]=local(e);mapUI.openContext(renderer.tileAt(x,y),x,y);updateUI();});
 updateUI(); requestAnimationFrame(frame);

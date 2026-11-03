@@ -18,7 +18,7 @@ export const atlasUV=(a,x,y)=>[(x-a.x0)/a.width,1-(y-a.y0)/a.height];
 
 export class TerrainAtlas {
   constructor(owner,createCanvas=()=>document.createElement('canvas'),createBitmap=globalThis.createImageBitmap){
-    this.owner=owner;this.base=createCanvas();this.ownership=createCanvas();
+    this.owner=owner;this.base=createCanvas();this.ownership=createCanvas();this.overview=createCanvas();this.overviewVersion=0;
     this.baseVersion=0;this.ownershipVersion=0;
     this.createBitmap=createBitmap;
     if(owner.game?.world&&owner.climatePixels&&typeof Worker!=='undefined'&&typeof OffscreenCanvas!=='undefined'){
@@ -47,17 +47,15 @@ export class TerrainAtlas {
   updateWorker(){
     if(this.snapshotPending)return;
     const o=this.owner,g=o.game,a=planAtlas(o,this.bounds),changed=a!==this.bounds;
-    const armies=(g.armies??[]).filter(p=>p.owner===1&&p.planPolygon),plans={armies:armies.map(p=>p.planPolygon),polygon:o.planPolygon,status:o.planStatus,drawing:o.planDrawing,preview:o.planPreviewPath?o.planPreviewLoops:null};
-    const planKey=JSON.stringify([o.planPolygon,o.planStatus,o.planDrawing,o.planPreviewRevision,armies.map(p=>[p.id,p.planPolygon])]);
     const visible=[...o.territoryPaths].filter(([,entry])=>!entry.bounds||entry.bounds.right>=a.x0&&entry.bounds.left<=a.x0+a.width&&entry.bounds.bottom>=a.y0&&entry.bounds.top<=a.y0+a.height);
     const stateKey=JSON.stringify([o.selected,visible.map(([id,entry])=>[id,entry.version??o.revision])]);
-    const baseChanged=!this.presented||changed||this.planKey!==planKey,ownershipChanged=!this.presented||changed||this.stateKey!==stateKey;
+    const baseChanged=!this.presented||changed,ownershipChanged=!this.presented||changed||this.stateKey!==stateKey;
     if(!baseChanged&&!ownershipChanged)return;
-    this.bounds=a;this.planKey=planKey;this.stateKey=stateKey;
+    this.bounds=a;this.stateKey=stateKey;
     if(baseChanged)this.baseVersion++;if(ownershipChanged)this.ownershipVersion++;
     this.workerTask={bounds:a,baseVersion:this.baseVersion,ownershipVersion:this.ownershipVersion};this.snapshotPending=true;
     const territories=visible.map(([id,entry])=>({id,version:entry.version,color:entry.color,geometry:entry.geometry}));
-    this.worker.postMessage({type:'draw',job:{bounds:a,plans,territories,selected:o.selected,baseChanged,ownershipChanged}});
+    this.worker.postMessage({type:'draw',job:{bounds:a,territories,selected:o.selected,baseChanged,ownershipChanged}});
   }
   snapshot(){
     if(this.worker&&!this.workerFailed)return;
@@ -83,14 +81,24 @@ export class TerrainAtlas {
     });
   }
   dispose(){this.disposed=true;this.worker?.terminate();this.presented?.base.close();this.presented?.ownership.close();}
+  updateOverview(){
+    const o=this.owner,g=o.game;
+    if(this.overviewRevision===o.revision)return;
+    const c=this.overview.getContext('2d');
+    if(this.overview.width!==g.width)this.overview.width=g.width;
+    if(this.overview.height!==g.height)this.overview.height=g.height;
+    c.setTransform(1,0,0,1,0,0);c.fillStyle='#b9dce8';c.fillRect(0,0,g.width,g.height);
+    c.save();if(o.coastPath)c.clip(o.coastPath,'evenodd');c.drawImage(o.climate,0,0);
+    c.globalAlpha=.72;for(const {path,color}of o.territoryPaths.values()){c.fillStyle=color;c.fill(path,'evenodd');}
+    c.restore();this.overviewRevision=o.revision;this.overviewVersion++;
+  }
   update(){
     if(this.workerReady&&!this.workerFailed){this.updateWorker();return;}
     if(this.worker&&!this.workerFailed&&this.baseVersion>0)return;
     const o=this.owner,g=o.game,bounds=planAtlas(o,this.bounds),changed=bounds!==this.bounds;
     this.bounds=bounds;const a=bounds;
     if(changed){for(const c of [this.base,this.ownership]){if(c.width!==a.pixelWidth)c.width=a.pixelWidth;if(c.height!==a.pixelHeight)c.height=a.pixelHeight;}}
-    const plans=JSON.stringify([o.planPolygon,o.planStatus,o.planDrawing,o.planPreviewRevision,(g.armies??[]).filter(p=>p.owner===1&&p.planPolygon).map(p=>[p.id,p.planPolygon])]);
-    if(changed||plans!==this.planKey){
+    if(changed||!this.baseVersion){
       const c=this.base.getContext('2d');c.setTransform(1,0,0,1,0,0);c.fillStyle='#b9dce8';c.fillRect(0,0,this.base.width,this.base.height);
       c.setTransform(a.density,0,0,a.density,-a.x0*a.density,-a.y0*a.density);
       c.strokeStyle='#527f9826';c.lineWidth=.5/a.mapScale;
@@ -103,7 +111,7 @@ export class TerrainAtlas {
       }
       c.save();if(o.coastPath)c.clip(o.coastPath,'evenodd');c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';c.drawImage(o.climate,0,0);drawRivers(c,g);c.restore();
       if(o.coastPath){c.lineWidth=.85/a.mapScale;c.strokeStyle='#528496';c.lineJoin='round';c.stroke(o.coastPath);}
-      o.drawPlans(c,0,0,1,a.mapScale);this.planKey=plans;this.baseVersion++;this.canvasBaseVersion=this.baseVersion;
+      this.baseVersion++;this.canvasBaseVersion=this.baseVersion;
     }
     const visible=[...o.territoryPaths].filter(([,entry])=>!entry.bounds||
       entry.bounds.right>=a.x0&&entry.bounds.left<=a.x0+a.width&&entry.bounds.bottom>=a.y0&&entry.bounds.top<=a.y0+a.height);

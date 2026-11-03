@@ -37,7 +37,8 @@ export class TerrainScene {
     this.texture.anisotropy=Math.min(8,this.renderer.capabilities.getMaxAnisotropy());
     this.territoryUniform={value:null};this.mapTransform={value:new THREE.Vector4()};
     this.scorchUniforms={map:{value:null},size:{value:new THREE.Vector2(1,1)},enabled:{value:0}};
-    this.material=createTerrainMaterial(this.texture,this.territoryUniform,this.mapTransform,this.scorchUniforms);
+    this.overviewUniforms={map:{value:null},size:{value:new THREE.Vector2(owner.game.width,owner.game.height)},ready:{value:0},detail:{value:new THREE.Vector4()},coarse:{value:0}};
+    this.material=createTerrainMaterial(this.texture,this.territoryUniform,this.mapTransform,this.scorchUniforms,this.overviewUniforms);
     this.raycaster=new THREE.Raycaster();this.pointer=new THREE.Vector2();
     this.setGame();this.resize();this.setActive(true);
   }
@@ -47,6 +48,9 @@ export class TerrainScene {
     this.owner.resize();this.owner.onViewFailure?.();
   }
   setGame(){
+    if(this.fallbackGround){this.fallbackGround.removeFromParent();this.fallbackGround.geometry.dispose();this.fallbackGround.material.dispose();this.fallbackGround=null;}
+    this.overviewTexture?.dispose();this.overviewTexture=null;this.overviewVersion=-1;
+    if(this.overviewUniforms){this.overviewUniforms.ready.value=0;this.overviewUniforms.size.value.set(this.owner.game.width,this.owner.game.height);}
     for(const {model} of this.models.values()){model.removeFromParent();disposeFacilityModel(model);}this.models.clear();
     this.elevation=buildElevation(this.owner.game);this.geometryKey=null;this.gridKey=null;this.renderKey=null;this.shadowDirty=true;this.baseVersion=-1;
     this.meshJobs?.dispose();this.meshJobs=null;
@@ -100,7 +104,17 @@ export class TerrainScene {
   }
   heightAt(x,y){
     const o=this.owner,g=o.game;
-    return reliefHeight(sampleElevation(this.elevation,g.width,g.height,(x-o.originX)/o.scale,(y-o.originY)/o.scale),o.scale);
+    const wx=(x-o.originX)/o.scale,wy=(y-o.originY)/o.scale,b=this.meshBounds;
+    if(this.fallbackGround?.visible&&!(wx>=b.x0&&wx<=b.x0+b.columns*b.step&&wy>=b.y0&&wy<=b.y0+b.rows*b.step)){
+      const a=this.fallbackBounds,p=this.fallbackGround.geometry.attributes.position;
+      const gx=(wx-a.x0)/a.step,gy=(wy-a.y0)/a.step,col=Math.floor(gx),row=Math.floor(gy);
+      if(col>=0&&col<a.columns&&row>=0&&row<a.rows){
+        const i=row*(a.columns+1)+col,u=gx-col,v=gy-row,h00=p.getZ(i),h10=p.getZ(i+1),h01=p.getZ(i+a.columns+1),h11=p.getZ(i+a.columns+2);
+        const z=u+v<=1?h00+(h10-h00)*u+(h01-h00)*v:h11+(h01-h11)*(1-u)+(h10-h11)*(1-v);
+        return reliefHeight(z,o.scale);
+      }
+    }
+    return reliefHeight(sampleElevation(this.elevation,g.width,g.height,wx,wy),o.scale);
   }
   project(x,y){return projectGround(x,y,this.heightAt(x,y),this.owner.w,this.owner.h,this.tilt);}
   updateCoverage(){
@@ -144,6 +158,8 @@ export class TerrainScene {
       else{this.meshJobs?.cancel();this.installMesh(buildTerrainMesh(this.elevation,g.width,g.height,g.gridScale,bounds),gridKey,bounds);}
     }else this.meshJobs?.cancel();
 
+    this.syncFallbackGround(coverage);
+
     this.worldRoot.position.set(o.originX-o.w/2,o.h/2-o.originY,0);this.worldRoot.scale.setScalar(o.scale);
     this.worldRoot.updateMatrixWorld(true);this.geometryKey=key;
     if((!this.navigating&&this.shadowScale!==o.scale)||Math.abs(this.worldRoot.position.x-(this.shadowX??0))>200||Math.abs(this.worldRoot.position.y-(this.shadowY??0))>200)this.shadowDirty=true;
@@ -152,10 +168,45 @@ export class TerrainScene {
     this.ground.geometry.dispose();this.ground.geometry=geometry;this.gridKey=key;this.meshBounds=bounds;
     this.shadowDirty=true;installTerrainRaycast(this.ground,bounds);
   }
+  syncFallbackGround(coverage){
+    if(!this.owner.game.world||!this.overviewUniforms)return;
+    const b=this.meshBounds,g=this.owner.game;
+    const needed=b&&(coverage.left<b.x0||coverage.top<b.y0||coverage.right>b.x0+b.columns*b.step||coverage.bottom>b.y0+b.rows*b.step);
+    if(needed&&!this.fallbackGround){
+      const step=Math.max(g.width,g.height)/160;
+      const bounds={x0:0,y0:0,step,columns:Math.ceil(g.width/step),rows:Math.ceil(g.height/step)};
+      const geometry=buildTerrainMesh(this.elevation,g.width,g.height,g.gridScale,bounds);
+      const material=createTerrainMaterial(this.texture,this.territoryUniform,this.mapTransform,this.scorchUniforms,{...this.overviewUniforms,coarse:{value:1}});
+      this.fallbackBounds=bounds;this.fallbackGround=new THREE.Mesh(geometry,material);installTerrainRaycast(this.fallbackGround,bounds);this.worldRoot.add(this.fallbackGround);
+    }
+    if(this.fallbackGround){
+      this.fallbackGround.visible=!!needed;
+      this.overviewUniforms.detail.value.set(b.x0/g.width,1-(b.y0+b.rows*b.step)/g.height,(b.x0+b.columns*b.step)/g.width,1-b.y0/g.height);
+    }
+  }
+  syncOverview(){
+    const o=this.owner,atlas=o.atlas,u=this.overviewUniforms;if(!u||!o.game.world||!atlas?.updateOverview)return;
+    const a=atlas.presented?.bounds??atlas.canvasBounds,c=this.updateCoverage();
+    if(a&&c.left>=a.x0&&c.right<=a.x0+a.width&&c.top>=a.y0&&c.bottom<=a.y0+a.height)return;
+    atlas.updateOverview();
+    if(!this.overviewTexture){this.overviewTexture=new THREE.CanvasTexture(atlas.overview);this.overviewTexture.colorSpace=THREE.SRGBColorSpace;this.overviewTexture.generateMipmaps=false;this.overviewTexture.minFilter=THREE.LinearFilter;u.map.value=this.overviewTexture;}
+    u.ready.value=1;
+    if(this.overviewVersion!==atlas.overviewVersion){this.overviewVersion=atlas.overviewVersion;this.overviewTexture.needsUpdate=true;this.renderKey=null;}
+  }
   pick(x,y,includeModels=false){
     this.syncGeometry();const o=this.owner;
     this.pointer.set(x/o.w*2-1,1-y/o.h*2);this.raycaster.setFromCamera(this.pointer,this.camera);
-    const hit=this.raycaster.intersectObject(this.ground)[0];
+    let hit=this.raycaster.intersectObject(this.ground)[0];
+    if(this.fallbackGround?.visible){
+      const b=this.meshBounds;
+      for(const candidate of this.raycaster.intersectObject(this.fallbackGround)){
+        const p=this.worldRoot.worldToLocal(candidate.point.clone()),x=p.x,y=-p.y;
+        // Match the fragment shader: coarse terrain inside the detailed patch is invisible.
+        if(x>=b.x0&&x<=b.x0+b.columns*b.step&&y>=b.y0&&y<=b.y0+b.rows*b.step)continue;
+        if(!hit||candidate.distance<hit.distance)hit=candidate;
+        break;
+      }
+    }
     if(includeModels){
       const hits=this.raycaster.intersectObjects([...this.models.values()].filter(m=>m.model.visible).map(m=>m.model),true);
       if(hits.length&&(!hit||hits[0].distance<hit.distance)){let model=hits[0].object;while(model.parent&&model.userData.tile===undefined)model=model.parent;
@@ -194,6 +245,7 @@ export class TerrainScene {
     this.syncBaseTexture();
     this.syncTerritories();
     this.syncScorch();
+    this.syncOverview();
     this.syncGeometry();this.syncModels();
     if(this.baseVersion!==this.owner.baseVersion){this.texture.needsUpdate=true;this.baseVersion=this.owner.baseVersion;}
     const key=[this.geometryKey,this.baseVersion,this.ownershipTexture?.version,this.modelsRevision,this.scorchTexture?.version,this.scorchUniforms?.enabled.value].join('|');
@@ -245,6 +297,7 @@ export class TerrainScene {
       this.texture.colorSpace=THREE.SRGBColorSpace;this.texture.generateMipmaps=false;
       this.texture.minFilter=THREE.LinearFilter;this.texture.anisotropy=previous.anisotropy;
       this.material.map=this.texture;this.material.needsUpdate=true;this.renderKey=null;
+      if(this.fallbackGround){this.fallbackGround.material.map=this.texture;this.fallbackGround.material.needsUpdate=true;}
       this.textureWidth=source.width;this.textureHeight=source.height;previous.dispose();
     }
     if(this.texture&&source&&this.texture.image!==source){this.texture.image=source;this.texture.needsUpdate=true;this.renderKey=null;}
