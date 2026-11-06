@@ -2,6 +2,7 @@ import {createTheater,worldTile} from './map.js';
 import {HISTORICAL_NATIONS,HISTORICAL_RUNS} from './historical-data.js';
 import {PREPARATION_SECONDS} from './campaign-pacing.js';
 import {seedHistoricalGarrisons} from './ground-garrisons.js';
+import {initializeRegiments} from './regiments.js';
 
 export const SCENARIO_DATE='1939-08-31';
 export const COUNTRY_OPTIONS=HISTORICAL_NATIONS;
@@ -65,6 +66,7 @@ export function prepareHistoricalCampaign(g){
   for(const {t} of [...fronts.values()].sort((a,b)=>a.d-b.d))add(n,'barracks',t,true);
  }
  seedHistoricalGarrisons(g);
+ initializeRegiments(g);
  g.log('1939年8月31日疆域 · 开局3分钟发育期，AI暂不主动开战。可建设、训练和研发；主动进攻会引起目标国反击。','player');
  return g;
 }

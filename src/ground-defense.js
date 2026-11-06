@@ -1,4 +1,4 @@
-import {takeTroops,effectiveness} from './troops.js';
+import {takeTroops,effectiveness,armorReadiness} from './troops.js';
 import {listGroundUnits,issueGroundOrder,unitPositions} from './ground-unit-orders.js';
 
 // Response routing is order-time work, limited to one formation per threatened
@@ -18,7 +18,7 @@ export function respondToFront(g,a){
 
 function contactIndex(g){if(g.defenseContactIndex?.time===g.time)return g.defenseContactIndex.buckets;const buckets=new Map();
  const add=r=>{for(const p of r.positions){const key=`${Math.floor(p.x/4)},${Math.floor(p.y/4)}`;if(!buckets.has(key))buckets.set(key,new Set());buckets.get(key).add(r);}};
- for(const [owner,n]of g.nations)if(n.alive)for(const p of g.reserveStations(owner))if(p.troops>0)add({owner,unit:p,positions:[p],station:true});
+ for(const [owner,n]of g.nations)if(n.alive&&!g.regimentOwners?.has(owner))for(const p of g.reserveStations(owner))if(p.troops>0)add({owner,unit:p,positions:[p],station:true});
  for(const b of g.armies)if(b.troops>0)add({owner:b.owner,unit:b,positions:unitPositions(b),station:false});
  g.defenseContactIndex={time:g.time,buckets};return buckets;
 }
@@ -34,7 +34,7 @@ export function engageGroundDefenders(g,a,dt){
  };
  const buckets=contactIndex(g),near=new Set();for(const p of attackPoints){const x=Math.floor(p.x/4),y=Math.floor(p.y/4);for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)for(const r of buckets.get(`${x+dx},${y+dy}`)??[])near.add(r);}
  for(const r of near)if(r.unit!==a&&(r.station||g.armies.includes(r.unit)))add(r.owner,r.unit,r.positions,r.station);
- const attackPower=a.troops*effectiveness(a)*Math.max(.2,(a.organization??100)/100)*(.25+.75*(a.supply??1))*(a.armor?1.5:1),ratio=power/Math.max(1,attackPower);
+ const attackPower=a.troops*effectiveness(a)*Math.max(.2,(a.organization??100)/100)*(.25+.75*(a.supply??1))*(1+.5*armorReadiness(a)),ratio=power/Math.max(1,attackPower);
  const before=a.troops,loss=takeTroops(a,Math.min(a.troops*.035,power*.008)*dt).troops;if(a.armor)a.armor.remaining*=a.troops/Math.max(1,before);a.organization=Math.max(0,(a.organization??100)-loss/Math.max(1,before)*200);
  for(const c of contacts){const requested=attackPower*.008*dt*c.power/Math.max(1,power);let paid;if(c.station){const n=g.nations.get(c.owner);paid=takeTroops(n,Math.min(c.unit.troops,requested)).troops;c.unit.troops=Math.max(0,c.unit.troops-paid);}else{const before=c.unit.troops;paid=takeTroops(c.unit,requested).troops;c.unit.organization=Math.max(0,(c.unit.organization??100)-paid/Math.max(1,before)*300);if(c.unit.armor)c.unit.armor.remaining*=c.unit.troops/Math.max(1,before);if(c.unit.troops<1)g.finishArmy(c.unit,false);}a.defenderLosses+=paid;}
  return {ratio,loss,contact:contacts.length>0,blocked:ratio>=1.4};

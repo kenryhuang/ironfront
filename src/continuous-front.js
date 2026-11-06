@@ -1,11 +1,11 @@
-import {takeTroops,effectiveness} from './troops.js';
+import {takeTroops,effectiveness,armorReadiness} from './troops.js';
 import {frontSupplied} from './ground-supply.js';
 import {prepareFrontMotion,moveFrontModels} from './front-motion.js';
 import {respondToFront,engageGroundDefenders} from './ground-defense.js';
 
 const eligible=(g,a,t)=>g.owners[t]>=0&&g.owners[t]!==a.owner&&(a.allowedTiles?a.allowedTiles.has(t):g.owners[t]===a.target);
 const point=(g,t)=>({x:t%g.width+.5,y:Math.floor(t/g.width)+.5});
-export const groundStateLabel=a=>a.orderState==='holding'&&a.holdReason==='losses'?'损失过重 · 暂停攻势':({gathering:'集结至战线',engaging:'交火推进',advancing:'全线推进',isolated:'被切断 · 停止深入',resupplying:'补给路线核验中',recovering:'组织度低 · 就地整顿',holding:'原地驻守',stationed:'原地待命',moving:'移动中',retreating:'撤退中',blocked:'路线被切断',defending:'防御交火',bombarding:'持续炮击',packed:'待展开'}[a.orderState]??'行军');
+export const groundStateLabel=a=>a.orderState==='holding'&&a.holdReason==='losses'?'损失过重 · 暂停攻势':({gathering:'集结至战线',engaging:'交火推进',advancing:'全线推进',isolated:'被切断 · 停止深入',resupplying:'补给核验 / 受压制',recovering:'组织度低 · 就地整顿',holding:'原地驻守',stationed:'原地待命',moving:'移动中',retreating:'撤退中',blocked:'路线被切断',defending:'防御交火',bombarding:'持续炮击',deploying:'火炮展开中','no-ammo':'炮弹耗尽 · 需停止补弹','no-guns':'火炮损失殆尽 · 需补充',packed:'待展开'}[a.orderState]??'行军');
 
 function moveGathering(g,a,dt){let ready=true;for(const p of [...a.frontline.lanes,...a.frontline.contingents??[]]){let travel=dt*8*Math.sqrt(g.gridScale??1);p.firing=false;p.status='gathering';
  while(p.pathHead<p.path.length&&travel>0){const t=p.path[p.pathHead];if(g.owners[t]!==a.owner){a.orderState='isolated';return false;}const q=point(g,t),dx=q.x-p.x,dy=q.y-p.y,d=Math.hypot(dx,dy);if(d<1e-7){p.pathHead++;continue;}const step=Math.min(travel,d);p.x+=dx/d*step;p.y+=dy/d*step;p.angle=Math.atan2(dy,dx);travel-=step;if(step>=d-1e-8)p.pathHead++;}
@@ -36,7 +36,7 @@ export function advanceContinuousFront(g,a,dt){
  if(g.time>=(a.contactCheckAt??0)){a.contactPressure=nearEnemyPressure(g,a);a.contactCheckAt=g.time+.5;}
  const local=engageGroundDefenders(g,a,dt);
  const pressure=Math.max(a.contactPressure??0,local.ratio),resistance=Math.min(3,f.cost/Math.max(50,a.troops*.03))+pressure;
- const rate=(a.armor?1.05:.65)*Math.min(4,Math.sqrt(g.gridScale??1))/(Math.max(1,f.terrain)*(1+resistance)*f.travelDistance);
+ const rate=(.65+.4*armorReadiness(a))*Math.min(4,Math.sqrt(g.gridScale??1))/(Math.max(1,f.terrain)*(1+resistance)*f.travelDistance);
  const ceiling=local.blocked&&!f.bandCaptured?Math.max(0,f.captureAt-1e-5):1;
  const progress=Math.min(Math.max(0,ceiling-f.phase),dt*rate*(.4+.6*a.supply)),fraction=Math.max(0,progress);
  setState(a,f.fighting||pressure>0?'engaging':'advancing',f.fighting||pressure>0);

@@ -5,6 +5,15 @@ import {createTacticalModels} from '../src/local-arms-models.js';
 import {LocalArmsScene} from '../src/local-arms-scene.js';
 import * as THREE from '../src/vendor/three.module.js';
 function scene(sea=false){const g=new LocalArmsGame({width:60,height:20,owners:Array.from({length:1200},(_,t)=>sea?(t%60<20?1:t%60<26?-1:2):(t%60<30?1:2)),terrain:Array(1200).fill(1),logistics:true,nations:[{id:1,troops:30000,gold:10000},{id:2,troops:30000,gold:10000}]});g.buildings.set(sea?619:625,{type:'barracks',remaining:0,level:1});return g;}
+
+test('relief units are culled using projected screen positions at high zoom',()=>{
+ const subject={owner:{w:1000,h:600,originX:0,originY:0,scale:320,displayPoint:(x,y)=>[x,y]},surface:{active:true,project:()=>[500,300]}};
+ assert.equal(LocalArmsScene.prototype.onScreen.call(subject,700,170),true);
+ subject.surface.project=()=>[1500,300];
+ assert.equal(LocalArmsScene.prototype.onScreen.call(subject,1,1),false);
+ subject.surface.active=false;
+ assert.equal(LocalArmsScene.prototype.onScreen.call(subject,1,1),true);
+});
 test('infantry advances smoothly after gathering and claims the band it reaches',()=>{const g=scene();g.battery.tile=625;const result=g.localAttack(false);assert.ok(result.ok);const a=g.armies[0];assert.ok(a.infantry?.motion);assert.equal(g.armorReserve,20);let moving=0,crossed=0;for(let i=0;i<600&&g.armies.includes(a);i++){const p=a.infantry.motion,x=p.x,y=p.y;g.step(1/60,{economy:false});if(g.armies.includes(a)&&['engaging','advancing'].includes(p.status)){assert.ok(Math.hypot(p.x-x,p.y-y)>1e-5);moving++;const t=Math.floor(p.y)*60+Math.floor(p.x);if(t%60>=30){if(g.owners[t]!==1){assert.ok(a.frontline.cells.includes(t));assert.ok(a.frontline.phase<1);}else crossed++;}}}assert.ok(moving>60);assert.ok(crossed>10);});
 test('sea transport deducts troops and produces moving infantry on landing',()=>{const g=scene(true),initial=g.nations.get(1).troops;const order=g.transport(1,626,.1);assert.ok(order.ok);assert.equal(g.nations.get(1).troops,initial-3000);let a;for(let i=0;i<120&&!a;i++){g.step(.1,{economy:false});a=g.armies.find(a=>a.id===order.fleetId);}assert.ok(a?.infantry?.motion);assert.equal(g.transports.length,0);for(let i=0;i<80&&g.owners[626]!==1;i++)g.step(.1,{economy:false});assert.equal(g.owners[626],1);assert.ok(a.troops<=3000);const before=g.nations.get(1).troops;g.stopAttack(1,a.id);assert.ok(g.nations.get(1).troops>before);});
 test('infantry and landing craft have bounded real geometry and identifiable parts',()=>{const kit=createTacticalModels();assert.equal(typeof kit.soldier,'function');assert.equal(typeof kit.transport,'function');const soldier=kit.soldier(),ship=kit.transport();for(const name of ['helmet','rifle','backpack','leg-left','leg-right'])assert.ok(soldier.getObjectByName(name));for(const name of ['hull','cabin','ramp'])assert.ok(ship.getObjectByName(name));for(const model of [soldier,ship]){let triangles=0;model.traverse(m=>{if(m.isMesh)triangles+=(m.geometry.index?.count??m.geometry.attributes.position.count)/3;});assert.ok(triangles<1500);}kit.dispose();});

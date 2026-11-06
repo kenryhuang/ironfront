@@ -256,10 +256,13 @@ export class Game {
   combatCost(owner, target, tile) {
     if (target === 0) return { attack: 7 * this.cellArea * this.terrain[tile], defense: 0 };
     const defender = this.nations.get(target);
-    const density = defender.troops / Math.max(1, defender.tiles.size);
+    // Regiment campaigns defend with their actual map formations. Unassigned
+    // reserves cannot also fight as an invisible, nation-wide garrison.
+    const defendingReserve=this.regimentOwners?.has(target)?0:defender.troops;
+    const density = defendingReserve / Math.max(1, defender.tiles.size);
     let fort = 1;
     for (const [t, b] of this.buildings) if (b.type === 'fort' && !(b.remaining>0) && !(b.suppressedUntil>this.time) && !this.radiationAt(t) && this.owners[t] === target && Math.hypot(t % this.width - tile % this.width, Math.floor(t / this.width) - Math.floor(tile / this.width)) <= 5*this.gridScale) { fort = 2.4; break; }
-    const defense = Math.min(defender.troops, Math.max(0, density * 0.8));
+    const defense = Math.min(defendingReserve, Math.max(0, density * 0.8));
     return { attack: (7*this.cellArea + defense * effectiveness(defender) * (this.logistics?this.researchBonuses(target).defense*this.defenseSuppression(tile):1) * 1.15) * this.terrain[tile] * fort, defense };
   }
 

@@ -37,3 +37,7 @@ Desktop.ini
 docs/performance-*.md
 __pycache__/
 *.pyc
+
+# Browser automation and design process files
+.playwright-cli/
+.superpowers/

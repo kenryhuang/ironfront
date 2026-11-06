@@ -1,7 +1,8 @@
 import {groundStateLabel} from './continuous-front.js';
 const number=n=>Math.floor(n).toLocaleString('en-US');
+export const isGroundCombatTask=a=>!a.groundOrder&&(a.target!=null||!!a.allowedTiles);
 export function updateBattleEvents(container,game,active){
-  const relevant=a=>a.owner===1||game.armyTargets(a,1);
+  const relevant=a=>(isGroundCombatTask(a)||a.artillery?.target!=null)&&(a.owner===1||a.target===1||(a.artillery&&game.owners[a.artillery.target]===1)||game.armyTargets(a,1));
   const rows=[...game.armies.filter(relevant).map(a=>({key:`army-${a.id}`,a})),...game.transports.filter(f=>f.owner===1||game.owners[f.destination]===1).map(f=>({key:`fleet-${f.id}`,f}))];
   if(game.battery?.autoTarget!==null&&game.battery?.autoTarget!==undefined)rows.push({key:'battery-player',battery:game.battery});
   const keys=new Set(rows.map(r=>r.key));
@@ -14,6 +15,7 @@ export function updateBattleEvents(container,game,active){
     const unit=a??f,own=unit.owner===1;
     let card=container.querySelector(`[data-battle="${key}"]`);
     if(!card){card=document.createElement('article');card.dataset.battle=key;card.className=`battle-event ${own?'outgoing':'incoming'}`;card.innerHTML='<div class="battle-event-title"><b></b><strong></strong></div><p class="battle-event-detail"></p><progress max="100"></progress><small></small><button></button>';container.append(card);}
+    if(a?.artillery){const b=a.artillery;card.querySelector('b').textContent=`${a.unitName} → ${name(game.owners[b.target])}`;card.querySelector('strong').textContent=`${b.ammo} / 18 发`;card.querySelector('p').textContent=`${groundStateLabel(a)} · 目标 ${b.target%game.width},${Math.floor(b.target/game.width)} · 下轮 ${Math.max(0,Math.ceil(b.cooldown-game.time))} 秒`;card.querySelector('progress').hidden=true;card.querySelector('small').textContent=`${number(a.troops)}人 · ${number(b.remaining)}门火炮 · 停止后可补员与补弹`;const button=card.querySelector('button');button.hidden=!own;button.disabled=!active;button.textContent='停止该团炮击';button.dataset.stopArmy=String(a.id);continue;}
     card.querySelector('b').textContent=own?`${f?'⚓ 海运':a.allowedTiles?'⌁ 区域进攻':'↗ 进攻'} → ${f?name(game.owners[f.destination]):name(a.target)}`:`⚠ ${name(unit.owner)} ${f?'正在登陆':'正在进攻我方'}`;
     card.querySelector('strong').textContent=`${number(unit.troops)} 人`;
     card.title=`正规军 ${number(unit.troops-(unit.militia??0))} · 强征军 ${number(unit.militia??0)}（40%效能）`;

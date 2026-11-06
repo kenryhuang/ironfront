@@ -1,7 +1,8 @@
-import {takeTroops} from './troops.js';
+import {takeTroops,armorReadiness} from './troops.js';
 import {frontSupplied,supplyNetwork} from './ground-supply.js';
 import {registerOrderTargets} from './campaign-pacing.js';
 import {batteryRoute} from './artillery-orders.js';
+import {artilleryRegimentOrderStatus,orderArtilleryRegiment,stopArtilleryRegiment} from './artillery-regiments.js';
 
 const tileAt=(g,p)=>Math.floor(p.y)*g.width+Math.floor(p.x);
 const point=(g,t)=>({x:t%g.width+.5,y:Math.floor(t/g.width)+.5});
@@ -15,14 +16,14 @@ export function unitPositions(a){
 
 export function listGroundUnits(g,owner=1){
  const result=[];
- for(const p of g.reserveStations(owner))if(p.troops>=1){
+ for(const p of g.regimentOwners?.has(owner)?[]:g.reserveStations(owner))if(p.troops>=1){
   p.unitKey??=`station-${g.nextGroundKey=(g.nextGroundKey??0)+1}`;
   p.unitName??=`驻军 ${p.unitKey.split('-').at(-1)}`;
   result.push({key:p.unitKey,name:p.unitName,owner,kind:'infantry',troops:p.troops,positions:[p],station:p,state:'stationed',supply:1,organization:100});
  }
  for(const a of g.armies)if(a.owner===owner&&a.troops>=1){
   a.unitKey??=`army-${a.id}`;a.unitName??=`${a.armor?'装甲':'步兵'} ${a.id}`;
-  result.push({key:a.unitKey,name:a.unitName,owner,kind:a.armor?'armor':'infantry',troops:a.troops,positions:unitPositions(a),army:a,state:a.orderState??'gathering',supply:a.supply??1,organization:a.organization??100});
+  result.push({key:a.unitKey,name:a.unitName,owner,kind:a.armor?'armor':a.artillery?'artillery':'infantry',troops:a.troops,capacity:a.regiment?.capacity,regiment:a.regiment,positions:unitPositions(a),army:a,state:a.orderState??'gathering',supply:a.supply??1,organization:a.organization??100});
  }
  const b=g.battery;
  if(owner===1&&b?.available&&g.owners[b.tile]===owner)result.push({key:'battery-1',name:'炮兵连',owner,kind:'artillery',troops:0,positions:[b.motion??b.position??point(g,b.tile)],battery:b,state:b.motion?'moving':b.autoTarget!==null?'bombarding':b.deployed?'stationed':'packed',supply:1,organization:100});
@@ -96,6 +97,7 @@ function activate(g,unit){
 
 function setPositions(a,groups){a.frontline={lanes:groups,contingents:[],cells:[],ready:false,phase:0,seen:new Set()};if(a.armor)a.armor.motion=groups[0];else a.infantry={motion:groups[0]};}
 export function parkGroundUnit(g,a,reason='stationed'){
+ stopArtilleryRegiment(a);
  const groups=unitPositions(a).map(p=>({...p,path:[],pathHead:0,firing:false,status:reason}));
  a.persistent=true;a.target=null;a.allowedTiles=null;a.planPolygon=null;a.microTarget=null;a.front=[];a.head=0;a.groundOrder={type:'hold',groups,target:null};a.orderState=reason;a.holding=true;a.recovering=false;a.supplyTrusted=false;setPositions(a,groups);
 }
@@ -110,10 +112,11 @@ export function issueGroundOrder(g,owner,keys,tile,{kind='auto'}={}){
  for(const unit of chosen){const target=kind==='retreat'&&tile==null?retreatDestination(g,unit):tile,type=kind==='auto'?(g.owners[target]===owner?'move':'attack'):kind;
   if(unit.battery){const b=unit.battery;if(!g.batteryReady())return {ok:false,message:'炮兵阵地不可用。'};
    if(type==='attack'){const d=distance(point(g,b.tile),point(g,target));if(d<3||d>32||g.owners[target]===owner)return {ok:false,message:'目标必须在炮兵3—32格射程内且不是己方领土。'};if(b.motion)return {ok:false,message:'炮兵正在转移，请到位后再下达炮击命令。'};if(b.deployed){const status=g.barrageStatus(target);if(!status.ok)return status;}else if(b.readyAt>g.time)return {ok:false,message:'炮兵正在展开，请稍候。'};}
-   else if(type!=='halt'){if(target==null||g.owners[target]!==owner||g.radiationAt?.(target)||b.reloadAt>g.time||g.localShells.some(s=>s.start>g.time)||!batteryRoute(g,target))return {ok:false,message:'炮兵无法转移：请检查己方陆路、核污染、装填和当前齐射。'};}
+   else if(type!=='halt'){if(target==null||g.owners[target]!==owner||g.radiationAt?.(target)||b.reloadAt>g.time||g.localShells.some(s=>!s.regimentId&&s.start>g.time)||!batteryRoute(g,target))return {ok:false,message:'炮兵无法转移：请检查己方陆路、核污染、装填和当前齐射。'};}
    orders.push({unit,type,target});continue;
   }
   if(type==='halt'){orders.push({unit,type,plan:{ok:true}});continue;}
+  if(unit.army?.artillery&&type==='attack'){const status=artilleryRegimentOrderStatus(g,unit.army,target);if(!status.ok)return status;orders.push({unit,type:'bombard',target});continue;}
   if(target==null)return {ok:false,message:`${unit.name}没有可达的安全撤退点，请先打通退路。`};
   const plan=type==='attack'?attackPlan(g,unit,target):movePlan(g,unit,target);if(!plan.ok)return plan;orders.push({unit,type,target,plan});
  }
@@ -121,6 +124,8 @@ export function issueGroundOrder(g,owner,keys,tile,{kind='auto'}={}){
  for(const {unit,type,target,plan} of orders){
   if(unit.battery){let result;if(type==='halt'){result=g.stopBarrage();const b=g.battery;if(b.motion){b.position={x:b.motion.x,y:b.motion.y,angle:b.motion.angle};b.tile=tileAt(g,b.position);b.motion=null;b.readyAt=0;b.deployed=false;}}else if(type==='attack'){const b=g.battery,d=distance(point(g,b.tile),point(g,target));if(d<3||d>32)return {ok:false,message:'目标不在炮兵3—32格射程内。'};if(!b.deployed){result=g.deployBattery();if(result.ok)b.autoTarget=target;}else result=g.startBarrage(target);}else result=g.relocateBattery(target);if(!result.ok)return result;continue;}
   const a=activate(g,unit);a.holding=false;a.holdReason=null;a.recovering=false;a.lossStopAt=a.troops*.4;a.supplyTrusted=false;
+  if(type==='bombard'){orderArtilleryRegiment(g,a,target);continue;}
+  if(a.artillery){stopArtilleryRegiment(a);if(type!=='halt')a.artillery.deployed=false;}
   if(type==='halt'){parkGroundUnit(g,a);continue;}
   if(type==='attack'){a.groundOrder=null;a.frontline=plan.frontline;a.target=plan.enemy;a.allowedTiles=plan.allowed;a.planPolygon=null;a.front=[...plan.front];a.head=0;a.microTarget=target;a.captured=0;a.planCaptured=0;a.orderState='gathering';if(a.armor)a.armor.motion=a.frontline.lanes[0];else a.infantry={motion:a.frontline.lanes[0]};registerOrderTargets(g,a,plan.allowed);}
   else{a.target=null;a.allowedTiles=null;a.planPolygon=null;a.microTarget=null;a.front=[];a.head=0;a.groundOrder={type,target,groups:plan.groups};a.orderState=type==='retreat'?'retreating':'moving';setPositions(a,plan.groups);}
@@ -150,7 +155,7 @@ export function advanceGroundOrder(g,a,dt){
   if(supplied.connected&&threat===0)a.organization=Math.min(100,(a.organization??100)+dt*2);
   for(const p of order.groups){p.firing=threat>0||(p.firingUntil??0)>g.time;p.status=a.orderState;}return true;
  }
- let arrived=true,blocked=false;for(const p of order.groups){p.firing=(p.firingUntil??0)>g.time;let travel=dt*(a.armor?9:7)*Math.min(4,Math.sqrt(g.gridScale??1))*(.5+.5*(a.supply??1));
+ let arrived=true,blocked=false;for(const p of order.groups){p.firing=(p.firingUntil??0)>g.time;let travel=dt*(a.artillery?4:7+2*armorReadiness(a))*Math.min(4,Math.sqrt(g.gridScale??1))*(.5+.5*(a.supply??1));
   while(p.pathHead<p.path.length&&travel>0){const t=p.path[p.pathHead];if(g.owners[t]!==a.owner){blocked=true;break;}const q=point(g,t),d=distance(p,q);if(d<1e-7){p.pathHead++;continue;}const step=Math.min(travel,d);p.angle=Math.atan2(q.y-p.y,q.x-p.x);p.x+=(q.x-p.x)/d*step;p.y+=(q.y-p.y)/d*step;travel-=step;if(step>=d-1e-7)p.pathHead++;}
   arrived&&=p.pathHead>=p.path.length;p.status=order.type==='retreat'?'retreating':'moving';
  }

@@ -1,12 +1,17 @@
 import {listGroundUnits,issueGroundOrder} from './ground-unit-orders.js';
 import {projectUnitPoint,pickGroundUnit,boxGroundUnits} from './ground-unit-selection.js';
 import {groundStateLabel} from './continuous-front.js';
+import {createRegimentControls} from './regiment-ui.js';
+import {requestReinforcement} from './regiments.js';
+import {regimentNeedsReinforcement,HEAVY_EQUIPMENT} from './regiment-equipment.js';
 
 export function createGroundUnitUI({canvas,getGame,getRenderer,available=()=>true,notify=()=>{},prepare=()=>{}}){
  const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='/src/ground-unit-ui.css';document.head.append(sheet);
  const host=canvas.parentElement,root=document.createElement('div');root.className='ground-unit-ui';host.append(root);
  root.innerHTML='<div class="unit-markers"></div><div class="unit-box" hidden></div><div class="unit-controls"><button type="button" class="unit-roster-toggle">部队</button><button type="button" class="unit-box-toggle" aria-pressed="false">框选</button></div><section class="unit-roster" hidden aria-label="我的部队"></section><section class="unit-selection" hidden aria-label="已选部队"><header><b></b><button data-order="halt">停止 S</button><button data-order="retreat">撤退 R</button><button data-clear>取消 ×</button></header><p>右键己方地面移动 · 右键敌方地面进攻 · Shift 拖动框选</p><div class="unit-selected-list"></div></section>';
  const markers=root.querySelector('.unit-markers'),box=root.querySelector('.unit-box'),panel=root.querySelector('.unit-selection'),rows=root.querySelector('.unit-selected-list'),roster=root.querySelector('.unit-roster'),boxButton=root.querySelector('.unit-box-toggle'),selected=new Set(),nodes=new Map();
+ const rosterRows=document.createElement('div');roster.append(rosterRows);
+ const regimentControls=createRegimentControls(roster,{getGame,notify,onCreated(key){refresh();choose(key);const u=units.find(u=>u.key===key);if(u)focus(u);}});
  let game=null,units=[],gesture=null,boxMode=false,lastRefresh=-Infinity,panelKey='',rosterKey='';
  const local=e=>{const b=canvas.getBoundingClientRect();return [e.clientX-b.left,e.clientY-b.top];};
  const project=p=>projectUnitPoint(getRenderer(),p);
@@ -15,10 +20,19 @@ export function createGroundUnitUI({canvas,getGame,getRenderer,available=()=>tru
  function choose(key,add=false){if(!add)selected.clear();if(add&&selected.has(key))selected.delete(key);else selected.add(key);prepare();drawPanels();}
  function order(kind,tile=null,keys=[...selected]){refresh();const result=issueGroundOrder(game,1,keys,tile,{kind});notify(result);refresh();drawPanels();}
  function focus(u){const r=getRenderer(),p=u.positions[0];if(!p)return;r.zoom=Math.max(r.zoom,45);const [x,y]=project(p);r.panX+=r.w/2-x;r.panY+=(r.h/2-y)/Math.cos(r.surface?.active?r.surface.tilt:0);r.constrainView();r.updateReliefBounds();}
- function reconcile(container,list,inRoster=false){const existing=new Map([...container.children].map(el=>[el.dataset.unit,el]));for(const u of list){let el=existing.get(u.key);if(!el){el=document.createElement('div');el.className='unit-row';el.dataset.unit=u.key;el.innerHTML='<button class="unit-name"></button><small></small><button></button>';el.children[0].onclick=e=>choose(u.key,e.shiftKey);el.children[2].onclick=()=>{const current=units.find(x=>x.key===u.key);if(current)inRoster?focus(current):order('retreat',null,[u.key]);};container.append(el);}existing.delete(u.key);el.children[0].textContent=`${selected.has(u.key)?'● ':''}${u.name} · ${Math.floor(u.troops).toLocaleString()} 人`;el.children[1].textContent=`${groundStateLabel({orderState:u.state})} · 补给 ${Math.round(u.supply*100)}% · 组织 ${Math.round(u.organization)}`;el.children[2].textContent=inRoster?'定位':'单队撤退';el.children[2].setAttribute('aria-label',`${inRoster?'定位':'单队撤退'} ${u.name}`);}for(const el of existing.values())el.remove();}
- function drawPanels(){const chosen=units.filter(u=>selected.has(u.key)),key=chosen.map(u=>[u.key,Math.floor(u.troops),u.state,Math.round(u.supply*100),Math.round(u.organization)].join(':')).join('|');panel.hidden=!chosen.length;panel.querySelector('b').textContent=`已选 ${chosen.length} 支部队`;
+ function reconcile(container,list,inRoster=false){const existing=new Map([...container.children].map(el=>[el.dataset.unit,el]));for(const u of list){let el=existing.get(u.key);if(!el){el=document.createElement('div');el.className='unit-row';el.dataset.unit=u.key;el.innerHTML='<button class="unit-name"></button><small></small><div class="unit-row-actions"><button class="unit-location"></button><button class="unit-replenish"></button></div><progress class="unit-strength"></progress><span class="unit-replenish-status"></span>';el.children[0].onclick=e=>choose(u.key,e.shiftKey);el.querySelector('.unit-location').onclick=()=>{const current=units.find(x=>x.key===u.key);if(current)inRoster?focus(current):order('retreat',null,[u.key]);};el.querySelector('.unit-replenish').onclick=()=>{refresh();const current=units.find(x=>x.key===u.key);if(current){notify(requestReinforcement(game,1,u.key,!current.regiment?.replenishing));drawPanels();}};container.append(el);}existing.delete(u.key);
+  el.children[0].textContent=`${selected.has(u.key)?'● ':''}${u.name} · ${Math.floor(u.troops).toLocaleString()}${u.capacity?' / '+u.capacity.toLocaleString():''} 人`;
+  el.children[1].textContent=`${groundStateLabel({orderState:u.state})} · 补给 ${Math.round(u.supply*100)}% · 组织 ${Math.round(u.organization)}`;
+  const location=el.querySelector('.unit-location');location.textContent=inRoster?'定位':'撤退';location.setAttribute('aria-label',`${inRoster?'定位':'单队撤退'} ${u.name}`);
+  const replenish=el.querySelector('.unit-replenish'),strength=el.querySelector('.unit-strength'),status=el.querySelector('.unit-replenish-status');replenish.hidden=strength.hidden=status.hidden=!u.regiment;
+  if(u.regiment){const needs=regimentNeedsReinforcement(u.army),heavy=HEAVY_EQUIPMENT[u.regiment.type],equipment=heavy?`${heavy.label} ${Math.floor(u.army[heavy.field].remaining)} / 12${u.army.artillery?` · 炮弹 ${u.army.artillery.ammo} / 18`:''} · `:'';
+   replenish.textContent=u.regiment.replenishing?'取消补充':needs?'补员 / 装备':'已满编';replenish.setAttribute('aria-label',`${u.regiment.replenishing?'取消补员':'补员'} ${u.name}`);replenish.disabled=game.phase!=='running'||(!u.regiment.replenishing&&!needs);strength.max=u.capacity;strength.value=u.troops;strength.setAttribute('aria-label',`${u.name}编制充实率`);status.textContent=equipment+(u.regiment.replenishing?u.regiment.reinforcementStatus:needs?(u.capacity-u.troops>=1?`缺员 ${Math.ceil(u.capacity-u.troops).toLocaleString()} 人`:'待补充装备 / 炮弹'):'满编');}
+ }for(const el of existing.values())el.remove();}
+ const rowKey=u=>[u.key,Math.floor(u.troops),u.state,Math.round(u.supply*100),Math.round(u.organization),selected.has(u.key),u.regiment?.replenishing,u.regiment?.reinforcementStatus,u.army?.armor?.remaining,u.army?.artillery?.remaining,u.army?.artillery?.ammo].join(':');
+ function drawPanels(){const chosen=units.filter(u=>selected.has(u.key)),key=chosen.map(rowKey).join('|');panel.hidden=!chosen.length;panel.querySelector('b').textContent=`已选 ${chosen.length} 支部队`;
+  panel.querySelector('p').textContent=chosen.some(u=>u.army?.artillery)?'右键己方地面移动 · 炮兵右键3—32格内敌方陆地炮击 · 停止后可补员和补弹':'右键己方地面移动 · 右键敌方地面进攻 · Shift 拖动框选';
   if(key!==panelKey){panelKey=key;reconcile(rows,chosen);}
-  const rk=units.map(u=>[u.key,Math.floor(u.troops),u.state,selected.has(u.key)].join(':')).join('|');if(!roster.hidden&&rk!==rosterKey){rosterKey=rk;reconcile(roster,units,true);}
+  const rk=units.map(rowKey).join('|');if(!roster.hidden){regimentControls.update();if(rk!==rosterKey){rosterKey=rk;reconcile(rosterRows,units,true);}}
  }
  root.querySelector('.unit-roster-toggle').onclick=()=>{roster.hidden=!roster.hidden;refresh();rosterKey='';drawPanels();};
  boxButton.onclick=()=>{boxMode=!boxMode;boxButton.setAttribute('aria-pressed',String(boxMode));canvas.style.cursor=boxMode?'crosshair':'';};

@@ -10,11 +10,13 @@ import {createHistoricalTheater,prepareHistoricalCampaign,COUNTRY_OPTIONS} from 
 import { runAI } from './ai.js';
 import {aiPosture,preparationRemaining,conflictTargets} from './campaign-pacing.js';
 import { AirRenderer as Renderer } from './air-renderer.js';
-import { updateBattleEvents } from './battle-events.js';
+import { updateBattleEvents,isGroundCombatTask } from './battle-events.js';
 import { createRenderDiagnostics } from './render-diagnostics.js';
 import { createZoomInput } from './navigation-input.js';
+import { BattleAudio } from './battle-audio.js';
 
 const $ = id => document.getElementById(id);
+const battleAudio=new BattleAudio();
 const number = n => Math.floor(n).toLocaleString('en-US');
 const time = n => `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(Math.floor(n % 60)).padStart(2, '0')}`;
 let countryCode=Number(new URLSearchParams(location.search).get('country'))||710;
@@ -176,14 +178,15 @@ function updateArmies(armies, active, ratio) {
     if (!card) {
       card = document.createElement('div'); card.dataset.army = String(a.id);
       card.className = `army-card ${a.owner !== 1 ? 'incoming' : ''}`;
-      card.innerHTML = `<div class="army-title"><span>${a.owner === 1 ? (a.allowedTiles?'⌁ 自定义 → ':'↗ ')+name(a.target) : '↙ ' + name(a.owner)}</span><strong></strong></div><div class="army-detail"></div><div class="battle-stats"></div><div class="army-actions">${a.owner === 1 ? `${a.allowedTiles?`<button data-reinforce-plan="${a.id}"></button>`:!a.naval ? `<button data-reinforce="${a.target}"></button>` : ''}<button data-retreat="${a.id}">停止进攻 · 余兵归队</button>` : `<button data-counter="${a.owner}">反攻 · 抵消来袭部队</button>`}</div>`;
+      card.innerHTML = `<div class="army-title"><span></span><strong></strong></div><div class="army-detail"></div><div class="battle-stats"></div><div class="army-actions">${a.owner === 1 ? `${a.regiment?'':a.allowedTiles?`<button data-reinforce-plan="${a.id}"></button>`:!a.naval ? `<button data-reinforce="${a.target}"></button>` : ''}<button data-retreat="${a.id}">${a.persistent?'部队撤退':'停止进攻 · 余兵归队'}</button>` : `<button data-counter="${a.owner}">反攻 · 抵消来袭部队</button>`}</div>`;
       container.append(card);
     }
     card.querySelector('.army-title strong').textContent = number(a.troops);
+    card.querySelector('.army-title span').textContent=a.owner===1?`${a.regiment?a.unitName+' · ':''}${a.allowedTiles?'⌁ 区域 → ':'↗ '}${name(a.target)}`:'↙ '+name(a.owner);
     card.querySelector('.army-detail').textContent = a.allowedTiles?`区域任务 · 已占领 ${number(a.planCaptured*game.cellArea)} / ${number(a.allowedTiles.size*game.cellArea)}`:`${a.naval ? a.landing ? '抢滩登陆' : '滩头推进' : a.target === 0 ? '扩张中' : '地面进攻'} · ${a.owner === 1 ? '我方' : '敌方'}部队`;
     card.querySelector('.battle-stats').textContent = `攻方损失 ${number(Math.max(0, a.committed - a.troops))} / 守方损失 ${number(a.defenderLosses)} · ${a.target===null?'多国区域推进':`目标全国守军 ${number(game.nations.get(a.target)?.troops ?? 0)}`}`;
     const reinforce = card.querySelector('[data-reinforce],[data-reinforce-plan]');
-    if (reinforce) reinforce.textContent = `增援 ${Math.round(ratio * 100)}%`;
+    if (reinforce) {reinforce.textContent = `增援 ${Math.round(ratio * 100)}%`;if(reinforce.dataset.reinforce!==undefined)reinforce.dataset.reinforce=String(a.target);}
     for (const button of card.querySelectorAll('button')) button.disabled = button.dataset.retreat ? game.phase!=='running'||!game.nations.get(1).alive : !active;
   }
 }
@@ -288,7 +291,7 @@ function updateUI() {
   $('alive-count').textContent = `${ranking.filter(x => x.alive).length} 国`;
   updateRanking(ranking);
   $('territory-strip').innerHTML = ranking.filter(a => a.tiles.size).map(a => `<span style="background:${a.color};flex:${a.tiles.size}" title="${a.name}"></span>`).join('');
-  const armies = game.armies.filter(a => a.owner === 1 || game.armyTargets(a,1));
+  const armies = game.armies.filter(a => isGroundCombatTask(a)&&(a.owner === 1 || a.target===1 || game.armyTargets(a,1)));
   $('army-count').textContent = String(armies.length);
   updateArmies(armies, active, ratio);
   updateFleets(active);
@@ -491,7 +494,7 @@ function frame(now) {
     while (accumulator >= 0.1) {
       const aiPeriod = Math.floor(game.time / 3);
       if (aiPeriod !== lastAI) { runAI(game); lastAI = aiPeriod; }
-      game.step(0.1); accumulator -= 0.1;
+      game.step(0.1); battleAudio.observe(game); accumulator -= 0.1;
     }
   }
   renderer.airRenderTime=paused||game.phase!=='running'?game.time:Math.max(0,game.time-.1+accumulator);

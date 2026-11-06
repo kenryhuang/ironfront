@@ -1,6 +1,7 @@
 import {registerHostilities} from './campaign-pacing.js';
 import {SCORCH_RECOVERY_SECONDS} from './contamination-visual.js';
 import {takeTroops} from './troops.js';
+import {unitPositions} from './ground-unit-orders.js';
 
 // All distances, costs, timers and damage below are game balance values.
 export const STRATEGIC_WEAPONS=Object.freeze({
@@ -19,6 +20,8 @@ export function blastTiles(g,center,radius){
 }
 const ready=(g,owner,tile,b,type,level)=>g.owners[tile]===owner&&b?.type===type&&(b.level??1)>=level&&!(b.remaining>0)&&!(b.suppressedUntil>g.time)&&!g.radiationAt(tile)&&(type!=='factory'||b.enabled!==false);
 const armyPosition=(g,a)=>{for(let i=a.head??0;i<(a.front?.length??0);i++)if(g.owners[a.front[i]]!==a.owner)return a.front[i];return a.landingTile;};
+const armyInArea=(g,a,area)=>{const positions=unitPositions(a);return positions.length?positions.some(p=>area.has(Math.floor(p.y)*g.width+Math.floor(p.x))):area.has(armyPosition(g,a));};
+function strikeArmy(g,a,amount){const before=a.troops;takeTroops(a,amount);const ratio=a.troops/Math.max(1,before);if(a.armor)a.armor.remaining*=ratio;if(a.artillery){a.artillery.remaining*=ratio;a.artillery.personnel=a.troops;}if(a.troops<1)g.finishArmy(a,false);}
 export const strategicMethods={
   strategicState(owner){const n=this.nations.get(owner);return n?(n.strategic??={stock:{v2:0,atomic:0},jobs:new Map(),cooldowns:{}}):null;},
   strategicWorkers(owner){let count=0;for(const j of this.nations.get(owner)?.strategic?.jobs.values()??[])count+=j.workers;return count;},
@@ -71,7 +74,7 @@ export const strategicMethods={
     for(const t of tiles){const id=this.owners[t];if(id>0)counts.set(id,(counts.get(id)??0)+1);}
     let estimatedLosses=0;for(const [id,count]of counts){const n=this.nations.get(id);estimatedLosses+=Math.floor(n.troops*count/n.tiles.size*d.casualties);}
     const facilities=[...this.buildings].filter(([t])=>area.has(t)).map(([tile,b])=>({tile,type:b.type,owner:this.owners[tile],destroyed:(b.integrity??100)<=d.structureDamage}));
-    const friendly=counts.has(owner)||this.armies.some(a=>a.owner===owner&&area.has(armyPosition(this,a)));
+    const friendly=counts.has(owner)||this.armies.some(a=>a.owner===owner&&armyInArea(this,a,area));
     return {ok:!missing.length,missing,source,target,distance,radius:d.radius,tiles,facilities,estimatedLosses,friendly};
   },
   launchWeapon(owner,kind,target){
@@ -89,7 +92,7 @@ export const strategicMethods={
       for(const z of this.radiationZones)if(z.createdAt<tick&&z.until>=tick-1e-8)for(const tile of z.tiles)area.add(tile);
       for(const tile of area){const id=this.owners[tile];if(id>0)counts.set(id,(counts.get(id)??0)+1);}
       for(const [id,count]of counts){const n=this.nations.get(id);takeTroops(n,n.troops*count/Math.max(1,n.tiles.size)*(1-Math.exp(-.01)));}
-      for(const a of [...this.armies])if(area.has(armyPosition(this,a))){takeTroops(a,a.troops*(1-Math.exp(-.02)));if(a.troops<1)this.finishArmy(a,false);}
+      for(const a of [...this.armies])if(armyInArea(this,a,area))strikeArmy(this,a,a.troops*(1-Math.exp(-.02)));
     }
     this.scorchZones=this.scorchZones.filter(z=>z.recoverUntil>this.time+1e-8);
     this.radiationZones=this.radiationZones.filter(z=>z.until>this.time+1e-8);
@@ -101,7 +104,7 @@ export const strategicMethods={
     registerHostilities(this,strike.owner,counts.keys());
     let losses=0,friendlyLosses=0,destroyed=0,damaged=0;
     for(const [id,count]of counts){const n=this.nations.get(id),amount=Math.floor(n.troops*count/Math.max(1,n.tiles.size)*d.casualties);takeTroops(n,amount);losses+=amount;if(id===strike.owner)friendlyLosses+=amount;}
-    for(const a of [...this.armies])if(area.has(armyPosition(this,a))){const amount=Math.floor(a.troops*d.armyDamage);takeTroops(a,amount);losses+=amount;if(a.owner===strike.owner)friendlyLosses+=amount;if(a.troops<1)this.finishArmy(a,false);}
+    for(const a of [...this.armies])if(armyInArea(this,a,area)){const amount=Math.floor(a.troops*d.armyDamage);strikeArmy(this,a,amount);losses+=amount;if(a.owner===strike.owner)friendlyLosses+=amount;}
     for(const [tile,b]of [...this.buildings])if(area.has(tile)){
       this.releaseFacility(tile,this.owners[tile]);b.integrity=(b.integrity??100)-d.structureDamage;
       if(b.integrity<=0){this.buildings.delete(tile);destroyed++;}

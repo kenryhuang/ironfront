@@ -36,13 +36,13 @@ test('historical campaign starts funded, staffed and ready to attack without fre
  const g=prepareHistoricalCampaign(new CampaignGame(createHistoricalTheater()));
  const n=g.nations.get(1);
  for(const country of g.nations.values())if(country.alive)assert.ok([...g.buildings].some(([t,b])=>g.owners[t]===country.id&&b.type==='barracks'),`${country.name} must have a usable starting barracks`);
- assert.equal(g.phase,'running');assert.ok(n.troops>=1000000);assert.ok(n.gold>=5000000);assert.ok(n.manpower>=500000);
+ assert.equal(g.phase,'running');assert.equal(n.troops,985000);assert.equal(g.armies.filter(a=>a.regiment?.type==='infantry').length,4);assert.equal(g.armies.filter(a=>a.regiment?.type==='guard').length,2);assert.ok(n.gold>=5000000);assert.ok(n.manpower>=500000);
  assert.ok(g.capacity(1)>g.population(1));assert.equal(g.researchState(1).completed.size,0);
  for(const type of ['city','factory','barracks'])assert.ok([...g.buildings].some(([t,b])=>g.owners[t]===1&&b.type===type&&!b.remaining));
  const japan=[...g.nations.values()].find(n=>n.code===740);
  const start=performance.now(),result=g.attack(1,japan.id,.1);
  assert.ok(result.ok,result.message);assert.ok(performance.now()-start<2000);
- const army=g.armies.find(a=>a.owner===1);assert.ok(army.frontline.lanes.length>1);assert.ok(army.frontline.lanes.length<=64);
+ const army=g.armies.find(a=>a.id===result.armyId);assert.ok(army.frontline.lanes.length>1);assert.ok(army.frontline.lanes.length<=64);
  const initial=army.frontline.lanes[0].x;g.step(.5);assert.ok(Number.isFinite(army.frontline.lanes[0].x));
  for(let i=0;i<Math.ceil(g.nations.size/2);i++)runAI(g);
  assert.ok(g.armies.some(a=>a.owner===japan.id),'the attacked country can retaliate during preparation');
@@ -52,6 +52,6 @@ test('historical campaign starts funded, staffed and ready to attack without fre
 test('full historical world has no unsolicited offensives throughout preparation',()=>{
  const g=prepareHistoricalCampaign(new CampaignGame(createHistoricalTheater(255)));
  for(let i=0;i<1790;i++){if(i%30===0)runAI(g);g.step(.1);}
- assert.equal(g.armies.length,0);assert.equal(g.transports.length,0);assert.equal(g.air.flights.length,0);
+ assert.equal(g.armies.length,6);assert.ok(g.armies.every(a=>a.regiment&&a.owner===1&&a.groundOrder?.type==='hold'));assert.equal(g.transports.length,0);assert.equal(g.air.flights.length,0);
  assert.ok([...g.nations.values()].some(n=>n.research?.activeId||n.research?.completed.size),'AI development continues');
 });

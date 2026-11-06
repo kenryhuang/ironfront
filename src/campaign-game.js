@@ -3,10 +3,13 @@ import {CombinedArmsGame} from './combined-arms-game.js';
 import {AirOperations} from './air-operations.js';
 import {advanceHistoricalNavigation} from './deferred-navigation.js';
 import {registerHostilities,registerOrderTargets} from './campaign-pacing.js';
+import {advanceRegiments} from './regiments.js';
+import {advanceRegimentGunProduction} from './regiment-equipment.js';
+import {advanceArtilleryRegiments} from './artillery-regiments.js';
 
 export class CampaignGame extends CombinedArmsGame {
  constructor(config){super(config);this.air=new AirOperations(this);this.facilityVisible=tile=>this.air.facilityVisible(tile);this.mergeAttacks=false;for(const n of this.nations.values())if(n.tiles.size)this.startingBarracks(n.id);}
- step(dt,options){if(!Number.isFinite(dt)||dt<=0||dt>10)return;let left=dt;while(left>1e-8&&this.phase==='running'){const tick=Math.min(.1,left);left-=tick;super.step(tick,options);this.air.step(tick);advanceHistoricalNavigation(this);}}
+ step(dt,options){if(!Number.isFinite(dt)||dt<=0||dt>10)return;let left=dt;while(left>1e-8&&this.phase==='running'){const tick=Math.min(.1,left);left-=tick;super.step(tick,options);this.air.step(tick);advanceHistoricalNavigation(this);advanceRegimentGunProduction(this,tick);advanceArtilleryRegiments(this);advanceRegiments(this,tick);}}
  startingBarracks(owner,preferred){const n=this.nations.get(owner);if(!n?.tiles.size)return;const tile=preferred??n.tiles.values().next().value;if(!this.buildings.has(tile))this.buildings.set(tile,{type:'barracks',level:1,remaining:0,enabled:false,workers:0,trainingMode:'recruit',queue:null,status:'初始兵营 · 停训'});if(owner===1)this.battery.tile=tile;}
  deploy(tile){const result=super.deploy(tile);if(result.ok){this.startingBarracks(1,tile);this.log('初始兵营已建立。步兵与海运开局可用；坦克需T08，炮兵需T11。','player');}return result;}
  usableFacility(owner,tile,type){const b=this.buildings.get(tile);return this.owners[tile]===owner&&b?.type===type&&!(b.remaining>0)&&!(b.suppressedUntil>this.time)&&(b.integrity??100)>0&&!this.radiationAt(tile);}

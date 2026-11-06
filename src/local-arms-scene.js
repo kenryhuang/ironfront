@@ -3,6 +3,7 @@ import {sampleElevation} from './terrain-relief.js';
 import {createTacticalModels,travelToward,shellArc,TACTICAL_SCALE} from './local-arms-models.js';
 import {armorAssembly} from './armor-movement.js';
 import {LocalGroundSeaScene} from './local-ground-sea-scene.js';
+import {HeavyRegimentScene} from './heavy-regiment-scene.js';
 
 /** Shared bounded model pool inside the existing terrain scene. */
 export class LocalArmsScene {
@@ -12,9 +13,9 @@ export class LocalArmsScene {
   this.trails=[];this.trailMaterial=new THREE.LineBasicMaterial({color:'#ffe7a3',transparent:true,opacity:.85,depthWrite:false});
   for(let i=0;i<3;i++){const model=this.kit.projectile();model.scale.setScalar(.09);model.visible=false;this.root.add(model);this.projectiles.push(model);
    const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(new Float32Array(27),3));const line=new THREE.Line(geometry,this.trailMaterial);line.frustumCulled=false;line.visible=false;this.root.add(line);this.trails.push(line);}
-  this.up=new THREE.Vector3(0,0,1);this.normal=new THREE.Vector3();this.yaw=new THREE.Quaternion();this.temp=new THREE.Vector3();this.groundSea=new LocalGroundSeaScene(this);this.update(true);
+  this.up=new THREE.Vector3(0,0,1);this.normal=new THREE.Vector3();this.yaw=new THREE.Quaternion();this.temp=new THREE.Vector3();this.groundSea=new LocalGroundSeaScene(this);this.heavy=new HeavyRegimentScene(this);this.update(true);
  }
- onScreen(x,y){const r=this.owner;if(!Number.isFinite(r.w)||!r.displayPoint)return true;const [sx,sy]=r.displayPoint(r.originX+x*r.scale,r.originY+y*r.scale);return sx>-160&&sx<r.w+160&&sy>-160&&sy<r.h+160;}
+ onScreen(x,y){const r=this.owner;if(!Number.isFinite(r.w)||!r.displayPoint)return true;const px=r.originX+x*r.scale,py=r.originY+y*r.scale,[sx,sy]=this.surface.active&&this.surface.project?this.surface.project(px,py):r.displayPoint(px,py);return sx>-160&&sx<r.w+160&&sy>-160&&sy<r.h+160;}
  height(x,y){return sampleElevation(this.surface.elevation,this.game.width,this.game.height,x,y);}
  place(item,x,y,angle){const m=item.model,dx=(this.height(x+.25,y)-this.height(x-.25,y))*2,dy=(this.height(x,y+.25)-this.height(x,y-.25))*2;
   // Exaggerated strategic-map relief can be almost vertical beside rivers.
@@ -25,7 +26,7 @@ export class LocalArmsScene {
  }
  armyAnchor(a){let sumX=0,sumY=0,count=0;for(let i=a.head;i<a.front.length&&count<40;i++){const tile=a.front[i];if(this.game.owners[tile]===a.owner)continue;sumX+=tile%this.game.width+.5;sumY+=Math.floor(tile/this.game.width)+.5;count++;}return count?{x:sumX/count-.8,y:sumY/count}:null;}
  update(force=false){const g=this.game,b=g.battery,time=g.time,dt=Math.min(.25,Math.max(0,time-this.previousTime));this.previousTime=time;
-  if(!force&&dt===0)return;const armored=g.armies.filter(a=>a.owner===1&&a.armor&&(!a.armor.motion||(a.frontline?.lanes??[a.armor.motion]).some(p=>p&&this.onScreen(p.x,p.y)))),a=armored[0],motion=a?.armor.motion,anchor=motion??(a?this.armyAnchor(a):null);
+  if(!force&&dt===0)return;const armored=g.armies.filter(a=>a.owner===1&&a.armor&&!a.regiment&&(!a.armor.motion||(a.frontline?.lanes??[a.armor.motion]).some(p=>p&&this.onScreen(p.x,p.y)))),a=armored[0],motion=a?.armor.motion,anchor=motion??(a?this.armyAnchor(a):null);
   this.reserve??=g.nations?armorAssembly(g):{x:b.tile%g.width-3,y:Math.floor(b.tile/g.width)-2};const reserve=this.reserve;
   // Seed a new column behind its front, then continuously follow averaged front
   // positions. Never attach a model to the randomized next-cell queue directly.
@@ -39,22 +40,22 @@ export class LocalArmsScene {
    if(moved>.001){if(!unitMotion){const desired=Math.atan2(dy,dx),delta=Math.atan2(Math.sin(desired-tank.angle),Math.cos(desired-tank.angle));tank.angle+=delta*Math.min(1,dt*5);}changed=true;}
    this.place(tank,tank.x,tank.y,tank.angle);
   }
-  const shot=g.localShells.find(s=>s.start<=time)??g.localShells[0],targetTile=shot?.target??b.autoTarget??this.lastTarget??b.tile+12;if(shot)this.lastTarget=shot.target;
+  const legacyShells=g.localShells.filter(s=>!s.regimentId),shot=legacyShells.find(s=>s.start<=time)??legacyShells[0],targetTile=shot?.target??b.autoTarget??this.lastTarget??b.tile+12;if(shot)this.lastTarget=shot.target;
   const bx=b.motion?.x??b.position?.x??b.tile%g.width+.5,by=b.motion?.y??b.position?.y??Math.floor(b.tile/g.width)+.5,tx=targetTile%g.width+.5,ty=Math.floor(targetTile/g.width)+.5,heading=b.motion?.angle??Math.atan2(ty-by,tx-bx);
   for(let i=0;i<3;i++){const item=this.guns[i],shown=b.available!==false&&this.onScreen(bx,by);if(item.model.visible!==shown)changed=true;item.model.visible=shown;if(!shown)continue;const x=bx,y=by+(i-1)*.36,moved=Math.hypot(x-item.x,y-item.y);item.x=x;item.y=y;this.place(item,x,y,heading);
    if(b.motion&&moved>0){changed=true;for(const name of ['wheel-left','wheel-right'])item.model.getObjectByName(name).rotation.y-=moved/.23;}
-   const shell=g.localShells.find(s=>(s.gun??0)===i),age=shell?time-shell.start:99,flash=age>=0&&age<.16;const recoil=item.model.getObjectByName('recoil'),light=item.model.getObjectByName('muzzle-flash');const offset=age>=0&&age<.65?-.16*Math.exp(-age*6):0;
+   const shell=legacyShells.find(s=>(s.gun??0)===i),age=shell?time-shell.start:99,flash=age>=0&&age<.16;const recoil=item.model.getObjectByName('recoil'),light=item.model.getObjectByName('muzzle-flash');const offset=age>=0&&age<.65?-.16*Math.exp(-age*6):0;
    if(recoil.position.x!==offset||light.visible!==flash)changed=true;recoil.position.x=offset;light.visible=flash;
    for(const name of ['trail-left','trail-right']){const leg=item.model.getObjectByName(name);leg.rotation.z=(name==='trail-left'?-1:1)*(b.deployed?.35:.08);}
    const key=[b.tile,b.deployed,targetTile].join(':');if(key!==this.gunKey)changed=true;
   }this.gunKey=[b.tile,b.deployed,targetTile].join(':');
   this.root.updateMatrixWorld(true);
-  for(let i=0;i<3;i++){const s=g.localShells[i],p=this.projectiles[i],trail=this.trails[i];const visible=!!s&&time>=s.start&&time<s.impactAt;if(p.visible!==visible)changed=true;p.visible=trail.visible=visible;if(!visible)continue;
+  for(let i=0;i<3;i++){const s=legacyShells[i],p=this.projectiles[i],trail=this.trails[i];const visible=!!s&&time>=s.start&&time<s.impactAt;if(p.visible!==visible)changed=true;p.visible=trail.visible=visible;if(!visible)continue;
    if(!s.visualStart){const muzzle=this.guns[s.gun??i].model.getObjectByName('muzzle-flash');muzzle.getWorldPosition(this.temp);this.surface.worldRoot.worldToLocal(this.temp);s.visualStart={x:this.temp.x,y:this.temp.y,z:this.temp.z};}
    const end={x:s.target%g.width+.5,y:-(Math.floor(s.target/g.width)+.5),z:this.height(s.target%g.width+.5,Math.floor(s.target/g.width)+.5)+.06};const progress=(time-s.start)/(s.impactAt-s.start),point=shellArc(s.visualStart,end,progress);p.position.set(point.x,point.y,point.z);
    for(let j=0;j<9;j++){const tail=shellArc(s.visualStart,end,Math.max(0,progress-j*.012));trail.geometry.attributes.position.setXYZ(j,tail.x,tail.y,tail.z);}trail.geometry.attributes.position.needsUpdate=true;changed=true;
   }
-  if(this.groundSea.update(force))changed=true;if(changed)this.surface.renderKey=null;
+  if(this.groundSea.update(force))changed=true;if(this.heavy.update(force))changed=true;if(changed)this.surface.renderKey=null;
  }
- dispose(){this.groundSea.dispose();this.root.removeFromParent();for(const line of this.trails)line.geometry.dispose();this.trailMaterial.dispose();this.kit.dispose();this.surface.renderKey=null;}
+ dispose(){this.groundSea.dispose();this.heavy.dispose();this.root.removeFromParent();for(const line of this.trails)line.geometry.dispose();this.trailMaterial.dispose();this.kit.dispose();this.surface.renderKey=null;}
 }
