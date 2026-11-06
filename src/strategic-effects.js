@@ -1,4 +1,5 @@
 // Small cached glow textures and bounded particles; no blur filters or extra render loop.
+import {drawNuclearImpact,NUCLEAR_DURATION} from './nuclear-effects.js';
 const sprites=new Map(),TAU=Math.PI*2,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function sprite(kind){
   if(sprites.has(kind))return sprites.get(kind);
@@ -9,7 +10,7 @@ function sprite(kind){
   c.fillStyle=gradient;c.fillRect(0,0,128,128);sprites.set(kind,canvas);return canvas;
 }
 function glow(c,kind,x,y,r,alpha=1){if(r<=0||alpha<=0)return;c.globalAlpha=alpha;c.drawImage(sprite(kind),x-r,y-r,r*2,r*2);}
-export const IMPACT_LIFETIME=Object.freeze({v2:5.5,atomic:11});
+export const IMPACT_LIFETIME=Object.freeze({v2:5.5,atomic:NUCLEAR_DURATION});
 export function impactEnvelope(kind,age){
   const duration=IMPACT_LIFETIME[kind]??0;
   if(!Number.isFinite(age)||age<0||age>=duration)return null;
@@ -27,6 +28,7 @@ export function drawEnergyOrb(c,position,progress,kind,time){
   c.restore();
 }
 export function drawImpact(c,{x,y,radius,kind,age,id=0,tilted=false}){
+  if(kind==='atomic')return drawNuclearImpact(c,{x,y,radius,age,id,tilted});
   const e=impactEnvelope(kind,age);if(!e)return;
   const atomic=kind==='atomic',r=clamp(radius,atomic?65:34,atomic?220:110),flatten=tilted?.52:.74;
   c.save();

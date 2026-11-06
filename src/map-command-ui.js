@@ -124,7 +124,7 @@ export function createMapCommandUI({getGame,isPaused,command,prepareContext,adva
   window.addEventListener('resize',()=>closeContext(false));
   $('open-research').addEventListener('click',()=>{closeContext(false);closeDrawer();});
   return {
-    get facilityTile(){return facilityTile;},openContext,openDrawer,closeDrawer,
+    get facilityTile(){return facilityTile;},openContext,openDrawer,closeDrawer,closeContext,
     reset(){closeContext(false);closeDrawer();showIntel(null);},
     update(){refreshBuild();if(facilityTile!=null&&(!getGame().buildings.has(facilityTile)||getGame().owners[facilityTile]!==1))closeContext(false);if(!plan.hidden&&drawerName==='advance')closeDrawer();}
   };

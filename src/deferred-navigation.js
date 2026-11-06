@@ -5,7 +5,8 @@ export function* createLandingSearch(g,owner,destination){
  if(!Number.isInteger(destination)||g.owners[destination]<0||g.owners[destination]===owner)return null;
  const starts=g.adjacent[destination]?.filter(t=>g.owners[t]===-1);if(!starts?.length)return null;
  const land=new Map(),queue=[];
- for(const [t,b] of g.buildings)if(g.owners[t]===owner&&b.type==='barracks'&&!(b.remaining>0)&&!(b.suppressedUntil>g.time)&&(b.integrity??100)>0&&!g.radiationAt(t)){land.set(t,null);queue.push(t);}
+ if(g.reserveStations){for(const p of g.reserveStations(owner))if(p.troops>=1&&g.owners[p.tile]===owner){land.set(p.tile,null);queue.push(p.tile);}}
+ else for(const [t,b] of g.buildings)if(g.owners[t]===owner&&b.type==='barracks'&&!(b.remaining>0)&&!(b.suppressedUntil>g.time)&&(b.integrity??100)>0&&!g.radiationAt(t)){land.set(t,null);queue.push(t);}
  if(!queue.length)return null;
  for(let i=0;i<queue.length;i++){
   const t=queue[i];for(const n of g.adjacent[t])if(g.owners[n]===owner&&!land.has(n)){land.set(n,t);queue.push(n);}yield;

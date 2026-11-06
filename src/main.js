@@ -1,3 +1,4 @@
+import {createGroundUnitUI} from './ground-unit-ui.js';
 import {createMapCommandUI} from './map-command-ui.js';
 import { createStrategicUI } from './strategic-ui.js';
 import { createResearchUI } from './research-ui.js';
@@ -27,7 +28,7 @@ const renderDiagnostics=createRenderDiagnostics(renderer);
 let selected = null, selectedTile = null, selectedForLanding = false, mode = null, paused = false, speed = 1, accumulator = 0;
 let lastTime = performance.now(), lastUI = -1, lastAI = -1, toastUntil = 0, ended = false;
 let drag = null, suppressClick = false, helpWasPaused = false;
-let planState=null,drawing=null,airDrawing=null,mapUI=null;
+let planState=null,drawing=null,airDrawing=null,mapUI=null,unitUI=null;
 const zoomInput=createZoomInput({getZoom:()=>renderer.zoom,zoomAt:(...args)=>{
   const px=renderer.panX,py=renderer.panY;
   renderer.zoomAt(...args);
@@ -375,6 +376,7 @@ $('armies').addEventListener('click', e => {
 $('battle-events').addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b||b.disabled)return;
   if(b.dataset.stopBarrage)command(game.stopBarrage(),'已停止炮击。');
+  if(b.dataset.resumeArmy)command(game.resumeAttack(1,Number(b.dataset.resumeArmy)));
   if(b.dataset.stopArmy)command(game.stopAttack(1,Number(b.dataset.stopArmy)));
   if(b.dataset.stopFleet)command(game.stopTransport(1,Number(b.dataset.stopFleet)));
   if(b.dataset.eventCounter)attack(Number(b.dataset.eventCounter));
@@ -497,6 +499,7 @@ function frame(now) {
   if (now - lastUI > 200) { updateUI(); lastUI = now; }
   if (now > toastUntil) $('toast').hidden = true;
   const renderStart=performance.now(),painted=!$('research-dialog').open&&!document.hidden&&renderer.render(now);
+  unitUI?.update(now);
   const phases={total:performance.now()-frameStart,navigation:afterNavigation-frameStart,simulation:afterSimulation-afterNavigation,ui:renderStart-afterSimulation,render:performance.now()-renderStart};
   campaignBench?.after({...phases,...(painted?renderer.timings:{rebuild:0,atlas:0,surface:0})});
   renderDiagnostics(now,painted?phases.render:null,phases);requestAnimationFrame(frame);
@@ -505,4 +508,5 @@ mapUI=createMapCommandUI({getGame:()=>game,isPaused:()=>paused,command,
   prepareContext(){zoomInput.flush();if(planState)cancelCustomPlan();mode=null;clearAirDrawing();renderer.localMode=null;renderer.strikePreview=null;renderer.plannedRoute=null;$('map-tooltip').hidden=true;},
   advance(id,tile){groundView();chooseTarget(id,tile);},custom:startCustomPlan});
 canvas.addEventListener('contextmenu',e=>{e.preventDefault();const [x,y]=local(e);mapUI.openContext(renderer.tileAt(x,y),x,y);updateUI();});
+unitUI=createGroundUnitUI({canvas,getGame:()=>game,getRenderer:()=>renderer,available:()=>!mode&&!renderer.airView&&!$('help-dialog').open&&!$('research-dialog').open&&game.phase==='running',prepare(){zoomInput.flush();mapUI.closeContext(false);$('map-tooltip').hidden=true;},notify(result){toast(result.message,!result.ok);updateUI();}});
 updateUI(); requestAnimationFrame(frame);

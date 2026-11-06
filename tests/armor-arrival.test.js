@@ -5,7 +5,7 @@ import * as THREE from '../src/vendor/three.module.js';
 import {LocalArmsScene} from '../src/local-arms-scene.js';
 test('marching armor does not fight or capture remotely before arriving',()=>{
  const g=createLocalArms();g.localAttack(true,LOCAL_CORRIDOR);const a=g.armies[0],troops=a.troops,enemy=g.nations.get(2).troops,land=g.nations.get(1).tiles.size;
- g.step(1,{economy:false});assert.equal(a.troops,troops);assert.equal(g.nations.get(2).troops,enemy);assert.equal(g.nations.get(1).tiles.size,land);assert.equal(a.armor.motion.status,'marching');
+ g.step(1,{economy:false});assert.equal(a.troops,troops);assert.equal(g.nations.get(2).troops,enemy);assert.equal(g.nations.get(1).tiles.size,land);assert.equal(a.armor.motion.status,'gathering');
 });
 test('renderer uses the exact simulation position at different frame intervals',()=>{
  const g=createLocalArms(),root=new THREE.Group(),scene=new LocalArmsScene({game:g,surface:{worldRoot:root,elevation:new Float32Array(g.width*g.height)}});g.localAttack(true,LOCAL_CORRIDOR);

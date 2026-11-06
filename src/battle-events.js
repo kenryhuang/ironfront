@@ -1,3 +1,4 @@
+import {groundStateLabel} from './continuous-front.js';
 const number=n=>Math.floor(n).toLocaleString('en-US');
 export function updateBattleEvents(container,game,active){
   const relevant=a=>a.owner===1||game.armyTargets(a,1);
@@ -17,11 +18,11 @@ export function updateBattleEvents(container,game,active){
     card.querySelector('strong').textContent=`${number(unit.troops)} 人`;
     card.title=`正规军 ${number(unit.troops-(unit.militia??0))} · 强征军 ${number(unit.militia??0)}（40%效能）`;
     const detail=card.querySelector('p'),bar=card.querySelector('progress'),small=card.querySelector('small');
-    if(f){const percent=Math.min(100,f.distance/Math.max(1,f.path.length-1)*100);bar.hidden=false;bar.value=percent;detail.textContent=f.embark?'兵营出发 · 前往海岸登船':`航程 ${Math.floor(percent)}% · ${Math.ceil((f.path.length-1-f.distance)/f.speed)} 秒抵达`;small.textContent=`${f.plan?'自动登陆 · 仅在原圈选区推进 · ':''}${f.armor?'携带12辆坦克 · ':''}撤回返还余兵`;}
+    if(f){const percent=Math.min(100,f.distance/Math.max(1,f.path.length-1)*100);bar.hidden=false;bar.value=percent;detail.textContent=f.embark?'驻军集结 · 前往海岸登船':`航程 ${Math.floor(percent)}% · ${Math.ceil((f.path.length-1-f.distance)/f.speed)} 秒抵达`;small.textContent=`${f.plan?'自动登陆 · 仅在原圈选区推进 · ':''}${f.armor?'携带12辆坦克 · ':''}撤回返还余兵`;}
     else{const captured=a.captured??a.planCaptured??0;detail.textContent=a.allowedTiles?`区域推进 · 已占领 ${number(captured*game.cellArea)} / ${number(a.allowedTiles.size*game.cellArea)}`:`持续推进 · 已占领 ${number(captured*game.cellArea)} 领土`;bar.hidden=!a.allowedTiles;if(a.allowedTiles)bar.value=Math.min(100,captured/Math.max(1,a.allowedTiles.size)*100);small.textContent=`攻方损失 ${number(Math.max(0,a.committed-a.troops))} · 守方损失 ${number(a.defenderLosses??0)} · 强征 ${number(a.militia??0)}`;}
-    if(a?.frontline)detail.textContent=`${a.armor?'装甲':'步兵'} · 全线${a.frontline.lanes.length}路 · ${detail.textContent}`;
+    if(a?.frontline)detail.textContent=`${a.armor?'装甲':'步兵'} · ${groundStateLabel(a)} · 补给${Math.round((a.supply??1)*100)}% · 组织${Math.round(a.organization??100)} · ${detail.textContent}`;
     const button=card.querySelector('button');button.disabled=!active;
-    if(own){button.textContent='停止进攻 · 返还余兵';if(f)button.dataset.stopFleet=String(f.id);else button.dataset.stopArmy=String(a.id);}
+    if(own){button.hidden=!!a?.groundOrder;button.textContent=f?'停止海运':a.holding?'恢复进攻':a.supplyConnected===false?'停止深入 · 就地驻守':'停止进攻 · 原地驻扎';delete button.dataset.resumeArmy;delete button.dataset.stopArmy;if(f)button.dataset.stopFleet=String(f.id);else if(a.holding)button.dataset.resumeArmy=String(a.id);else button.dataset.stopArmy=String(a.id);}
     else if(f){button.hidden=true;}else{button.textContent='反攻来袭国家';button.dataset.eventCounter=String(a.owner);}
   }
 }

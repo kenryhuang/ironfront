@@ -10,6 +10,10 @@ export function deployFront(g,owner,front){let targets=[...new Set(front)].sort(
  lanes.sort((a,b)=>a.path.length-b.path.length||a.initialTarget-b.initialTarget);return lanes.length?{source:base.tile,lanes}:null;
 }
 export function moveEmbarking(g,f,dt){const m=f.embark;if(!m)return true;let distance=dt*1.5;
+ if(f.embarkGroups){let arrived=true;for(const p of f.embarkGroups){let travel=dt*1.5;p.status='marching';if(p.path.slice(p.pathHead).some(t=>g.owners[t]!==f.owner)){p.status='isolated';g.stopTransport(f.owner,f.id);return false;}
+  while(p.pathHead<p.path.length&&travel>0){const t=p.path[p.pathHead],dx=t%g.width+.5-p.x,dy=Math.floor(t/g.width)+.5-p.y,d=Math.hypot(dx,dy);if(d<1e-7){p.pathHead++;continue;}const step=Math.min(d,travel);p.x+=dx/d*step;p.y+=dy/d*step;p.angle=Math.atan2(dy,dx);travel-=step;if(step>=d-1e-7)p.pathHead++;}arrived&&=p.pathHead>=p.path.length;}
+  if(arrived){f.embark=null;f.embarkGroups=null;f.distance=1;g.log('登陆部队已完成集结登船，船队开始航行。','player');}return arrived;
+ }
  if(m.path.some(t=>g.owners[t]!==f.owner)){g.stopTransport(f.owner,f.id);return false;}
  while(m.path.length&&distance>0){const t=m.path[0],dx=t%g.width+.5-m.x,dy=Math.floor(t/g.width)+.5-m.y,d=Math.hypot(dx,dy);if(d<1e-7){m.path.shift();continue;}const step=Math.min(d,distance);m.x+=dx/d*step;m.y+=dy/d*step;m.angle=Math.atan2(dy,dx);distance-=step;if(step>=d-1e-7)m.path.shift();}
  if(!m.path.length){f.embark=null;f.distance=1;g.log('登陆步兵已抵达海岸登船，船队开始航行。','player');}return !f.embark;

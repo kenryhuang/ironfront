@@ -49,6 +49,6 @@ test('three real shells progressively damage a fort and no suppression survives 
 test('world-map scenario keeps the attack alive until the barrage lands and allows withdrawal',()=>{
  const g=createLocalArms();g.deployBattery();tick(g,3.1);assert.equal(g.fireBarrage(LOCAL_FORT).ok,true);
  const attack=g.localAttack(true,LOCAL_CORRIDOR);assert.equal(attack.ok,true);tick(g,3);
- const army=g.armies.find(a=>a.id===attack.armyId);assert.ok(army);assert.ok(army.troops>0);assert.equal(army.sourceBarracks,174*1440+732);
+ const army=g.armies.find(a=>a.id===attack.armyId);assert.ok(army);assert.ok(army.troops>0);assert.equal(army.sourcePosition,g.supplyHomes.get(1));
  assert.equal(g.buildings.get(LOCAL_FORT).integrity,34);assert.equal(g.stopAttack(1,army.id).ok,true);assert.ok(g.armorReserve>8);
 });

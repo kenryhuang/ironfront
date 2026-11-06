@@ -1,13 +1,18 @@
 import * as THREE from './vendor/three.module.js';
+import {batchFacilityModel} from './facility-batch.js';
+
+export const TACTICAL_SCALE=Object.freeze({infantry:.16,tank:.32,gun:.30,transport:.42,squadBack:.125,squadSide:.10});
 
 export function travelToward(p,target,dt,speed=3){const dx=target.x-p.x,dy=target.y-p.y,d=Math.hypot(dx,dy),step=Math.min(d,Math.max(0,dt)*speed);if(d>1e-8){p.x+=dx/d*step;p.y+=dy/d*step;}return step;}
 export function shellArc(a,b,t){const p=Math.max(0,Math.min(1,t)),height=Math.min(7,Math.hypot(b.x-a.x,b.y-a.y)*.27);return {x:a.x+(b.x-a.x)*p,y:a.y+(b.y-a.y)*p,z:a.z+(b.z-a.z)*p+4*p*(1-p)*height};}
 
 // Shared primitives/materials, eight-sided wheels; no textures or dynamic lights.
 export function createTacticalModels(){
- const geometry={box:new THREE.BoxGeometry(1,1,1),cylinder:new THREE.CylinderGeometry(1,1,1,8),flash:new THREE.OctahedronGeometry(1,0),shell:new THREE.SphereGeometry(1,6,4),shadow:new THREE.CircleGeometry(1,12)};
+ let soldierTemplate=null;
+ const geometry={box:new THREE.BoxGeometry(1,1,1),cylinder:new THREE.CylinderGeometry(1,1,1,8),taper:new THREE.CylinderGeometry(.84,1,1,8),head:new THREE.SphereGeometry(1,10,6),helmet:new THREE.SphereGeometry(1,12,5,0,Math.PI*2,0,Math.PI*.57),flash:new THREE.OctahedronGeometry(1,0),shell:new THREE.SphereGeometry(1,6,4),shadow:new THREE.CircleGeometry(1,12)};
  const outline=new THREE.Shape();outline.moveTo(-1,-.48);outline.lineTo(.75,-.48);outline.lineTo(1.3,-.3);outline.lineTo(1.5,0);outline.lineTo(1.3,.3);outline.lineTo(.75,.48);outline.lineTo(-1,.48);outline.closePath();geometry.boat=new THREE.ExtrudeGeometry(outline,{depth:.38,bevelEnabled:false});const hullPosition=geometry.boat.attributes.position;for(let i=0;i<hullPosition.count;i++){const taper=.72+.28*hullPosition.getZ(i)/.38;hullPosition.setXY(i,hullPosition.getX(i)*taper,hullPosition.getY(i)*taper);}geometry.boat.computeVertexNormals();
  const material={olive:new THREE.MeshLambertMaterial({color:'#84915c'}),light:new THREE.MeshLambertMaterial({color:'#aeb47b'}),dark:new THREE.MeshLambertMaterial({color:'#333c32'}),metal:new THREE.MeshLambertMaterial({color:'#59634b'}),flash:new THREE.MeshBasicMaterial({color:'#fff2b6',transparent:true,opacity:.95,depthWrite:false}),shell:new THREE.MeshBasicMaterial({color:'#ffe59b'}),shadow:new THREE.MeshBasicMaterial({color:'#202a21',transparent:true,opacity:.18,depthWrite:false,side:THREE.DoubleSide})};
+ for(const [name,color]of Object.entries({cloth:'#69766a',trousers:'#535e55',steel:'#46534e',skin:'#bfa185',webbing:'#a39770',leather:'#493e32',wood:'#806044'}))material[name]=new THREE.MeshLambertMaterial({color});
  const mesh=(root,name,shape,mat,pos,scale)=>{const m=new THREE.Mesh(geometry[shape],material[mat]);m.name=name;m.position.set(...pos);m.scale.set(...scale);m.receiveShadow=true;root.add(m);return m;};
  const box=(r,n,m,p,s)=>mesh(r,n,'box',m,p,s);
  const shadow=r=>{const m=mesh(r,'contact-shadow','shadow','shadow',[0,0,.015],[.8,.42,1]);m.receiveShadow=false;};
@@ -33,12 +38,29 @@ export function createTacticalModels(){
   box(recoil,'breech','light',[-.08,0,0],[.28,.2,.18]);
   const flash=mesh(recoil,'muzzle-flash','flash','flash',[1.04,0,0],[.34,.13,.13]);flash.visible=false;flash.receiveShadow=false;return r;
  }
- function soldier(){const r=new THREE.Group();r.name='infantry-3d';
-  box(r,'uniform','olive',[0,0,.64],[.27,.31,.35]);box(r,'belt','dark',[0,0,.49],[.28,.32,.05]);
-  mesh(r,'face','shell','light',[.02,0,.91],[.12,.11,.13]);mesh(r,'helmet','shell','metal',[0,0,1.01],[.155,.145,.08]);
-  box(r,'backpack','metal',[-.19,0,.67],[.12,.25,.27]);
-  for(const [side,y,sign]of [['left',.095,1],['right',-.095,-1]]){const leg=new THREE.Group();leg.name=`leg-${side}`;leg.position.set(0,y,.47);r.add(leg);box(leg,`trouser-${side}`,'olive',[0,0,-.19],[.105,.12,.36]);box(leg,`boot-${side}`,'dark',[.04,0,-.4],[.19,.13,.09]);const arm=box(r,`arm-${side}`,'olive',[.1,sign*.2,.65],[.25,.105,.12]);arm.rotation.y=-.25;}
-  box(r,'rifle-stock','metal',[.19,-.2,.7],[.35,.055,.07]);box(r,'rifle','dark',[.49,-.2,.71],[.34,.035,.04]);return r;
+ function soldier(){if(soldierTemplate)return soldierTemplate.clone(true);const r=new THREE.Group();r.name='infantry-3d';
+  const vertical=(root,name,shape,mat,p,s)=>{const m=mesh(root,name,shape,mat,p,s);m.rotation.x=Math.PI/2;return m;};
+  const limb=(root,name,mat,a,b,radius)=>{const start=new THREE.Vector3(...a),end=new THREE.Vector3(...b),d=end.clone().sub(start),m=mesh(root,name,'taper',mat,start.add(end).multiplyScalar(.5).toArray(),[radius,d.length(),radius]);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize());return m;};
+  vertical(r,'uniform','taper','cloth',[-.015,0,.65],[.13,.34,.18]);
+  vertical(r,'jacket-skirt','taper','cloth',[-.025,0,.47],[.14,.09,.17]);
+  box(r,'belt','leather',[0,0,.51],[.265,.345,.035]);box(r,'belt-buckle','webbing',[.137,0,.515],[.018,.045,.032]);
+  mesh(r,'neck','shell','skin',[.01,0,.835],[.05,.055,.055]);
+  mesh(r,'face','head','skin',[.025,0,.915],[.082,.085,.105]);
+  const helmet=mesh(r,'helmet','helmet','steel',[0,0,.955],[.115,.085,.115]);helmet.rotation.x=Math.PI/2;
+  vertical(r,'helmet-brim','cylinder','steel',[.005,0,.945],[.129,.013,.119]);
+  box(r,'backpack','webbing',[-.15,0,.65],[.105,.245,.235]);
+  for(const sign of [-1,1]){box(r,`shoulder-strap-${sign}`,'webbing',[.109,sign*.092,.688],[.018,.023,.24]);box(r,`ammo-pouch-${sign}`,'leather',[.14,sign*.105,.535],[.055,.075,.085]);}
+  for(const [side,y]of [['left',.09],['right',-.09]]){const leg=new THREE.Group();leg.name=`leg-${side}`;leg.position.set(-.02,y,.44);r.add(leg);
+   limb(leg,`trouser-${side}`,'trousers',[0,0,0],[.02,0,-.2],.065);limb(leg,`gaiter-${side}`,'webbing',[.02,0,-.2],[-.025,0,-.36],.045);box(leg,`boot-${side}`,'leather',[.015,0,-.395],[.14,.10,.07]);}
+  limb(r,'upper-arm-left','cloth',[-.025,.175,.765],[.1,.19,.61],.06);limb(r,'forearm-left','cloth',[.1,.19,.61],[.34,-.055,.70],.045);
+  limb(r,'upper-arm-right','cloth',[-.025,-.175,.765],[.04,-.25,.62],.06);limb(r,'forearm-right','cloth',[.04,-.25,.62],[.18,-.14,.715],.045);
+  mesh(r,'hand-left','shell','skin',[.34,-.065,.705],[.045,.036,.035]);mesh(r,'hand-right','shell','skin',[.18,-.14,.715],[.045,.036,.035]);
+  box(r,'rifle-stock','wood',[.20,-.12,.735],[.36,.045,.065]);const rifle=mesh(r,'rifle','cylinder','dark',[.48,-.12,.75],[.018,.30,.018]);rifle.rotation.z=-Math.PI/2;
+  box(r,'rifle-bolt','steel',[.25,-.12,.77],[.095,.04,.025]);
+  const fixed=new THREE.Group();fixed.name='uniform-details';
+  for(const part of [...r.children])if(part.isMesh&&!['rifle-stock','rifle'].includes(part.name)){const marker=new THREE.Object3D();marker.name=part.name;marker.position.copy(part.position);marker.quaternion.copy(part.quaternion);marker.scale.copy(part.scale);r.add(marker);part.geometry=part.geometry.clone();fixed.add(part);}
+  batchFacilityModel(fixed);fixed.children.forEach((m,i)=>{geometry[`infantry-detail-${i}`]=m.geometry;});r.add(fixed);
+  soldierTemplate=r;return r.clone(true);
  }
  function transport(){const r=new THREE.Group();r.name='transport-3d';mesh(r,'hull','boat','metal',[0,0,0],[1,1,1]);
   box(r,'deck','dark',[0,0,.39],[1.9,.8,.06]);box(r,'gunwale-left','olive',[0,.45,.51],[1.85,.065,.25]);box(r,'gunwale-right','olive',[0,-.45,.51],[1.85,.065,.25]);

@@ -8,7 +8,7 @@ test('landing search yields through land and sea without reserving troops',()=>{
  const g=theater(),job=createLandingSearch(g,1,199);let result,count=0;
  do{result=job.next();count++;assert.equal(g.nations.get(1).troops,1000);}while(!result.done);
  assert.ok(count>199);assert.equal(result.value.path[0],49);assert.equal(result.value.path.at(-1),199);
- assert.deepEqual(result.value.base.path,Array.from({length:50},(_,i)=>i));
+ assert.deepEqual(result.value.base.path,Array.from({length:26},(_,i)=>i+24));
 });
 test('bounded planning dispatches exactly once without repeating synchronous searches',()=>{
  const g=theater();g.historicalNavigation={owner:1,destination:199,ratio:.2,search:createLandingSearch(g,1,199)};
@@ -18,8 +18,8 @@ test('bounded planning dispatches exactly once without repeating synchronous sea
  assert.equal(g.transports.length,1);assert.equal(g.nations.get(1).troops,800);
  advanceHistoricalNavigation(g,10);assert.equal(g.transports.length,1);
 });
-test('lost barracks or departure path cancels a prepared order without charging troops',()=>{
- for(const change of [g=>g.buildings.get(0).remaining=5,g=>g.claim(20,2),g=>g.claim(199,1)]){
+test('lost garrison or departure path cancels a prepared order without charging troops',()=>{
+ for(const change of [g=>g.claim(24,2),g=>g.claim(35,2),g=>g.claim(199,1)]){
   const g=theater(),search=createLandingSearch(g,1,199);let step;do{step=search.next();}while(!step.done);
   change(g);assert.equal(g.dispatchTransport(1,199,.2,step.value.path,step.value.base).ok,false);
   assert.equal(g.transports.length,0);assert.equal(g.nations.get(1).troops,1000);
