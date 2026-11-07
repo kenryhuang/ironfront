@@ -14,10 +14,10 @@ export class HeavyRegimentScene {
  }
  update(force=false){const s=this.scene,g=s.game,time=g.time,units=g.armies.filter(a=>a.regiment&&(a.armor||a.artillery)&&unitPositions(a).some(p=>s.onScreen(p.x,p.y))),shots=g.localShells.filter(sh=>sh.regimentId&&time>=sh.start&&time<sh.impactAt).slice(0,96);
   const key=units.map(a=>[a.id,...unitPositions(a).map(p=>[p.x,p.y,p.angle].join(',')),a.armor?.remaining,a.artillery?.remaining,a.artillery?.target,a.artillery?.deployed].join(':')).join('|')+';'+(shots.length?time:'');if(!force&&key===this.lastKey)return false;this.lastKey=key;
-  let tanks=0,guns=0;for(const a of units){const artillery=!!a.artillery,pool=artillery?this.guns:this.tanks,e=artillery?a.artillery:a.armor,positions=unitPositions(a),count=Math.min(2,Math.ceil(e.remaining/6));
+  let tanks=0,guns=0;for(const a of units)for(const artillery of [false,true]){if(!(artillery?a.artillery:a.armor))continue;const pool=artillery?this.guns:this.tanks,e=artillery?a.artillery:a.armor,positions=unitPositions(a),count=Math.min(2,Math.ceil(e.remaining/6));
    for(let j=0;j<count;j++){const index=artillery?guns++:tanks++;if(index>=64)break;const item=pool.units[index],p=positions[Math.min(positions.length-1,Math.floor(j*positions.length/count))];let angle=p.angle??0;
     if(artillery&&e.target!=null)angle=Math.atan2(Math.floor(e.target/g.width)+.5-p.y,e.target%g.width+.5-p.x);
-    const side=positions.length===1?(j-.5)*.42:0,x=p.x-Math.sin(angle)*side,y=p.y+Math.cos(angle)*side;s.place(item,x,y,angle);
+    const side=(positions.length===1?(j-.5)*.42:0)+(a.armor&&a.artillery?(artillery?.42:-.42):0),x=p.x-Math.sin(angle)*side,y=p.y+Math.cos(angle)*side;s.place(item,x,y,angle);
     if(artillery){const shot=shots.findLast(sh=>sh.regimentId===a.id&&sh.gun%2===j),age=shot?time-shot.start:99;item.model.getObjectByName('muzzle-flash').visible=age>=0&&age<.16;item.model.getObjectByName('recoil').position.x=age<.65?-.16*Math.exp(-age*6):0;for(const name of ['trail-left','trail-right'])item.model.getObjectByName(name).rotation.z=(name==='trail-left'?-1:1)*(e.deployed?.35:.08);}
     item.model.updateMatrixWorld(true);for(let k=0;k<pool.batches.length;k++){const part=item.parts[k],count=part.isInstancedMesh?part.count:1;for(let sub=0;sub<count;sub++){if(part.isInstancedMesh){part.getMatrixAt(sub,this.partMatrix);this.instanceMatrix.multiplyMatrices(part.matrixWorld,this.partMatrix);}pool.batches[k].setMatrixAt(index*count+sub,part.visible?(part.isInstancedMesh?this.instanceMatrix:part.matrixWorld):this.zero);}}
    }

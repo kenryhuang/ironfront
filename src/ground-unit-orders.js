@@ -1,3 +1,4 @@
+import {isArtilleryOnly} from './regiment-composition.js';
 import {takeTroops,armorReadiness} from './troops.js';
 import {frontSupplied,supplyNetwork} from './ground-supply.js';
 import {registerOrderTargets} from './campaign-pacing.js';
@@ -23,7 +24,7 @@ export function listGroundUnits(g,owner=1){
  }
  for(const a of g.armies)if(a.owner===owner&&a.troops>=1){
   a.unitKey??=`army-${a.id}`;a.unitName??=`${a.armor?'装甲':'步兵'} ${a.id}`;
-  result.push({key:a.unitKey,name:a.unitName,owner,kind:a.armor?'armor':a.artillery?'artillery':'infantry',troops:a.troops,capacity:a.regiment?.capacity,regiment:a.regiment,positions:unitPositions(a),army:a,state:a.orderState??'gathering',supply:a.supply??1,organization:a.organization??100});
+  result.push({key:a.unitKey,name:a.unitName,owner,kind:a.regiment?.type==='custom'?'mixed':a.armor?'armor':a.artillery?'artillery':'infantry',troops:a.troops,capacity:a.regiment?.capacity,regiment:a.regiment,positions:unitPositions(a),army:a,state:a.orderState??'gathering',supply:a.supply??1,organization:a.organization??100});
  }
  const b=g.battery;
  if(owner===1&&b?.available&&g.owners[b.tile]===owner)result.push({key:'battery-1',name:'炮兵连',owner,kind:'artillery',troops:0,positions:[b.motion??b.position??point(g,b.tile)],battery:b,state:b.motion?'moving':b.autoTarget!==null?'bombarding':b.deployed?'stationed':'packed',supply:1,organization:100});
@@ -95,7 +96,7 @@ function activate(g,unit){
  const a={id:g.nextArmy++,unitKey:unit.key,unitName:unit.name,owner:unit.owner,target:null,troops:packet.troops,militia:packet.militia,committed:packet.troops,defenderLosses:0,progress:0,front:[],head:0,queued:new Set(),naval:false,sourcePosition:p.tile,persistent:true,supply:1,organization:100,infantry:{motion:{...p}}};g.armies.push(a);return a;
 }
 
-function setPositions(a,groups){a.frontline={lanes:groups,contingents:[],cells:[],ready:false,phase:0,seen:new Set()};if(a.armor)a.armor.motion=groups[0];else a.infantry={motion:groups[0]};}
+function setPositions(a,groups){a.frontline={lanes:groups,contingents:[],cells:[],ready:false,phase:0,seen:new Set()};if(a.armor)a.armor.motion=groups[0];if(a.infantry||!a.armor)a.infantry={motion:groups[0]};}
 export function parkGroundUnit(g,a,reason='stationed'){
  stopArtilleryRegiment(a);
  const groups=unitPositions(a).map(p=>({...p,path:[],pathHead:0,firing:false,status:reason}));
@@ -106,17 +107,18 @@ export function issueGroundOrder(g,owner,keys,tile,{kind='auto'}={}){
  if(g.phase!=='running'||!g.nations.get(owner)?.alive)return {ok:false,message:'战役未运行，无法下令。'};
  const units=listGroundUnits(g,owner),chosen=[...new Set(keys)].map(key=>units.find(u=>u.key===key));
  if(!chosen.length||chosen.some(u=>!u))return {ok:false,message:'请选择仍然存在的己方部队。'};
- if(!['auto','move','attack','retreat','halt'].includes(kind))return {ok:false,message:'未知部队命令。'};
+ if(!['auto','move','attack','retreat','halt','bombard'].includes(kind))return {ok:false,message:'未知部队命令。'};
  if(kind!=='halt'&&!(kind==='retreat'&&tile==null)&&(!Number.isInteger(tile)||tile<0||tile>=g.owners.length||g.owners[tile]<0))return {ok:false,message:'请选择地图内的陆地。'};
  const orders=[];
  for(const unit of chosen){const target=kind==='retreat'&&tile==null?retreatDestination(g,unit):tile,type=kind==='auto'?(g.owners[target]===owner?'move':'attack'):kind;
+  if(type==='bombard'&&!unit.army?.artillery)return {ok:false,message:'炮击模式只能用于带火炮的编制部队。'};
   if(unit.battery){const b=unit.battery;if(!g.batteryReady())return {ok:false,message:'炮兵阵地不可用。'};
    if(type==='attack'){const d=distance(point(g,b.tile),point(g,target));if(d<3||d>32||g.owners[target]===owner)return {ok:false,message:'目标必须在炮兵3—32格射程内且不是己方领土。'};if(b.motion)return {ok:false,message:'炮兵正在转移，请到位后再下达炮击命令。'};if(b.deployed){const status=g.barrageStatus(target);if(!status.ok)return status;}else if(b.readyAt>g.time)return {ok:false,message:'炮兵正在展开，请稍候。'};}
    else if(type!=='halt'){if(target==null||g.owners[target]!==owner||g.radiationAt?.(target)||b.reloadAt>g.time||g.localShells.some(s=>!s.regimentId&&s.start>g.time)||!batteryRoute(g,target))return {ok:false,message:'炮兵无法转移：请检查己方陆路、核污染、装填和当前齐射。'};}
    orders.push({unit,type,target});continue;
   }
   if(type==='halt'){orders.push({unit,type,plan:{ok:true}});continue;}
-  if(unit.army?.artillery&&type==='attack'){const status=artilleryRegimentOrderStatus(g,unit.army,target);if(!status.ok)return status;orders.push({unit,type:'bombard',target});continue;}
+  if(type==='bombard'||(isArtilleryOnly(unit.army??{})&&type==='attack')){const status=artilleryRegimentOrderStatus(g,unit.army,target);if(!status.ok)return status;orders.push({unit,type:'bombard',target});continue;}
   if(target==null)return {ok:false,message:`${unit.name}没有可达的安全撤退点，请先打通退路。`};
   const plan=type==='attack'?attackPlan(g,unit,target):movePlan(g,unit,target);if(!plan.ok)return plan;orders.push({unit,type,target,plan});
  }
@@ -127,7 +129,7 @@ export function issueGroundOrder(g,owner,keys,tile,{kind='auto'}={}){
   if(type==='bombard'){orderArtilleryRegiment(g,a,target);continue;}
   if(a.artillery){stopArtilleryRegiment(a);if(type!=='halt')a.artillery.deployed=false;}
   if(type==='halt'){parkGroundUnit(g,a);continue;}
-  if(type==='attack'){a.groundOrder=null;a.frontline=plan.frontline;a.target=plan.enemy;a.allowedTiles=plan.allowed;a.planPolygon=null;a.front=[...plan.front];a.head=0;a.microTarget=target;a.captured=0;a.planCaptured=0;a.orderState='gathering';if(a.armor)a.armor.motion=a.frontline.lanes[0];else a.infantry={motion:a.frontline.lanes[0]};registerOrderTargets(g,a,plan.allowed);}
+  if(type==='attack'){a.groundOrder=null;a.frontline=plan.frontline;a.target=plan.enemy;a.allowedTiles=plan.allowed;a.planPolygon=null;a.front=[...plan.front];a.head=0;a.microTarget=target;a.captured=0;a.planCaptured=0;a.orderState='gathering';if(a.armor)a.armor.motion=a.frontline.lanes[0];if(a.infantry||!a.armor)a.infantry={motion:a.frontline.lanes[0]};registerOrderTargets(g,a,plan.allowed);}
   else{a.target=null;a.allowedTiles=null;a.planPolygon=null;a.microTarget=null;a.front=[];a.head=0;a.groundOrder={type,target,groups:plan.groups};a.orderState=type==='retreat'?'retreating':'moving';setPositions(a,plan.groups);}
  }
  return {ok:true,count:orders.length,message:kind==='halt'?`${orders.length} 支部队原地待命。`:kind==='retreat'?`${orders.length} 支部队正在沿己方陆路撤退。`:`已向 ${orders.length} 支部队下达命令。`};

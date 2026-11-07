@@ -12,8 +12,8 @@ const notify=r=>{$('hint').textContent=r.message??(r.ok?'命令完成':'命令�
 const ui=createGroundUnitUI({canvas,getGame:()=>game,getRenderer:()=>renderer,notify});
 $('unlock').onclick=()=>{for(const id of ['T08','T11'])game.researchState(1).completed.add(id);notify({ok:true,message:'演示已完成T08/T11，正式游戏仍须付费研究。'});};
 $('stock').onclick=()=>{game.armorReserve=36;game.artilleryReserve=36;notify({ok:true,message:'演示库存：36辆坦克、36门火炮。'});};
-$('fire').onclick=()=>{const a=game.armies.find(a=>a.artillery);notify(a?issueGroundOrder(game,1,[a.unitKey],LOCAL_FORT):{ok:false,message:'请先组建炮兵团。'});};
-$('damage').onclick=()=>{for(const a of game.armies)if(a.armor||a.artillery){a.troops*=.8;if(a.armor)a.armor.remaining*=.8;if(a.artillery){a.artillery.remaining*=.8;a.artillery.personnel=a.troops;a.artillery.ammo=6;}}notify({ok:true,message:'已模拟20%人员与重装备损失，可以验证补员；炮兵请先停止炮击。'});};
+$('fire').onclick=()=>{const a=game.armies.find(a=>a.artillery);notify(a?issueGroundOrder(game,1,[a.unitKey],LOCAL_FORT,{kind:'bombard'}):{ok:false,message:'请先组建炮兵团。'});};
+$('damage').onclick=()=>{for(const a of game.armies)if(a.armor||a.artillery){a.troops*=.8;if(a.armor)a.armor.remaining*=.8;if(a.artillery){a.artillery.remaining*=.8;a.artillery.personnel=a.troops;a.artillery.ammo=Math.min(6,Math.floor((a.artillery.ammoCapacity??18)/3));}}notify({ok:true,message:'已模拟20%人员与重装备损失，可以验证补员；炮兵请先停止炮击。'});};
 $('step').onclick=()=>{game.step(1,{economy:false});notify({ok:true,message:`模拟时间 ${game.time.toFixed(1)}秒`});};
 $('pause').onclick=()=>{running=!running;$('pause').textContent=running?'暂停':'继续';};
 const pos=e=>{const b=canvas.getBoundingClientRect();return [e.clientX-b.left,e.clientY-b.top];};

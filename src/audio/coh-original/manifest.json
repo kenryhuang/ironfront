@@ -1,0 +1,1447 @@
+{
+  "game": "Company of Heroes",
+  "source": "https://steamcommunity.com/sharedfiles/filedetails/?id=647726710",
+  "download": "https://drive.google.com/file/d/1L3oXCWtX5gP8izlKaC9-nWUVv7TMwWcF/view",
+  "clips": [
+    {
+      "file": "allies-attack-0.ogg",
+      "category": "attack",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\attack\\lb_at1_atk_57ge00_lt_s_5102550a.smf"
+    },
+    {
+      "file": "allies-attack-1.ogg",
+      "category": "attack",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\attack\\lb_at1_atk_atge00_li_m_5105370a.smf"
+    },
+    {
+      "file": "allies-attack-2.ogg",
+      "category": "attack",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\attack\\lb_at1_atk_atge00_li_s_5105380a.smf"
+    },
+    {
+      "file": "allies-attack-3.ogg",
+      "category": "attack",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\attack\\lb_at1_atk_atge00_li_s_5105380b.smf"
+    },
+    {
+      "file": "allies-attack-4.ogg",
+      "category": "attack",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\attack\\lb_at1_atk_atge00_li_s_5105390a.smf"
+    },
+    {
+      "file": "allies-attack-5.ogg",
+      "category": "attack",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\attack\\lb_at1_atk_atge00_li_s_5105400a.smf"
+    },
+    {
+      "file": "allies-attack-6.ogg",
+      "category": "attack",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\attack\\lb_at1_atk_atge00_lt_s_5102490a.smf"
+    },
+    {
+      "file": "allies-attack-7.ogg",
+      "category": "attack",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\attack\\lb_at1_atk_atge00_lt_s_5102500a.smf"
+    },
+    {
+      "file": "allies-attack-8.ogg",
+      "category": "attack",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\attack\\lb_at1_atk_atge00_lt_s_5102500b.smf"
+    },
+    {
+      "file": "allies-attack-9.ogg",
+      "category": "attack",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\attack\\lb_at1_atk_atge00_lt_s_5102510a.smf"
+    },
+    {
+      "file": "allies-attack-10.ogg",
+      "category": "attack",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\attack\\lb_at1_atk_atge00_lt_s_5102520a.smf"
+    },
+    {
+      "file": "allies-attack-11.ogg",
+      "category": "attack",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\attack\\lb_at1_atk_atge00_lt_s_5102520b.smf"
+    },
+    {
+      "file": "allies-attack-12.ogg",
+      "category": "attack",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\attack\\lb_at1_atk_atge00_lt_s_5102530a.smf"
+    },
+    {
+      "file": "allies-attack-13.ogg",
+      "category": "attack",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\attack\\lb_at1_atk_atge00_lt_s_5102540a.smf"
+    },
+    {
+      "file": "allies-attack-14.ogg",
+      "category": "attack",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\attack\\lb_at1_atk_atge00_lt_s_5102560a.smf"
+    },
+    {
+      "file": "allies-deploy-0.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\unitcreated\\lb_at1_unc_57mgen_nt_s_5102080a.smf"
+    },
+    {
+      "file": "allies-deploy-1.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\unitcreated\\lb_at1_unc_57mgen_nt_s_5102080b.smf"
+    },
+    {
+      "file": "allies-deploy-2.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\unitcreated\\lb_at1_unc_57mgen_nt_s_5105870a.smf"
+    },
+    {
+      "file": "allies-deploy-3.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\unitcreated\\lb_at1_unc_antgen_lt_s_5104900a.smf"
+    },
+    {
+      "file": "allies-deploy-4.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\unitcreated\\lb_at1_unc_antgen_lt_s_5104910a.smf"
+    },
+    {
+      "file": "allies-deploy-5.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\unitcreated\\lb_at1_unc_antgen_nt_s_5102070a.smf"
+    },
+    {
+      "file": "allies-deploy-6.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\unitcreated\\lb_at1_unc_antgen_nt_s_5102070b.smf"
+    },
+    {
+      "file": "allies-deploy-7.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\unitcreated\\lb_at1_unc_antgen_nt_s_5102070c.smf"
+    },
+    {
+      "file": "allies-deploy-8.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\unitcreated\\lb_at1_unc_antgen_nt_s_5102090a.smf"
+    },
+    {
+      "file": "allies-deploy-9.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\unitcreated\\lb_at1_unc_antgen_nt_s_5102090b.smf"
+    },
+    {
+      "file": "allies-deploy-10.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\unitcreated\\lb_at1_unc_antgen_nt_s_5102090c.smf"
+    },
+    {
+      "file": "allies-deploy-11.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\unitcreated\\lb_at1_unc_antgen_nt_s_5102090d.smf"
+    },
+    {
+      "file": "allies-deploy-12.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\unitcreated\\lb_at1_unc_antgen_nt_s_5102100a.smf"
+    },
+    {
+      "file": "allies-deploy-13.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\unitcreated\\lb_at1_unc_antgen_nt_s_5102100b.smf"
+    },
+    {
+      "file": "allies-deploy-14.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\unitcreated\\lb_at1_unc_antgen_nt_s_5105860a.smf"
+    },
+    {
+      "file": "allies-deploy-15.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\unitcreated\\lb_at1_unc_antgen_nt_s_5105880a.smf"
+    },
+    {
+      "file": "allies-deploy-16.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\at1\\unitcreated\\lb_at1_unc_antgen_nt_s_5105890a.smf"
+    },
+    {
+      "file": "allies-attack-15.ogg",
+      "category": "attack",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\causeway_mp\\abl\\attack\\lb_abl_atk_gebl00_nt_l_9375300a.smf"
+    },
+    {
+      "file": "allies-attack-16.ogg",
+      "category": "attack",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\causeway_mp\\abl\\attack\\lb_abl_atk_gebl00_nt_l_9375300b.smf"
+    },
+    {
+      "file": "allies-attack-17.ogg",
+      "category": "attack",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\causeway_mp\\abl\\attack\\lb_abl_atk_gebl00_nt_l_9375300c.smf"
+    },
+    {
+      "file": "allies-attack-18.ogg",
+      "category": "attack",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\causeway_mp\\abl\\attack\\lb_abl_atk_gebl00_nt_l_9375310a.smf"
+    },
+    {
+      "file": "allies-attack-19.ogg",
+      "category": "attack",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\causeway_mp\\abl\\attack\\lb_abl_atk_gebl00_nt_l_9375310b.smf"
+    },
+    {
+      "file": "allies-attack-20.ogg",
+      "category": "attack",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\causeway_mp\\abl\\attack\\lb_abl_atk_gebl00_nt_l_9375310c.smf"
+    },
+    {
+      "file": "allies-attack-21.ogg",
+      "category": "attack",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\causeway_mp\\abl\\attack\\lb_abl_atk_gebl00_nt_l_9375310d.smf"
+    },
+    {
+      "file": "allies-attack-22.ogg",
+      "category": "attack",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\causeway_mp\\abl\\attack\\lb_abl_atk_gege00_li_l_9375180a.smf"
+    },
+    {
+      "file": "allies-attack-23.ogg",
+      "category": "attack",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\causeway_mp\\abl\\attack\\lb_abl_atk_gege00_li_s_9375160a.smf"
+    },
+    {
+      "file": "allies-rout-0.ogg",
+      "category": "rout",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\causeway_mp\\abl\\retreat\\lb_abl_ret_gengen_li_s_9374660a.smf"
+    },
+    {
+      "file": "allies-rout-1.ogg",
+      "category": "rout",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\causeway_mp\\abl\\retreat\\lb_abl_ret_gengen_li_s_9374660b.smf"
+    },
+    {
+      "file": "allies-rout-2.ogg",
+      "category": "rout",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\causeway_mp\\abl\\retreat\\lb_abl_ret_gengen_li_s_9374670a.smf"
+    },
+    {
+      "file": "allies-rout-3.ogg",
+      "category": "rout",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\causeway_mp\\abl\\retreat\\lb_abl_ret_gengen_lt_l_9374680a.smf"
+    },
+    {
+      "file": "allies-rout-4.ogg",
+      "category": "rout",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\causeway_mp\\abl\\retreat\\lb_abl_ret_gengen_lt_l_9374690a.smf"
+    },
+    {
+      "file": "allies-rout-5.ogg",
+      "category": "rout",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\causeway_mp\\abl\\retreat\\lb_abl_ret_gengen_nt_s_9374700a.smf"
+    },
+    {
+      "file": "allies-rout-6.ogg",
+      "category": "rout",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\causeway_mp\\abl\\retreat\\lb_abl_ret_gengen_nt_s_9374700b.smf"
+    },
+    {
+      "file": "allies-rout-7.ogg",
+      "category": "rout",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\causeway_mp\\bkr\\retreat\\lb_bkr_ret_gengen_li_l_9375980a.smf"
+    },
+    {
+      "file": "allies-rout-8.ogg",
+      "category": "rout",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\causeway_mp\\bkr\\retreat\\lb_bkr_ret_gengen_li_s_9375990a.smf"
+    },
+    {
+      "file": "allies-rout-9.ogg",
+      "category": "rout",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\causeway_mp\\bkr\\retreat\\lb_bkr_ret_gengen_lt_s_9376000a.smf"
+    },
+    {
+      "file": "allies-rout-10.ogg",
+      "category": "rout",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\causeway_mp\\bkr\\retreat\\lb_bkr_ret_gengen_lt_s_9376010a.smf"
+    },
+    {
+      "file": "allies-rout-11.ogg",
+      "category": "rout",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\causeway_mp\\bkr\\retreat\\lb_bkr_ret_gengen_nt_s_9376020a.smf"
+    },
+    {
+      "file": "allies-rout-12.ogg",
+      "category": "rout",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\causeway_mp\\bkr\\retreat\\lb_bkr_ret_gengen_nt_s_9376020b.smf"
+    },
+    {
+      "file": "allies-rout-13.ogg",
+      "category": "rout",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\causeway_mp\\cft\\retreat\\lb_cft_ret_gengen_li_s_9377310a.smf"
+    },
+    {
+      "file": "allies-rout-14.ogg",
+      "category": "rout",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\causeway_mp\\cft\\retreat\\lb_cft_ret_gengen_li_s_9377310b.smf"
+    },
+    {
+      "file": "allies-rout-15.ogg",
+      "category": "rout",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\causeway_mp\\cft\\retreat\\lb_cft_ret_gengen_lt_s_9377320a.smf"
+    },
+    {
+      "file": "allies-rout-16.ogg",
+      "category": "rout",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\causeway_mp\\cft\\retreat\\lb_cft_ret_gengen_lt_s_9377320b.smf"
+    },
+    {
+      "file": "allies-rout-17.ogg",
+      "category": "rout",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\causeway_mp\\cft\\retreat\\lb_cft_ret_gengen_nt_s_9377300a.smf"
+    },
+    {
+      "file": "allies-rout-18.ogg",
+      "category": "rout",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\causeway_mp\\cft\\retreat\\lb_cft_ret_gengen_nt_s_9377300b.smf"
+    },
+    {
+      "file": "allies-death-0.ogg",
+      "category": "death",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\killed\\lb_en1_kil_fltgen_li_m_5069450a.smf"
+    },
+    {
+      "file": "allies-death-1.ogg",
+      "category": "death",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\killed\\lb_en1_kil_fltgen_li_m_5166090a.smf"
+    },
+    {
+      "file": "allies-death-2.ogg",
+      "category": "death",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\killed\\lb_en1_kil_gengen_li_m_5068030a.smf"
+    },
+    {
+      "file": "allies-death-3.ogg",
+      "category": "death",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\killed\\lb_en1_kil_gengen_li_m_5166080a.smf"
+    },
+    {
+      "file": "allies-death-4.ogg",
+      "category": "death",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\killed\\lb_en1_kil_gengen_li_s_5068010a.smf"
+    },
+    {
+      "file": "allies-death-5.ogg",
+      "category": "death",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\killed\\lb_en1_kil_gengen_li_s_5068020a.smf"
+    },
+    {
+      "file": "allies-death-6.ogg",
+      "category": "death",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\killed\\lb_en1_kil_gengen_li_s_5166060a.smf"
+    },
+    {
+      "file": "allies-death-7.ogg",
+      "category": "death",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\killed\\lb_en1_kil_gengen_li_s_5166070a.smf"
+    },
+    {
+      "file": "allies-death-8.ogg",
+      "category": "death",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\killed\\lb_en1_kil_gengen_li_s_8067590.smf"
+    },
+    {
+      "file": "allies-death-9.ogg",
+      "category": "death",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\killed\\lb_en1_kil_gengen_li_s_8067690.smf"
+    },
+    {
+      "file": "allies-death-10.ogg",
+      "category": "death",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\killed\\lb_en1_kil_gengen_li_s_8067700.smf"
+    },
+    {
+      "file": "allies-death-11.ogg",
+      "category": "death",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\killed\\lb_en1_kil_gengen_li_s_8067710.smf"
+    },
+    {
+      "file": "allies-death-12.ogg",
+      "category": "death",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\killed\\lb_en1_kil_gengen_li_s_8067720.smf"
+    },
+    {
+      "file": "allies-death-13.ogg",
+      "category": "death",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\killed\\lb_en1_kil_gengen_li_s_8067730.smf"
+    },
+    {
+      "file": "allies-rout-19.ogg",
+      "category": "rout",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\retreat\\lb_en1_ret_gengen_lt_s_8068980a.smf"
+    },
+    {
+      "file": "allies-rout-20.ogg",
+      "category": "rout",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\retreat\\lb_en1_ret_gengen_lt_s_8068980b.smf"
+    },
+    {
+      "file": "allies-rout-21.ogg",
+      "category": "rout",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\retreat\\lb_en1_ret_gengen_lt_s_8068990a.smf"
+    },
+    {
+      "file": "allies-rout-22.ogg",
+      "category": "rout",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\retreat\\lb_en1_ret_gengen_lt_s_8068990b.smf"
+    },
+    {
+      "file": "allies-rout-23.ogg",
+      "category": "rout",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\retreat\\lb_en1_ret_gengen_lt_s_8069000.smf"
+    },
+    {
+      "file": "allies-underfire-0.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\underfire\\lb_en1_ufw_gege00_li_l_5069340a.smf"
+    },
+    {
+      "file": "allies-underfire-1.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\underfire\\lb_en1_ufw_gege00_li_l_5069340b.smf"
+    },
+    {
+      "file": "allies-underfire-2.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\underfire\\lb_en1_ufw_gege00_li_l_5166120a.smf"
+    },
+    {
+      "file": "allies-underfire-3.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\underfire\\lb_en1_ufw_gege00_li_m_5166130a.smf"
+    },
+    {
+      "file": "allies-underfire-4.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\underfire\\lb_en1_ufw_gege00_lt_s_5069360a.smf"
+    },
+    {
+      "file": "allies-underfire-5.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\underfire\\lb_en1_ufw_gege00_lt_s_5166000a.smf"
+    },
+    {
+      "file": "allies-underfire-6.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\underfire\\lx_en1_ufw_gege00_li_m_5069350a.smf"
+    },
+    {
+      "file": "allies-deploy-17.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\unitcreated\\lb_en1_unc_gengen_nt_l_5067500a.smf"
+    },
+    {
+      "file": "allies-deploy-18.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\unitcreated\\lb_en1_unc_gengen_nt_l_5067500b.smf"
+    },
+    {
+      "file": "allies-deploy-19.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\unitcreated\\lb_en1_unc_gengen_nt_l_5067500c.smf"
+    },
+    {
+      "file": "allies-deploy-20.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\unitcreated\\lb_en1_unc_gengen_nt_l_5067500d.smf"
+    },
+    {
+      "file": "allies-deploy-21.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\unitcreated\\lb_en1_unc_gengen_nt_l_5163470a.smf"
+    },
+    {
+      "file": "allies-deploy-22.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\unitcreated\\lb_en1_unc_gengen_nt_l_5163490a.smf"
+    },
+    {
+      "file": "allies-deploy-23.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\unitcreated\\lb_en1_unc_gengen_nt_m_5067510a.smf"
+    },
+    {
+      "file": "allies-underfire-7.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1\\battlechatter\\underfire\\lb_en1_buf_getncs_lt_s_5166360a.smf"
+    },
+    {
+      "file": "allies-underfire-8.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1-2005\\underfire\\a_e_cht_undfire_01.smf"
+    },
+    {
+      "file": "allies-underfire-9.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1-2005\\underfire\\a_e_cht_undfire_02.smf"
+    },
+    {
+      "file": "allies-underfire-10.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1-2005\\underfire\\a_e_cht_undfire_04.smf"
+    },
+    {
+      "file": "allies-underfire-11.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1-2005\\underfire\\a_e_cht_undfire_05.smf"
+    },
+    {
+      "file": "allies-underfire-12.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1-2005\\underfire\\a_e_cht_undfire_07.smf"
+    },
+    {
+      "file": "allies-underfire-13.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1-2005\\underfire\\a_e_cht_undfire_08.smf"
+    },
+    {
+      "file": "allies-underfire-14.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1-2005\\underfire\\a_e_cht_undfirearty_01.smf"
+    },
+    {
+      "file": "allies-underfire-15.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1-2005\\underfire\\a_e_cht_undfirearty_02.smf"
+    },
+    {
+      "file": "allies-underfire-16.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1-2005\\underfire\\a_e_cht_undfirearty_04.smf"
+    },
+    {
+      "file": "allies-underfire-17.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1-2005\\underfire\\a_e_cht_undfireflame_01.smf"
+    },
+    {
+      "file": "allies-underfire-18.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1-2005\\underfire\\a_e_cht_undfireflame_02.smf"
+    },
+    {
+      "file": "allies-underfire-19.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1-2005\\underfire\\a_e_cht_undfirehvy_03.smf"
+    },
+    {
+      "file": "allies-underfire-20.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1-2005\\underfire\\a_e_cht_undfirehvy_04.smf"
+    },
+    {
+      "file": "allies-underfire-21.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1-2005\\underfire\\a_e_cht_undfiremg_01.smf"
+    },
+    {
+      "file": "allies-underfire-22.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1-2005\\underfire\\a_e_cht_undfiremg_02.smf"
+    },
+    {
+      "file": "allies-underfire-23.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\en1-2005\\underfire\\a_e_cht_undfiremg_03.smf"
+    },
+    {
+      "file": "allies-death-14.ogg",
+      "category": "death",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\gs2\\killed\\lb_gs2_kil_gengen_li_s_5073510a.smf"
+    },
+    {
+      "file": "allies-death-15.ogg",
+      "category": "death",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\gs2\\killed\\lb_gs2_kil_gengen_li_s_5073520a.smf"
+    },
+    {
+      "file": "allies-death-16.ogg",
+      "category": "death",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\gs2\\killed\\lb_gs2_kil_gengen_li_s_5123010a.smf"
+    },
+    {
+      "file": "allies-death-17.ogg",
+      "category": "death",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\gs2\\killed\\lb_gs2_kil_gengen_li_s_5123010b.smf"
+    },
+    {
+      "file": "allies-death-18.ogg",
+      "category": "death",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\gs2\\killed\\lb_gs2_kil_gengen_li_s_5123020a.smf"
+    },
+    {
+      "file": "allies-death-19.ogg",
+      "category": "death",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\gs2\\killed\\lb_gs2_kil_gengen_li_s_5123020b.smf"
+    },
+    {
+      "file": "allies-death-20.ogg",
+      "category": "death",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\gs2\\killed\\lb_gs2_kil_gengen_li_s_5123020c.smf"
+    },
+    {
+      "file": "allies-death-21.ogg",
+      "category": "death",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\gs2\\killed\\lb_gs2_kil_gengen_li_s_5123020d.smf"
+    },
+    {
+      "file": "allies-death-22.ogg",
+      "category": "death",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\gs2\\killed\\lb_gs2_kil_gengen_li_s_5123020e.smf"
+    },
+    {
+      "file": "allies-death-23.ogg",
+      "category": "death",
+      "source_archive": "WW2AlliesSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\allies\\gs2\\killed\\lb_gs2_kil_gengen_li_s_5123020f.smf"
+    },
+    {
+      "file": "axis-attack-0.ogg",
+      "category": "attack",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\at1\\attack\\xb_at1_atk_gear00_nt_s_2661840g.smf"
+    },
+    {
+      "file": "axis-attack-1.ogg",
+      "category": "attack",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\at1\\attack\\xb_at1_atk_gege00_lt_s_2662960g.smf"
+    },
+    {
+      "file": "axis-attack-2.ogg",
+      "category": "attack",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\at1\\attack\\xb_at1_atk_gege00_lt_s_2662970g.smf"
+    },
+    {
+      "file": "axis-attack-3.ogg",
+      "category": "attack",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\at1\\attack\\xb_at1_atk_gege00_lt_s_2662980g.smf"
+    },
+    {
+      "file": "axis-attack-4.ogg",
+      "category": "attack",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\at1\\attack\\xb_at1_atk_gege00_lt_s_2662990g.smf"
+    },
+    {
+      "file": "axis-attack-5.ogg",
+      "category": "attack",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\at1\\attack\\xb_at1_atk_gege00_lt_s_2663000g.smf"
+    },
+    {
+      "file": "axis-attack-6.ogg",
+      "category": "attack",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\at1\\attack\\xb_at1_atk_gege00_lt_s_2663010g.smf"
+    },
+    {
+      "file": "axis-attack-7.ogg",
+      "category": "attack",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\at1\\attack\\xb_at1_atk_gege00_lt_s_2663020g.smf"
+    },
+    {
+      "file": "axis-attack-8.ogg",
+      "category": "attack",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\at1\\attack\\xb_at1_atk_gege00_nt_l_2661830g.smf"
+    },
+    {
+      "file": "axis-attack-9.ogg",
+      "category": "attack",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\at1\\attack\\xb_at1_atk_gege00_nt_m_2661850g.smf"
+    },
+    {
+      "file": "axis-attack-10.ogg",
+      "category": "attack",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\at1\\attack\\xb_at1_atk_genge0_nt_s_2661820g.smf"
+    },
+    {
+      "file": "axis-death-0.ogg",
+      "category": "death",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\at1\\killed\\xb_at1_kil_gengen_lt_s_2663230g.smf"
+    },
+    {
+      "file": "axis-rout-0.ogg",
+      "category": "rout",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\at1\\retreat\\xb_at1_ret_gengen_lt_s_2664300g.smf"
+    },
+    {
+      "file": "axis-attack-11.ogg",
+      "category": "attack",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\fg1\\attack\\xb_fg1_atk_gear00_lt_s_2645510g.smf"
+    },
+    {
+      "file": "axis-attack-12.ogg",
+      "category": "attack",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\fg1\\attack\\xb_fg1_atk_gear00_lt_s_2645560g.smf"
+    },
+    {
+      "file": "axis-attack-13.ogg",
+      "category": "attack",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\fg1\\attack\\xb_fg1_atk_gear00_lt_s_2645570g.smf"
+    },
+    {
+      "file": "axis-attack-14.ogg",
+      "category": "attack",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\fg1\\attack\\xb_fg1_atk_gear00_nt_s_2645070g.smf"
+    },
+    {
+      "file": "axis-attack-15.ogg",
+      "category": "attack",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\fg1\\attack\\xb_fg1_atk_gear00_nt_s_2645080g.smf"
+    },
+    {
+      "file": "axis-attack-16.ogg",
+      "category": "attack",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\fg1\\attack\\xb_fg1_atk_gebk00_lt_s_2645630g.smf"
+    },
+    {
+      "file": "axis-attack-17.ogg",
+      "category": "attack",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\fg1\\attack\\xb_fg1_atk_gebk00_nt_s_2645100g.smf"
+    },
+    {
+      "file": "axis-attack-18.ogg",
+      "category": "attack",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\fg1\\attack\\xb_fg1_atk_gebk00_nt_s_2645110g.smf"
+    },
+    {
+      "file": "axis-attack-19.ogg",
+      "category": "attack",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\fg1\\attack\\xb_fg1_atk_gebl00_nt_s_2645120g.smf"
+    },
+    {
+      "file": "axis-attack-20.ogg",
+      "category": "attack",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\fg1\\attack\\xb_fg1_atk_gebl00_nt_s_2645130g.smf"
+    },
+    {
+      "file": "axis-attack-21.ogg",
+      "category": "attack",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\fg1\\attack\\xb_fg1_atk_gebl00_nt_s_2645140g.smf"
+    },
+    {
+      "file": "axis-attack-22.ogg",
+      "category": "attack",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\fg1\\attack\\xb_fg1_atk_gebl00_nt_s_2645150g.smf"
+    },
+    {
+      "file": "axis-attack-23.ogg",
+      "category": "attack",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\fg1\\attack\\xb_fg1_atk_gebl00_nt_s_2645160g.smf"
+    },
+    {
+      "file": "axis-underfire-0.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\fg1\\underfire\\xb_fg1_ufw_gear00_lt_l_2645920g.smf"
+    },
+    {
+      "file": "axis-underfire-1.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\fg1\\underfire\\xb_fg1_ufw_gear00_lt_s_2645930g.smf"
+    },
+    {
+      "file": "axis-underfire-2.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\fg1\\underfire\\xb_fg1_ufw_gege00_lt_s_2645880g.smf"
+    },
+    {
+      "file": "axis-underfire-3.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\fg1\\underfire\\xb_fg1_ufw_gege00_lt_s_2645890g.smf"
+    },
+    {
+      "file": "axis-underfire-4.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\fg1\\underfire\\xb_fg1_ufw_gege00_lt_s_2645910g.smf"
+    },
+    {
+      "file": "axis-underfire-5.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\fg1\\underfire\\xb_fg1_ufw_gege00_lt_s_2645960g.smf"
+    },
+    {
+      "file": "axis-underfire-6.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\fg1\\underfire\\xb_fg1_ufw_gego00_lt_s_2646000g.smf"
+    },
+    {
+      "file": "axis-underfire-7.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\fg1\\underfire\\xb_fg1_ufw_gein00_lt_s_2645900g.smf"
+    },
+    {
+      "file": "axis-underfire-8.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\fg1\\underfire\\xb_fg1_ufw_gemr00_lt_l_2645950g.smf"
+    },
+    {
+      "file": "axis-underfire-9.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\fg1\\underfire\\xb_fg1_ufw_gesc00_lt_l_2645940g.smf"
+    },
+    {
+      "file": "axis-death-1.ogg",
+      "category": "death",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\killed\\xb_htk_kil_pntgen_lt_s_2641900.smf"
+    },
+    {
+      "file": "axis-death-2.ogg",
+      "category": "death",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\killed\\xb_htk_kil_pntgen_lt_s_2641900g.smf"
+    },
+    {
+      "file": "axis-death-3.ogg",
+      "category": "death",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\killed\\xb_htk_kil_pntgen_lt_s_2641920.smf"
+    },
+    {
+      "file": "axis-death-4.ogg",
+      "category": "death",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\killed\\xb_htk_kil_pntgen_lt_s_2641920g.smf"
+    },
+    {
+      "file": "axis-death-5.ogg",
+      "category": "death",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\killed\\xb_htk_kil_tgrgen_lt_s_2641890.smf"
+    },
+    {
+      "file": "axis-death-6.ogg",
+      "category": "death",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\killed\\xb_htk_kil_tgrgen_lt_s_2641890g.smf"
+    },
+    {
+      "file": "axis-death-7.ogg",
+      "category": "death",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\killed\\xb_htk_kil_tgrgen_lt_s_2641910.smf"
+    },
+    {
+      "file": "axis-death-8.ogg",
+      "category": "death",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\killed\\xb_htk_kil_tgrgen_lt_s_2641910g.smf"
+    },
+    {
+      "file": "axis-underfire-10.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\underfire\\xb_htk_ufw_gearf0_lt_s_2640890.smf"
+    },
+    {
+      "file": "axis-underfire-11.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\underfire\\xb_htk_ufw_gearf0_lt_s_2640890g.smf"
+    },
+    {
+      "file": "axis-underfire-12.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\underfire\\xb_htk_ufw_gearf0_nt_s_2640870.smf"
+    },
+    {
+      "file": "axis-underfire-13.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\underfire\\xb_htk_ufw_gearf0_nt_s_2640870g.smf"
+    },
+    {
+      "file": "axis-underfire-14.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\underfire\\xb_htk_ufw_geat00_li_s_2644750.smf"
+    },
+    {
+      "file": "axis-underfire-15.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\underfire\\xb_htk_ufw_geat00_li_s_2644750g.smf"
+    },
+    {
+      "file": "axis-underfire-16.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\underfire\\xb_htk_ufw_geat00_lt_s_2644720.smf"
+    },
+    {
+      "file": "axis-underfire-17.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\underfire\\xb_htk_ufw_geat00_lt_s_2644720g.smf"
+    },
+    {
+      "file": "axis-underfire-18.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\underfire\\xb_htk_ufw_geat00_lt_s_2644730.smf"
+    },
+    {
+      "file": "axis-underfire-19.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\underfire\\xb_htk_ufw_geat00_lt_s_2644730g.smf"
+    },
+    {
+      "file": "axis-underfire-20.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\underfire\\xb_htk_ufw_gege00_li_s_2644760.smf"
+    },
+    {
+      "file": "axis-underfire-21.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\underfire\\xb_htk_ufw_gege00_li_s_2644760g.smf"
+    },
+    {
+      "file": "axis-underfire-22.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\underfire\\xb_htk_ufw_gege00_li_s_2644770.smf"
+    },
+    {
+      "file": "axis-underfire-23.ogg",
+      "category": "underfire",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\underfire\\xb_htk_ufw_gege00_li_s_2644770g.smf"
+    },
+    {
+      "file": "axis-deploy-0.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\unitcreated\\xb_htk_unc_gengen_lt_l_2644310.smf"
+    },
+    {
+      "file": "axis-deploy-1.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\unitcreated\\xb_htk_unc_gengen_lt_l_2644310g.smf"
+    },
+    {
+      "file": "axis-deploy-2.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\unitcreated\\xb_htk_unc_gengen_lt_s_2644340.smf"
+    },
+    {
+      "file": "axis-deploy-3.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\unitcreated\\xb_htk_unc_gengen_lt_s_2644340g.smf"
+    },
+    {
+      "file": "axis-deploy-4.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\unitcreated\\xb_htk_unc_gengen_nt_s_2643540.smf"
+    },
+    {
+      "file": "axis-deploy-5.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\unitcreated\\xb_htk_unc_gengen_nt_s_2643540g.smf"
+    },
+    {
+      "file": "axis-deploy-6.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\unitcreated\\xb_htk_unc_gengen_nt_s_2643550.smf"
+    },
+    {
+      "file": "axis-deploy-7.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\unitcreated\\xb_htk_unc_gengen_nt_s_2643550g.smf"
+    },
+    {
+      "file": "axis-deploy-8.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\unitcreated\\xb_htk_unc_gengen_nt_s_2643610.smf"
+    },
+    {
+      "file": "axis-deploy-9.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\unitcreated\\xb_htk_unc_gengen_nt_s_2643610g.smf"
+    },
+    {
+      "file": "axis-deploy-10.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\unitcreated\\xb_htk_unc_pntgen_lt_s_2644320.smf"
+    },
+    {
+      "file": "axis-deploy-11.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\unitcreated\\xb_htk_unc_pntgen_lt_s_2644320g.smf"
+    },
+    {
+      "file": "axis-deploy-12.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\unitcreated\\xb_htk_unc_pntgen_lt_s_2644350.smf"
+    },
+    {
+      "file": "axis-deploy-13.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\unitcreated\\xb_htk_unc_pntgen_lt_s_2644350g.smf"
+    },
+    {
+      "file": "axis-deploy-14.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\unitcreated\\xb_htk_unc_pntgen_lt_s_2644370.smf"
+    },
+    {
+      "file": "axis-deploy-15.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\unitcreated\\xb_htk_unc_pntgen_lt_s_2644370g.smf"
+    },
+    {
+      "file": "axis-deploy-16.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\unitcreated\\xb_htk_unc_pntgen_nt_s_2641830.smf"
+    },
+    {
+      "file": "axis-deploy-17.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\unitcreated\\xb_htk_unc_pntgen_nt_s_2641830g.smf"
+    },
+    {
+      "file": "axis-deploy-18.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\unitcreated\\xb_htk_unc_pntgen_nt_s_2641840.smf"
+    },
+    {
+      "file": "axis-deploy-19.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\unitcreated\\xb_htk_unc_pntgen_nt_s_2641840g.smf"
+    },
+    {
+      "file": "axis-deploy-20.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\unitcreated\\xb_htk_unc_pntgen_nt_s_2641850.smf"
+    },
+    {
+      "file": "axis-deploy-21.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\unitcreated\\xb_htk_unc_pntgen_nt_s_2641850g.smf"
+    },
+    {
+      "file": "axis-deploy-22.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\unitcreated\\xb_htk_unc_pntgen_nt_s_2643580.smf"
+    },
+    {
+      "file": "axis-deploy-23.ogg",
+      "category": "deploy",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\htk\\unitcreated\\xb_htk_unc_pntgen_nt_s_2643580g.smf"
+    },
+    {
+      "file": "axis-rout-1.ogg",
+      "category": "rout",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\kh1\\retreat\\xb_kh1_ret_gengen_lt_s_2761330g.smf"
+    },
+    {
+      "file": "axis-rout-2.ogg",
+      "category": "rout",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\kh1\\retreat\\xb_kh1_ret_gengen_lt_s_2761390g.smf"
+    },
+    {
+      "file": "axis-rout-3.ogg",
+      "category": "rout",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\kh1\\retreat\\xb_kh1_ret_gengen_lt_s_2761400g.smf"
+    },
+    {
+      "file": "axis-rout-4.ogg",
+      "category": "rout",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\kh1\\retreat\\xb_kh1_ret_gengen_lt_s_2761410g.smf"
+    },
+    {
+      "file": "axis-rout-5.ogg",
+      "category": "rout",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\kh1\\retreat\\xb_kh1_ret_gengen_lt_s_2761430g.smf"
+    },
+    {
+      "file": "axis-rout-6.ogg",
+      "category": "rout",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\kh1\\retreat\\xb_kh1_ret_gengen_nt_s_2761360g.smf"
+    },
+    {
+      "file": "axis-rout-7.ogg",
+      "category": "rout",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\kh1\\retreat\\xb_kh1_ret_gengen_nt_s_2761420g.smf"
+    },
+    {
+      "file": "axis-rout-8.ogg",
+      "category": "rout",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\kh1\\retreat\\xb_kh1_ret_gengen_st_s_2761300g.smf"
+    },
+    {
+      "file": "axis-rout-9.ogg",
+      "category": "rout",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\kh1\\retreat\\xb_kh1_ret_gengen_st_s_2761310g.smf"
+    },
+    {
+      "file": "axis-rout-10.ogg",
+      "category": "rout",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\kh1\\retreat\\xb_kh1_ret_gengen_st_s_2761320g.smf"
+    },
+    {
+      "file": "axis-rout-11.ogg",
+      "category": "rout",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\kh1\\retreat\\xb_kh1_ret_gengen_st_s_2761340g.smf"
+    },
+    {
+      "file": "axis-rout-12.ogg",
+      "category": "rout",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\kh1\\retreat\\xb_kh1_ret_gengen_st_s_2761350g.smf"
+    },
+    {
+      "file": "axis-rout-13.ogg",
+      "category": "rout",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\kh1\\retreat\\xb_kh1_ret_gengen_st_s_2761370g.smf"
+    },
+    {
+      "file": "axis-death-9.ogg",
+      "category": "death",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\lvh\\killed\\xb_lvh_kil_bmwgen_lt_s_2651810g.smf"
+    },
+    {
+      "file": "axis-death-10.ogg",
+      "category": "death",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\lvh\\killed\\xb_lvh_kil_htkgen_lt_s_2651820g.smf"
+    },
+    {
+      "file": "axis-death-11.ogg",
+      "category": "death",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\lvh\\killed\\xb_lvh_kil_ostgen_lt_s_2651790g.smf"
+    },
+    {
+      "file": "axis-death-12.ogg",
+      "category": "death",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\lvh\\killed\\xb_lvh_kil_ostgen_lt_s_2651800g.smf"
+    },
+    {
+      "file": "axis-death-13.ogg",
+      "category": "death",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\lvh\\killed\\xb_lvh_kil_pn4gen_lt_s_2651750g.smf"
+    },
+    {
+      "file": "axis-death-14.ogg",
+      "category": "death",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\lvh\\killed\\xb_lvh_kil_pn4gen_lt_s_2651760g.smf"
+    },
+    {
+      "file": "axis-death-15.ogg",
+      "category": "death",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\lvh\\killed\\xb_lvh_kil_pumgen_lt_s_2651770g.smf"
+    },
+    {
+      "file": "axis-death-16.ogg",
+      "category": "death",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\lvh\\killed\\xb_lvh_kil_pumgen_lt_s_2651780g.smf"
+    },
+    {
+      "file": "axis-death-17.ogg",
+      "category": "death",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\lvh\\killed\\xb_lvh_kil_stugen_lt_s_2651730g.smf"
+    },
+    {
+      "file": "axis-death-18.ogg",
+      "category": "death",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\lvh\\killed\\xb_lvh_kil_stugen_lt_s_2651740g.smf"
+    },
+    {
+      "file": "axis-death-19.ogg",
+      "category": "death",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\mtk\\killed\\xb_mtk_kil_pnzgen_li_s_2660740.smf"
+    },
+    {
+      "file": "axis-death-20.ogg",
+      "category": "death",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\mtk\\killed\\xb_mtk_kil_pnzgen_li_s_2660740g.smf"
+    },
+    {
+      "file": "axis-death-21.ogg",
+      "category": "death",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\mtk\\killed\\xb_mtk_kil_pnzgen_li_s_2660750.smf"
+    },
+    {
+      "file": "axis-death-22.ogg",
+      "category": "death",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\mtk\\killed\\xb_mtk_kil_pnzgen_li_s_2660750g.smf"
+    },
+    {
+      "file": "axis-death-23.ogg",
+      "category": "death",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\mtk\\killed\\xb_mtk_kil_stugen_li_s_2660760.smf"
+    },
+    {
+      "file": "axis-rout-14.ogg",
+      "category": "rout",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\pn3\\retreat\\xb_pn3_ret_gengen_li_m_2614000g.smf"
+    },
+    {
+      "file": "axis-rout-15.ogg",
+      "category": "rout",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\pn3\\retreat\\xb_pn3_ret_gengen_li_s_2621790g.smf"
+    },
+    {
+      "file": "axis-rout-16.ogg",
+      "category": "rout",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\pn3\\retreat\\xb_pn3_ret_gengen_li_s_2621800g.smf"
+    },
+    {
+      "file": "axis-rout-17.ogg",
+      "category": "rout",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\pn3\\retreat\\xb_pn3_ret_gengen_li_s_2621810g.smf"
+    },
+    {
+      "file": "axis-rout-18.ogg",
+      "category": "rout",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\pn3\\retreat\\xb_pn3_ret_gengen_li_s_2621820g.smf"
+    },
+    {
+      "file": "axis-rout-19.ogg",
+      "category": "rout",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\pn3\\retreat\\xb_pn3_ret_gengen_li_s_2621830g.smf"
+    },
+    {
+      "file": "axis-rout-20.ogg",
+      "category": "rout",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\pn3\\retreat\\xb_pn3_ret_gengen_li_s_2621840g.smf"
+    },
+    {
+      "file": "axis-rout-21.ogg",
+      "category": "rout",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\pn3\\retreat\\xb_pn3_ret_gengen_li_s_2621850g.smf"
+    },
+    {
+      "file": "axis-rout-22.ogg",
+      "category": "rout",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\pn3\\retreat\\xb_pn3_ret_gengen_li_s_2621860g.smf"
+    },
+    {
+      "file": "axis-rout-23.ogg",
+      "category": "rout",
+      "source_archive": "WW2AxisSpeechEnglish.sga",
+      "source_path": "sound\\wav\\speech\\mp\\axis\\pn3\\retreat\\xb_pn3_ret_gengen_li_s_2621880g.smf"
+    }
+  ]
+}

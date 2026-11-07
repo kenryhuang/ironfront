@@ -1,3 +1,4 @@
+import {effectiveArtilleryGuns} from './regiment-composition.js';
 import {unitPositions} from './ground-unit-orders.js';
 import {frontSupplied} from './ground-supply.js';
 import {registerHostilities} from './campaign-pacing.js';
@@ -7,7 +8,7 @@ export function artilleryRegimentOrderStatus(g,a,target){
  if(a.groundOrder?.type!=='hold')return {ok:false,message:'炮兵正在转移，请到位或停止后再下达炮击命令。'};
  const p=unitPositions(a)[0],d=p?Math.hypot(p.x-target%g.width-.5,p.y-Math.floor(target/g.width)-.5):Infinity;
  if(d<3||d>32)return {ok:false,message:'炮兵团射程为3—32个地块，请先移动至射程内。'};
- if(a.artillery.remaining<1)return {ok:false,message:'该炮兵团没有可用火炮，请先补充装备。'};
+ if(effectiveArtilleryGuns(a)<=0)return {ok:false,message:'该炮兵团没有可用火炮，请先补充装备。'};
  return {ok:true};
 }
 export function orderArtilleryRegiment(g,a,target){
@@ -27,11 +28,11 @@ export function advanceArtilleryRegiments(g){
   if(!supply.connected||g.owners[tile]!==a.owner||g.radiationAt?.(tile)||(g.defenseSuppression?.(tile)??1)<1){a.orderState='resupplying';continue;}
   if(b.readyAt>g.time+1e-8){a.orderState='deploying';continue;}
   b.deployed=true;b.readyAt=0;
-  if(b.remaining<1){a.orderState='no-guns';continue;}
-  const shells=Math.min(3,Math.ceil(b.remaining/4));if(b.ammo<shells){a.orderState='no-ammo';continue;}
+  const staffed=effectiveArtilleryGuns(a);if(staffed<=0){a.orderState='no-guns';continue;}
+  const shells=Math.min(a.regiment?.composition?Math.min(12,b.ammo):3,Math.ceil(staffed/4));if(shells<1||b.ammo<shells){a.orderState='no-ammo';continue;}
   a.orderState='bombarding';if(b.cooldown>g.time+1e-8)continue;
   if(!artilleryRegimentOrderStatus(g,a,b.target).ok){stopArtilleryRegiment(a);continue;}
   b.ammo-=shells;b.cooldown=g.time+8;
-  for(let i=0;i<shells;i++)g.localShells.push({regimentId:a.id,owner:a.owner,gun:i,source:tile,sourcePoint:{x:p.x,y:p.y},target:b.target,start:g.time+i*.25,impactAt:g.time+1.8+i*.25});
+  for(let i=0;i<shells;i++)g.localShells.push({regimentId:a.id,owner:a.owner,gun:i,strength:a.regiment?.composition?Math.min(4,staffed-i*4)/4:1,source:tile,sourcePoint:{x:p.x,y:p.y},target:b.target,start:g.time+i*.25,impactAt:g.time+1.8+i*.25});
  }
 }

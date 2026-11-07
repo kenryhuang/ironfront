@@ -4,6 +4,10 @@ import { introFrame } from './intro-timeline.js';
 import { IntroAudio } from './intro-audio.js';
 
 const canvas=document.querySelector('#scene'),menu=document.querySelector('#menu'),status=document.querySelector('#status');
+const entry=document.querySelector('#menu a.primary');
+const entryParams=new URLSearchParams(location.search);
+for(const key of ['shot','v'])entryParams.delete(key);
+entry.href='/game.html'+(entryParams.size?'?'+entryParams.toString():'');
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 let renderer;
 try{renderer=new T.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});}catch{
@@ -67,11 +71,20 @@ const embersGeo=new T.BufferGeometry(),stars=[];for(let i=0;i<140;i++)stars.push
 const world=new T.Group();for(const child of [...scene.children]){if(!child.isLight)world.add(child);}world.scale.setScalar(4);scene.add(world);
 let start=performance.now(),elapsed=0,freeze=reduced,skip=reduced,raf;
 const audio=new IntroAudio({button:document.querySelector('#sound'),subtitle:document.querySelector('#radio-subtitle'),onStart(){skip=false;start=performance.now();}});
+let entering=false;
+entry.addEventListener('click',e=>{
+ if(e.ctrlKey||e.metaKey||e.shiftKey||e.altKey)return;e.preventDefault();if(entering)return;entering=true;
+ document.querySelector('#sound').disabled=true;audio.fadeOut(1.2);
+ const black=document.createElement('div');black.id='battle-transition';Object.assign(black.style,{position:'fixed',inset:'0',background:'#000',zIndex:'99999',opacity:'0',transition:'opacity 1.2s ease',pointerEvents:'all'});document.body.append(black);
+ requestAnimationFrame(()=>requestAnimationFrame(()=>black.style.opacity='1'));
+ setTimeout(()=>{try{sessionStorage.setItem('ironfront.entering','1');}catch{}location.assign(entry.href);},1300);
+});
 addEventListener('pagehide',()=>audio.dispose(),{once:true});
 const query=new URLSearchParams(location.search),shot=Number(query.get('shot'));const fixed=query.has('shot')&&Number.isFinite(shot);
 function resize(){renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();}addEventListener('resize',resize);resize();
 function render(now){
- const t=fixed?shot:skip?16:(now-start)/1000;const f=introFrame(t,reduced);elapsed=t;audio.update(t);
+ const t=fixed?shot:skip?16:(now-start)/1000;const f=introFrame(t,reduced);elapsed=t;
+ if(!fixed)audio.update((now-start)/1000);
  camera.position.fromArray(f.position).multiplyScalar(4);camera.lookAt(...f.target.map(v=>v*4));
  // Combat has its own clock and remains alive after the cinematic settles.
  const clock=freeze?14:now/1000;

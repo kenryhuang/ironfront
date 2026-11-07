@@ -1,30 +1,43 @@
-import {REGIMENTS,REGIMENT_LIMIT,regularReserve,regimentBases,createRegiment} from './regiments.js';
+import {regimentComposition,refitQuote,refitRegiment} from './regiment-refit.js';
+import {createTemplateControls} from './regiment-template-ui.js';
+import {renderCompositionPreview} from './regiment-preview-ui.js';
+import {REGIMENTS,REGIMENT_LIMIT,regularReserve,regimentBases,createRegimentBatch,regimentBatchStatus} from './regiments.js';
 import {HEAVY_EQUIPMENT,heavyRegimentAccess,produceRegimentGuns} from './regiment-equipment.js';
+import {COMPOSITION_LIMITS,DEFAULT_COMPOSITION,compositionQuote,customRegimentAccess} from './regiment-composition.js';
 
-export function createRegimentControls(host,{getGame,onCreated,notify}){
+export function createRegimentControls(host,{getGame,onCreated,onRefitted,notify}){
  const root=document.createElement('div');root.className='regiment-controls';host.prepend(root);
- root.innerHTML='<header><strong>编制与预备兵</strong><span class="regiment-count"></span></header><div class="regiment-reserve"></div><label>新建编制<select aria-label="新建部队编制"><option value="infantry">步兵团 · 3,000人</option><option value="guard">守备团 · 1,500人</option></select></label><label>集结兵营<select aria-label="新建部队集结兵营"></select></label><button class="regiment-create" type="button">组建部队</button><p class="regiment-hint"></p><p class="regiment-help">从预备正规军划拨，装备已在训练时配发。补员需在有补给的安全己方领土停驻，每秒100人；行军或交火时暂停。右键兵营开启训练可增加预备兵。</p>';
- const form=document.createElement('details'),summary=document.createElement('summary');summary.textContent='＋ 新建部队';form.append(summary);while(root.children.length>2)form.append(root.children[2]);root.append(form);
- const selects=root.querySelectorAll('select'),type=selects[0],base=selects[1],button=root.querySelector('.regiment-create');let baseKey='';
- for(const value of ['armor','artillery']){const option=document.createElement('option');option.value=value;option.textContent=`${REGIMENTS[value].name} · ${REGIMENTS[value].capacity.toLocaleString()}人`;type.append(option);}
- const production=document.createElement('div');production.className='regiment-production';production.innerHTML='<div class="regiment-stock"></div><button type="button" class="regiment-produce"></button><p class="regiment-production-status"></p>';form.insertBefore(production,button);
- const produce=production.querySelector('button');produce.onclick=()=>{notify(type.value==='armor'?getGame().produceArmor():produceRegimentGuns(getGame()));update();};
- function update(){const g=getGame();root.hidden=!g.regimentOwners?.has(1);if(root.hidden)return;
-  const n=g.nations.get(1),units=g.armies.filter(a=>a.owner===1&&a.regiment),reserve=Math.floor(regularReserve(g,1)),bases=regimentBases(g,1).sort((a,b)=>Number(b===n.capitalTile)-Number(a===n.capitalTile));
+ root.innerHTML='<header><strong>编制与预备兵</strong><span class="regiment-count"></span></header><div class="regiment-reserve"></div><details><summary>＋ 新建部队</summary><label>编制方案<select aria-label="新建部队编制"></select></label><div class="composition-editor"></div><label class="regiment-quantity-label">组建数量<input type="number" min="1" max="32" step="1" value="1" aria-label="批量组建数量"></label><div class="composition-quote" aria-label="编制需求与战斗力" aria-live="polite"></div><label class="regiment-base-label">集结兵营<select aria-label="新建部队集结兵营"></select></label><div class="regiment-productions"></div><button class="regiment-create" type="button">组建部队</button><button class="regiment-cancel-refit" type="button" hidden>退出改编，切换新建</button><details class="regiment-template-section"><summary>模板库 · 保存 / 载入</summary><div class="regiment-template-host"></div></details><p class="regiment-hint" role="status"></p><p class="regiment-help"></p></details>';
+ const form=root.querySelector('details'),selects=root.querySelectorAll('select'),type=selects[0],base=selects[1],button=root.querySelector('.regiment-create'),editor=root.querySelector('.composition-editor'),preview=root.querySelector('.composition-quote');let baseKey='',quoteKey='',editingKey=null,previousGame=null;
+ const quantity=root.querySelector('[aria-label="批量组建数量"]'),cancelRefit=root.querySelector('.regiment-cancel-refit');quantity.oninput=()=>update();
+ for(const [key,spec]of Object.entries(REGIMENTS)){const option=document.createElement('option');option.value=key;option.textContent=key==='custom'?'自定义混编团':`${spec.name} · ${spec.capacity.toLocaleString()}人`;type.append(option);}
+ const fields={};for(const [key,label,unit,crew]of [['infantry','步兵','人','已配发个人装备'],['tanks','坦克','辆','每辆配5名车组人员'],['guns','火炮','门','每门配8名炮组人员']]){const row=document.createElement('label');row.innerHTML=`<span>${label}<small>${crew}</small></span><input type="number" min="0" max="${COMPOSITION_LIMITS[key]}" step="1" aria-label="混编${label}数量"><span>${unit}</span>`;const input=row.querySelector('input');input.value=DEFAULT_COMPOSITION[key];input.oninput=()=>update();fields[key]=input;editor.append(row);}
+ const composition=()=>Object.fromEntries(Object.entries(fields).map(([k,input])=>[k,input.valueAsNumber]));
+ const draft=()=>type.value==='custom'?composition():regimentComposition({regiment:{capacity:REGIMENTS[type.value].capacity},armor:type.value==='armor'?{initial:12}:null,artillery:type.value==='artillery'?{initial:12}:null});
+ const loadComposition=c=>{type.value='custom';for(const [key,input]of Object.entries(fields))input.value=c[key];quoteKey='';update();};
+ const templates=createTemplateControls(root.querySelector('.regiment-template-host'),{getComposition:draft,loadComposition,notify});
+ cancelRefit.onclick=()=>{editingKey=null;quoteKey='';update();};
+ const productions={};for(const key of ['armor','artillery']){const panel=document.createElement('div');panel.className='regiment-production';panel.innerHTML='<div class="regiment-stock"></div><button type="button" class="regiment-produce"></button><p class="regiment-production-status"></p>';root.querySelector('.regiment-productions').append(panel);panel.querySelector('button').onclick=()=>{notify(key==='armor'?getGame().produceArmor():produceRegimentGuns(getGame()));update();};productions[key]=panel;}
+ function update(){const g=getGame();if(previousGame!==g){editingKey=null;previousGame=g;quoteKey='';}root.hidden=!g.regimentOwners?.has(1);if(root.hidden)return;
+  const n=g.nations.get(1),units=g.armies.filter(a=>a.owner===1&&a.regiment),reserve=Math.floor(regularReserve(g,1)),bases=regimentBases(g,1).sort((a,b)=>Number(b===n.capitalTile)-Number(a===n.capitalTile)),custom=type.value==='custom',c=draft(),q=compositionQuote(c),unit=editingKey?g.armies.find(a=>a.owner===1&&a.unitKey===editingKey&&a.regiment):null,amount=quantity.valueAsNumber;
+  type.disabled=!!editingKey;root.querySelector('.regiment-base-label').hidden=root.querySelector('.regiment-quantity-label').hidden=!!editingKey;cancelRefit.hidden=!editingKey;form.querySelector('summary').textContent=editingKey?`改编 · ${unit?.unitName??'部队已不存在'}`:'＋ 新建部队';
+  for(const [k,input]of Object.entries(fields))input.max=Math.max(COMPOSITION_LIMITS[k],unit?regimentComposition(unit)[k]:0);
   root.querySelector('.regiment-count').textContent=`${units.length} / ${REGIMENT_LIMIT} 支`;
   root.querySelector('.regiment-reserve').textContent=`预备正规军 ${reserve.toLocaleString()} 人 · 在编 ${Math.floor(units.reduce((sum,a)=>sum+a.troops,0)).toLocaleString()} 人`;
   const key=bases.join(',');if(key!==baseKey||!base.options.length){const selected=base.value;baseKey=key;base.replaceChildren();for(const tile of bases){const option=document.createElement('option');option.value=String(tile);option.textContent=`${tile===n.capitalTile?'首都兵营':'兵营'} · ${tile%g.width}, ${Math.floor(tile/g.width)}`;base.append(option);}if(bases.includes(Number(selected)))base.value=selected;}
-  const spec=REGIMENTS[type.value],access=heavyRegimentAccess(g,1,type.value),reason=g.phase!=='running'?'战役已结束':!bases.length?'没有可用兵营':units.length>=REGIMENT_LIMIT?'已达编制上限':!access.ok?access.message:reserve<spec.capacity?'预备正规军不足':'';
-  production.hidden=!HEAVY_EQUIPMENT[type.value];if(!production.hidden){const heavy=HEAVY_EQUIPMENT[type.value],job=type.value==='armor'?g.armorJob:g.artilleryJob,productionAccess=g.armsAccess(type.value);
-   production.querySelector('.regiment-stock').textContent=`库存${heavy.label} ${Math.floor(g[heavy.stock]??0)} / 组建需12 · 通用装备 ${Math.floor(n.equipment).toLocaleString()}`;
-   produce.textContent=job?`生产中 ${Math.floor(job.elapsed/job.duration*100)}%`:`生产12${type.value==='armor'?'辆坦克':'门火炮'}`;
-   produce.disabled=!!job||!productionAccess.ok||n.gold<1800||n.equipment<120;
-   production.querySelector('.regiment-production-status').textContent=job?(job.paused?'工厂停工 · 生产已暂停':`工厂生产 · 剩余 ${Math.ceil(job.duration-job.elapsed)} 秒`):!productionAccess.ok?productionAccess.missing.join('；'):'每批1,800资金＋120装备 · 12秒入库';
+  const spec=REGIMENTS[type.value],batch=editingKey?null:regimentBatchStatus(g,1,type.value,Number(base.value),custom?c:undefined,amount),refit=editingKey?refitQuote(g,1,editingKey,c):null,status=refit??batch,personnel=custom?q?.personnel:spec.capacity,reason=status.ok?'':status.message;
+  editor.hidden=!custom;preview.hidden=false;
+  const pk=JSON.stringify([editingKey,c,amount,reserve,Math.floor(n.equipment),g.armorReserve,g.artilleryReserve,status,unit?.troops,unit?.armor?.remaining,unit?.artillery?.remaining,unit?.artillery?.ammo]);if(pk!==quoteKey){quoteKey=pk;renderCompositionPreview(preview,{composition:c,nation:n,reserve,tankStock:g.armorReserve??0,gunStock:g.artilleryReserve??0,quantity:amount,refit,batch,unit});}
+  for(const [key,panel]of Object.entries(productions)){panel.hidden=custom?!c[key==='armor'?'tanks':'guns']:type.value!==key;if(panel.hidden)continue;const heavy=HEAVY_EQUIPMENT[key],need=custom?c[key==='armor'?'tanks':'guns']:12,job=key==='armor'?g.armorJob:g.artilleryJob,productionAccess=g.armsAccess(key),produce=panel.querySelector('button');
+   panel.querySelector('.regiment-stock').textContent=`库存${heavy.label} ${Math.floor(g[heavy.stock]??0)} / 组建需${need}`;
+   produce.textContent=job?`生产中 ${Math.floor(job.elapsed/job.duration*100)}%`:`生产12${key==='armor'?'辆坦克':'门火炮'}`;
+   produce.disabled=g.phase!=='running'||!!job||!productionAccess.ok||n.gold<1800||n.equipment<120;
+   panel.querySelector('.regiment-production-status').textContent=job?(job.paused?'工厂停工 · 生产已暂停':`工厂生产 · 剩余 ${Math.ceil(job.duration-job.elapsed)} 秒`):!productionAccess.ok?productionAccess.missing.join('；'):'每批1,800资金＋120装备 · 12秒入库';
   }
-  button.disabled=!!reason;root.querySelector('.regiment-hint').textContent=reason||`${spec.description} · 划拨 ${spec.capacity.toLocaleString()} 人`;
-  root.querySelector('.regiment-help').textContent=HEAVY_EQUIPMENT[type.value]?`从预备正规军划拨人员，并扣除12${type.value==='armor'?'辆库存坦克':'门库存火炮＋18装备作为首批炮弹'}。安全停驻且有补给时可补员，每秒100人、1辆坦克或1门火炮；炮弹每秒补3发，每发消耗1装备。行军或交火时暂停补充。`:'从预备正规军划拨，装备已在训练时配发。补员需在有补给的安全己方领土停驻，每秒100人；行军或交火时暂停。右键兵营开启训练可增加预备兵。';
+  button.disabled=!!reason||!!refit?.unchanged;button.textContent=editingKey?'确认改编':amount>1?`批量组建 ${amount} 支`:'组建部队';root.querySelector('.regiment-hint').textContent=reason||(editingKey?refit.unchanged?'编制未变化':'按上方差额扣除或返还，确认前会再次核验。':`每团 ${personnel.toLocaleString()} 人 · 整批 ${batch.costs.personnel.toLocaleString()} 人`);
+  root.querySelector('.regiment-help').textContent=editingKey?'改编需安全停驻且补给连通；部队身份、位置和炮击冷却保留。模板可载入草案，保存模板不会自动改编。':custom?'人员从预备正规军划拨，不重复收取已配发的个人装备。坦克需T08，火炮需T11。组建后保留此配比，补员按原编制恢复。混编团右键推进；选择「炮击瞄准」后右键目标可停驻炮击。':HEAVY_EQUIPMENT[type.value]?`从预备正规军划拨人员，并扣除12${type.value==='armor'?'辆库存坦克':'门库存火炮＋18装备作为首批炮弹'}。安全停驻且有补给时可补员，每秒100人、1辆坦克或1门火炮；炮弹每秒补3发，每发消耗1装备。`:'从预备正规军划拨，装备已在训练时配发。安全驻扎且有补给时可补员，每秒100人。';
  }
- type.onchange=update;
- button.onclick=()=>{const result=createRegiment(getGame(),1,type.value,Number(base.value));notify(result);if(result.ok){form.open=false;onCreated(result.unitKey);}update();};
- return {update};
+ type.onchange=()=>{quoteKey='';update();};
+ button.onclick=()=>{const g=getGame(),result=editingKey?refitRegiment(g,1,editingKey,draft()):createRegimentBatch(g,1,type.value,Number(base.value),type.value==='custom'?composition():undefined,quantity.valueAsNumber);notify(result);if(result.ok){const wasEditing=editingKey;editingKey=null;quoteKey='';form.open=false;if(wasEditing)onRefitted?.(wasEditing);else onCreated(result.unitKey,result.unitKeys);}update();};
+ return {update,edit(key){update();const a=getGame().armies.find(a=>a.owner===1&&a.unitKey===key&&a.regiment);if(!a)return;editingKey=key;loadComposition(regimentComposition(a));form.open=true;templates.refresh();},refreshTemplates(){templates.refresh();}};
 }

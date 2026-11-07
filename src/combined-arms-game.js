@@ -118,11 +118,11 @@ export class CombinedArmsGame extends Game {
   this.log('炮兵齐射3发：命中后削弱区域守军并压制设施20秒。','player');return {ok:true,message:'炮击已发射；爆炸会伤及范围内友军。'};}
  reloadBattery(){const b=this.battery,n=this.nations.get(1);if(!this.batteryReady()||b.motion||b.reloadAt>this.time||b.ammo>=18)return {ok:false,message:'阵地不可用、正在转移、弹药已满或正在装填。'};
   if(n.gold<300||n.equipment<20)return {ok:false,message:'需要300资金、20装备。'};n.gold-=300;n.equipment-=20;b.reloadAt=this.time+5;return {ok:true,message:'5秒后弹药补至18发。'};}
- artilleryImpact(tile){const radius=6/this.gridScale,area=new Set(blastTiles(this,tile,radius));let casualties=0,structures=0;
-  for(const n of this.nations.values()){const cells=[...area].filter(t=>this.owners[t]===n.id).length;const loss=Math.min(n.troops,n.troops/Math.max(1,n.tiles.size)*cells*.18);takeTroops(n,loss);casualties+=loss;}
-  for(const a of [...this.armies]){const front=a.front.slice(a.head).filter(t=>this.owners[t]!==a.owner),m=a.armor?.motion??a.infantry?.motion,lanes=a.frontline?.lanes??(m?[m]:[]);const fraction=m?lanes.filter(p=>Math.hypot(p.x-(tile%this.width+.5),p.y-(Math.floor(tile/this.width)+.5))<=6).length/lanes.length:front.filter(t=>area.has(t)).length/Math.max(1,front.length);const loss=a.troops*fraction*.16;const before=a.troops;takeTroops(a,loss);if(a.armor)a.armor.remaining*=a.troops/Math.max(1,before);casualties+=loss;if(a.troops<1)this.finishArmy(a,false);}
-  for(const [t,b]of this.buildings)if(area.has(t)){structures++;this.releaseFacility(t,this.owners[t]);b.integrity=Math.max(0,(b.integrity??100)-22);b.suppressedUntil=Math.max(b.suppressedUntil??0,this.time+20);if(!b.integrity)this.buildings.delete(t);}
-  this.strikeZones.push({target:tile,radius,factor:.35,until:this.time+20});this.localImpacts.push({target:tile,time:this.time});this.localImpacts=this.localImpacts.slice(-12);
+ artilleryImpact(tile,strength=1){strength=Math.max(0,Math.min(1,strength));const radius=6/this.gridScale,area=new Set(blastTiles(this,tile,radius));let casualties=0,structures=0;
+  for(const n of this.nations.values()){const cells=[...area].filter(t=>this.owners[t]===n.id).length;const loss=Math.min(n.troops,n.troops/Math.max(1,n.tiles.size)*cells*.18*strength);takeTroops(n,loss);casualties+=loss;}
+  for(const a of [...this.armies]){const front=a.front.slice(a.head).filter(t=>this.owners[t]!==a.owner),m=a.armor?.motion??a.infantry?.motion,lanes=a.frontline?.lanes??(m?[m]:[]);const fraction=m?lanes.filter(p=>Math.hypot(p.x-(tile%this.width+.5),p.y-(Math.floor(tile/this.width)+.5))<=6).length/lanes.length:front.filter(t=>area.has(t)).length/Math.max(1,front.length);const loss=a.troops*fraction*.16*strength;const before=a.troops;takeTroops(a,loss);if(a.armor)a.armor.remaining*=a.troops/Math.max(1,before);casualties+=loss;if(a.troops<1)this.finishArmy(a,false);}
+  for(const [t,b]of this.buildings)if(area.has(t)){structures++;this.releaseFacility(t,this.owners[t]);b.integrity=Math.max(0,(b.integrity??100)-22*strength);b.suppressedUntil=Math.max(b.suppressedUntil??0,this.time+20);if(!b.integrity)this.buildings.delete(t);}
+  this.strikeZones.push({target:tile,radius,factor:1-.65*strength,until:this.time+20});this.localImpacts.push({target:tile,time:this.time});this.localImpacts=this.localImpacts.slice(-12);
   this.log(`炮弹命中：守军/前线损失 ${Math.floor(casualties)}，影响${structures}座设施，区域压制20秒。`,'war');
  }
  step(dt,options){if(!Number.isFinite(dt)||dt<=0||dt>10)return;let left=dt;while(left>1e-8&&this.phase==='running'){const part=Math.min(.1,left);left-=part;super.step(part,options);
@@ -130,6 +130,6 @@ export class CombinedArmsGame extends Game {
    if(b.reloadAt&&b.reloadAt<=this.time){if(this.owners[b.tile]===1)b.ammo=18;b.reloadAt=0;}
    this.advanceArmorProduction(part);
    this.advanceBarrage();
-   for(const shell of this.localShells)if(shell.impactAt<=this.time&&!shell.hit){shell.hit=true;this.artilleryImpact(shell.target);}this.localShells=this.localShells.filter(s=>!s.hit);
+   for(const shell of this.localShells)if(shell.impactAt<=this.time&&!shell.hit){shell.hit=true;this.artilleryImpact(shell.target,shell.strength??1);}this.localShells=this.localShells.filter(s=>!s.hit);
   }}
 }

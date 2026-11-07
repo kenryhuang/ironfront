@@ -1,3 +1,4 @@
+import {ammoCapacity} from './regiment-composition.js';
 export const HEAVY_EQUIPMENT=Object.freeze({
  armor:{research:'T08',researchName:'中型坦克生产工艺',stock:'armorReserve',field:'armor',label:'坦克',capacity:12},
  artillery:{research:'T11',researchName:'火炮弹药与重装运输',stock:'artilleryReserve',field:'artillery',label:'火炮',capacity:12},
@@ -23,15 +24,18 @@ export function advanceRegimentGunProduction(g,dt){
  if(!job.paused)job.elapsed=Math.min(job.duration,job.elapsed+dt);
  if(job.elapsed>=job.duration-1e-8){g.artilleryReserve=(g.artilleryReserve??0)+12;g.artilleryJob=null;g.log('12门火炮已入库，可用于组建炮兵团或补充损失。','player');}
 }
-export function equipmentMissing(a){const s=HEAVY_EQUIPMENT[a.regiment?.type],e=s&&a[s.field];return e?Math.max(0,e.initial-e.remaining):0;}
-export function regimentNeedsReinforcement(a){return a.troops<(a.regiment?.capacity??a.troops)-1e-6||equipmentMissing(a)>1e-6||!!(a.artillery&&a.artillery.ammo<18-1e-6);}
+export function equipmentMissing(a){return ['armor','artillery'].reduce((sum,k)=>sum+(a[k]?Math.max(0,a[k].initial-a[k].remaining):0),0);}
+export function regimentNeedsReinforcement(a){return a.troops<(a.regiment?.capacity??a.troops)-1e-6||equipmentMissing(a)>1e-6||!!(a.artillery&&a.artillery.ammo<ammoCapacity(a)-1e-6);}
 export function replenishRegimentEquipment(g,a,dt){
- const s=HEAVY_EQUIPMENT[a.regiment.type];if(!s)return [];
- const e=a[s.field],r=a.regiment,missing=equipmentMissing(a),waiting=[];
- if(missing>1e-6){
-  if((g[s.stock]??0)<1){waiting.push(`等待库存${s.label}`);r.equipmentProgress=0;}
-  else {r.equipmentProgress=(r.equipmentProgress??0)+dt;while(r.equipmentProgress>=1-1e-8&&e.remaining<e.initial-1e-6&&g[s.stock]>=1){g[s.stock]--;e.remaining=Math.min(e.initial,e.remaining+1);r.equipmentProgress=Math.max(0,r.equipmentProgress-1);}if(e.remaining>=e.initial-1e-6)r.equipmentProgress=0;}
+ const r=a.regiment,waiting=[];r.equipmentProgressByType??={};
+ for(const s of Object.values(HEAVY_EQUIPMENT)){const e=a[s.field];if(!e)continue;
+  const missing=Math.max(0,e.initial-e.remaining);
+  if(missing>1e-6){
+   if((g[s.stock]??0)<=1e-8){waiting.push(`等待库存${s.label}`);r.equipmentProgressByType[s.field]=0;}
+   else {let progress=(r.equipmentProgressByType[s.field]??0)+dt;while(progress>=1-1e-8&&e.remaining<e.initial-1e-6&&g[s.stock]>1e-8){const amount=Math.min(1,e.initial-e.remaining,g[s.stock]);g[s.stock]-=amount;e.remaining+=amount;progress=Math.max(0,progress-1);}r.equipmentProgressByType[s.field]=e.remaining>=e.initial-1e-6?0:progress;}
+  }
  }
- if(a.artillery&&a.artillery.ammo<18-1e-6){const n=g.nations.get(a.owner);if(n.equipment<1){waiting.push('等待装备补充炮弹');r.ammoProgress=0;}else{r.ammoProgress=(r.ammoProgress??0)+dt*3;while(r.ammoProgress>=1-1e-8&&a.artillery.ammo<18&&n.equipment>=1){n.equipment--;a.artillery.ammo++;r.ammoProgress=Math.max(0,r.ammoProgress-1);}if(a.artillery.ammo>=18)r.ammoProgress=0;}}
+ const cap=ammoCapacity(a);
+ if(a.artillery&&a.artillery.ammo<cap-1e-6){const n=g.nations.get(a.owner);if(n.equipment<1){waiting.push('等待装备补充炮弹');r.ammoProgress=0;}else{r.ammoProgress=(r.ammoProgress??0)+dt*3;while(r.ammoProgress>=1-1e-8&&a.artillery.ammo<cap&&n.equipment>=1){n.equipment--;a.artillery.ammo++;r.ammoProgress=Math.max(0,r.ammoProgress-1);}if(a.artillery.ammo>=cap)r.ammoProgress=0;}}
  return waiting;
 }

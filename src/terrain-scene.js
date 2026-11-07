@@ -16,7 +16,7 @@ export class TerrainScene {
     this.renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
     this.nativePixelRatio=Math.min(window.devicePixelRatio||1,2);this.pixelRatio=this.nativePixelRatio;
     this.renderer.setPixelRatio(this.pixelRatio);
-    this.renderer.setClearColor('#bddce8');
+    this.renderer.setClearColor('#233945');
     this.renderer.outputColorSpace=THREE.SRGBColorSpace;
     this.renderer.toneMapping=THREE.NoToneMapping;
     this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;
@@ -28,8 +28,8 @@ export class TerrainScene {
     this.element.addEventListener('webglcontextlost',e=>this.handleContextLoss(e));
     this.scene=new THREE.Scene();
     this.camera=new THREE.OrthographicCamera(-1,1,1,-1,.1,10000);
-    const sky=new THREE.HemisphereLight('#f1f7ff','#c3c9ad',2.15);sky.position.set(0,0,1);this.scene.add(sky);
-    this.sun=new THREE.DirectionalLight('#fff5e3',1.4);this.sun.castShadow=true;
+    const sky=new THREE.HemisphereLight('#b4c6d5','#555b4d',1.45);sky.position.set(0,0,1);this.scene.add(sky);
+    this.sun=new THREE.DirectionalLight('#d4c5a6',1.25);this.sun.castShadow=true;
     this.sun.shadow.mapSize.set(2048,2048);this.sun.shadow.bias=-.0003;this.sun.shadow.normalBias=.5;
     this.scene.add(this.sun);this.scene.add(this.sun.target);
     this.texture=new THREE.CanvasTexture(owner.atlas?.base??owner.canvas);this.texture.colorSpace=THREE.SRGBColorSpace;
@@ -38,7 +38,8 @@ export class TerrainScene {
     this.territoryUniform={value:null};this.mapTransform={value:new THREE.Vector4()};
     this.scorchUniforms={map:{value:null},size:{value:new THREE.Vector2(1,1)},enabled:{value:0}};
     this.overviewUniforms={map:{value:null},size:{value:new THREE.Vector2(owner.game.width,owner.game.height)},ready:{value:0},detail:{value:new THREE.Vector4()},coarse:{value:0}};
-    this.material=createTerrainMaterial(this.texture,this.territoryUniform,this.mapTransform,this.scorchUniforms,this.overviewUniforms);
+    this.scanUniform={value:-1};
+    this.material=createTerrainMaterial(this.texture,this.territoryUniform,this.mapTransform,this.scorchUniforms,this.overviewUniforms,this.scanUniform);
     this.raycaster=new THREE.Raycaster();this.pointer=new THREE.Vector2();
     this.setGame();this.resize();this.setActive(true);
   }
@@ -176,7 +177,7 @@ export class TerrainScene {
       const step=Math.max(g.width,g.height)/160;
       const bounds={x0:0,y0:0,step,columns:Math.ceil(g.width/step),rows:Math.ceil(g.height/step)};
       const geometry=buildTerrainMesh(this.elevation,g.width,g.height,g.gridScale,bounds);
-      const material=createTerrainMaterial(this.texture,this.territoryUniform,this.mapTransform,this.scorchUniforms,{...this.overviewUniforms,coarse:{value:1}});
+      const material=createTerrainMaterial(this.texture,this.territoryUniform,this.mapTransform,this.scorchUniforms,{...this.overviewUniforms,coarse:{value:1}},this.scanUniform);
       this.fallbackBounds=bounds;this.fallbackGround=new THREE.Mesh(geometry,material);installTerrainRaycast(this.fallbackGround,bounds);this.worldRoot.add(this.fallbackGround);
     }
     if(this.fallbackGround){
@@ -248,7 +249,7 @@ export class TerrainScene {
     this.syncOverview();
     this.syncGeometry();this.syncModels();
     if(this.baseVersion!==this.owner.baseVersion){this.texture.needsUpdate=true;this.baseVersion=this.owner.baseVersion;}
-    const key=[this.geometryKey,this.baseVersion,this.ownershipTexture?.version,this.modelsRevision,this.scorchTexture?.version,this.scorchUniforms?.enabled.value].join('|');
+    const key=[this.geometryKey,this.baseVersion,this.ownershipTexture?.version,this.modelsRevision,this.scorchTexture?.version,this.scorchUniforms?.enabled.value,this.scanUniform?.value].join('|');
     if(key===this.renderKey)return;
     // Translate light and shadow camera with a cached map during short pans.
     // The depth image stays identical; only its world-to-shadow matrix moves.

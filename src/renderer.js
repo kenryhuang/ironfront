@@ -15,12 +15,16 @@ import { TerrainAtlas } from './terrain-atlas.js';
 import {TerritoryJobs} from './territory-jobs.js';
 import {tracePackedTerritory} from './territory-geometry.js';
 import {drawFlatAtlas} from './flat-atlas.js';
+import {MapScan} from './map-atmosphere.js';
+import {FactorySmoke} from './factory-smoke.js';
 
 const rgb = hex => [1,3,5].map(i => parseInt(hex.slice(i,i+2),16));
 const mix = (a,b,t) => a.map((v,i)=>Math.round(v*(1-t)+b[i]*t));
+// Muted national hues remain distinct without the former pastel white wash.
+const territoryColor=hex=>{const c=rgb(hex),gray=c[0]*.2126+c[1]*.7152+c[2]*.0722;return c.map(v=>Math.round((v*.72+gray*.28)*.68+12));};
 function terrainColors(game) {
   const result=new Uint8ClampedArray(game.owners.length*3);
-  const land=rgb('#d3e4bd'),desert=rgb('#ebddb3'),snow=rgb('#edf2e6'),forest=rgb('#bbd7aa'),hills=rgb('#c9c6a2'),mountain=rgb('#c3b596');
+  const land=rgb('#79816c'),desert=rgb('#91836a'),snow=rgb('#abb5b2'),forest=rgb('#616f60'),hills=rgb('#777464'),mountain=rgb('#797773');
   for(let i=0;i<game.owners.length;i++){
     const lat=90-Math.floor(i/game.width)/game.gridScale,lon=(i%game.width)/game.gridScale-180;
     const gaussian=(x,y,sx,sy)=>Math.exp(-(((lon-x)/sx)**2+((lat-y)/sy)**2));
@@ -38,6 +42,9 @@ function terrainColors(game) {
 export class Renderer {
   constructor(canvas, game) {
     this.canvas = canvas; this.ctx = canvas.getContext('2d'); this.game = game;
+    this.mapScan=new MapScan();this.factorySmoke=new FactorySmoke();this.scanProgress=-1;
+    this.reducedMotion=globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches??false;
+    canvas.addEventListener('pointerdown',()=>this.mapScan.skip(),{passive:true});canvas.addEventListener('wheel',()=>this.mapScan.skip(),{passive:true});
     this.baseColors=terrainColors(game);
     this.initializeGeography();
     this.zoom = 1; this.panX = 0; this.panY = 0;
@@ -47,7 +54,9 @@ export class Renderer {
     try{this.surface=new TerrainScene(this);this.resize();}catch(error){console.warn('立体地形不可用，使用俯视地图。',error);}
   }
 
+  startMapScan(){this.mapScan.start(this.reducedMotion);this.lastRender=0;}
   setGame(game) {
+    this.mapScan.skip();
     this.game = game;
     this.baseColors=terrainColors(game);
     this.initializeGeography();
@@ -83,7 +92,7 @@ export class Renderer {
       for(const result of results){
         const n=g.nations.get(result.id);if(!n?.alive||!n.tiles.size)continue;
         if((this.territoryPaths.get(n.id)?.version??-1)>result.version)continue;
-        const color=rgb(n.color).map(v=>Math.round(v*.85+255*.15));
+        const color=territoryColor(n.color);
         this.territoryPaths.set(n.id,{path:tracePackedTerritory(new Path2D(),result),geometry:{points:result.points,offsets:result.offsets},version:result.version,tile:result.tile,bounds:result.bounds,color:`rgb(${color.join(',')})`});changed=true;
       }
       if(changed){this.revision++;this.labels=[...this.territoryPaths].map(([id,entry])=>({nation:g.nations.get(id),tile:entry.tile}));}
@@ -163,7 +172,7 @@ export class Renderer {
       const cx=sumX/n.tiles.size,cy=sumY/n.tiles.size;let tile,dist=Infinity;
       for(const t of n.tiles){const d=(t%g.width-cx)**2+(Math.floor(t/g.width)-cy)**2;if(d<dist){tile=t;dist=d;}}
       const loops=territoryContours(g.owners,g.width,g.height,n.id,region),path=traceSmoothTerritory(new Path2D(),loops);
-      const color=rgb(n.color).map(v=>Math.round(v*.85+255*.15));
+      const color=territoryColor(n.color);
       this.territoryPaths.set(n.id,{path,geometry:{loops},version,color:`rgb(${color.join(',')})`,tile,bounds:{left:left-1,top:top-1,right:right+1,bottom:bottom+1}});changed=true;
     }
     if(changed)this.revision++;
@@ -181,7 +190,7 @@ export class Renderer {
       }
       for(const canvas of [this.geography,this.landMask,this.coastInk]){
         const ctx=canvas.getContext('2d');ctx.setTransform(this.dpr,0,0,this.dpr,0,0);ctx.translate(ox,oy+this.overscan);ctx.scale(scale,scale);
-        if(canvas===this.coastInk){ctx.strokeStyle='#528496';ctx.lineWidth=.85/scale;ctx.lineJoin='round';ctx.stroke(this.coastPath);}
+        if(canvas===this.coastInk){ctx.strokeStyle='#617e88';ctx.lineWidth=.85/scale;ctx.lineJoin='round';ctx.stroke(this.coastPath);}
         else if(canvas===this.landMask){ctx.fillStyle='#fff';ctx.fill(this.coastPath,'evenodd');}
         else{ctx.save();ctx.clip(this.coastPath,'evenodd');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(this.climate,0,0);ctx.restore();}
       }
@@ -192,7 +201,7 @@ export class Renderer {
       const ctx=this.states.getContext('2d');ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,this.states.width,this.states.height);
       ctx.setTransform(this.dpr,0,0,this.dpr,0,0);ctx.translate(ox,oy+this.overscan);ctx.scale(scale,scale);ctx.lineJoin='round';
       for(const {path,color} of this.territoryPaths.values()){ctx.fillStyle=color;ctx.strokeStyle=color;ctx.lineWidth=.12;ctx.fill(path,'evenodd');ctx.stroke(path);}
-      for(const [id,{path}] of this.territoryPaths){ctx.strokeStyle=id===this.selected?(id===1?'#8d5b10':'#345d76'):'#526f7580';ctx.lineWidth=(id===this.selected?1.5:.7)/scale;ctx.stroke(path);}
+      for(const [id,{path}] of this.territoryPaths){ctx.strokeStyle=id===this.selected?(id===1?'#e4c488':'#9dc6d3'):'#82948d99';ctx.lineWidth=(id===this.selected?1.5:.7)/scale;ctx.stroke(path);}
       ctx.setTransform(1,0,0,1,0,0);ctx.globalCompositeOperation='destination-in';ctx.drawImage(this.landMask,0,0);ctx.globalCompositeOperation='source-over';
       this.statesKey=stateKey;
     }
@@ -210,6 +219,7 @@ export class Renderer {
     if(now&&this.lastRender&&now-this.lastRender<(viewKey===this.lastViewKey?(this.animationFrameInterval??32):16))return false;
     this.lastViewKey=viewKey;
     this.lastRender=now;
+    this.scanProgress=this.mapScan?.sample(navigationTime)??-1;if(this.surface?.scanUniform)this.surface.scanUniform.value=this.scanProgress;
     let c=this.ctx;const g=this.game,sourceContext=c;
     const stageStart=performance.now();
     if (this.cacheTime !== g.time) this.rebuild();
@@ -222,13 +232,13 @@ export class Renderer {
     const baseKey=surfaceKey(this);
     if(!this.surface?.active){
     c.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); c.clearRect(0, 0, this.w, this.h+2*this.overscan);c.translate(0,this.overscan);
-    const ocean=c.createLinearGradient(0,0,0,this.h);ocean.addColorStop(0,'#d0e7f0');ocean.addColorStop(1,'#9ccadd');
+    const ocean=c.createLinearGradient(0,0,0,this.h);ocean.addColorStop(0,'#344e60');ocean.addColorStop(1,'#203743');
     c.fillStyle = ocean; c.fillRect(0, -this.overscan, this.w, this.h+2*this.overscan);
-    c.save(); c.strokeStyle = '#527f9826'; c.lineWidth = 0.5;
+    c.save(); c.strokeStyle = '#7b95a126'; c.lineWidth = 0.5;
     const spacing = 30 * g.gridScale * scale;
     for (let x = ox % spacing; x < this.w; x += spacing) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, this.h); c.stroke(); }
     for (let y = oy % spacing; y < this.h; y += spacing) { c.beginPath(); c.moveTo(0, y); c.lineTo(this.w, y); c.stroke(); }
-    c.textAlign = 'center'; c.fillStyle = '#3c708b8a'; c.font = 'italic 12px Georgia';
+    c.textAlign = 'center'; c.fillStyle = '#91a6ad8a'; c.font = 'italic 12px Georgia';
     const seaLabel = (text, x, y) => c.fillText(text, ox + x * g.gridScale * scale, oy + y * g.gridScale * scale);
     seaLabel('P A C I F I C', 33, 100); seaLabel('A T L A N T I C', 143, 96); seaLabel('I N D I A N   O C E A N', 257, 117);
     c.imageSmoothingEnabled = true;c.imageSmoothingQuality='high';
@@ -250,6 +260,8 @@ export class Renderer {
       c.setTransform(this.dpr,0,0,this.dpr,0,0);c.clearRect(0,0,this.w,this.h);c.save();
     }else c.save();
     this.timings={rebuild:rebuiltAt-stageStart,atlas:atlasAt-rebuiltAt,surface:performance.now()-atlasAt};
+    this.factorySmoke?.draw(this,c);
+    if(!this.surface?.active&&this.scanProgress>=0)this.drawFlatScan(c);
     if(!this.airView)drawPlanOverlay(this,c);
     c.textAlign = 'center';
     const labelBoxes = [];
@@ -267,11 +279,11 @@ export class Renderer {
       }
       if(g.historical&&!placed)continue;
       if (x !== anchor[0] || y !== anchor[1]) { c.strokeStyle = '#526c7680'; c.lineWidth = 0.5; c.beginPath(); c.moveTo(...anchor); c.lineTo(x,y); c.stroke(); }
-      c.lineJoin='round';c.strokeStyle='#f8fbefeb';c.lineWidth=3;
-      c.fillStyle = n.id === 1 ? '#6b4707' : '#243f4a'; c.font = `${n.id === 1 ? 700 : 600} ${Math.min(14, 11 + this.zoom)}px "Noto Sans SC", "Microsoft YaHei", sans-serif`;
+      c.lineJoin='round';c.strokeStyle='#131e23e8';c.lineWidth=3;
+      c.fillStyle = n.id === 1 ? '#f0d59a' : '#d1dbd4'; c.font = `${n.id === 1 ? 700 : 600} ${Math.min(14, 11 + this.zoom)}px "Noto Sans SC", "Microsoft YaHei", sans-serif`;
       c.strokeText(n.name,x,y-3);
       c.fillText(n.name, x, y - 3);
-      c.font = '11px "Barlow Condensed", monospace'; c.fillStyle = n.id === 1 ? '#704e15' : '#3c5460';
+      c.font = '11px "Barlow Condensed", monospace'; c.fillStyle = n.id === 1 ? '#d8bd86' : '#aebfbb';
       c.strokeText(`${Math.floor(n.troops).toLocaleString()} ⚑`,x,y+13);
       c.fillText(`${Math.floor(n.troops).toLocaleString()} ⚑`, x, y + 13);
       c.shadowBlur = 0; c.shadowOffsetY = 0;
@@ -321,6 +333,12 @@ export class Renderer {
     c.restore();
   }
 
+  drawFlatScan(c){
+    const g=this.game,y=this.originY+g.height*this.scale*this.scanProgress,bottom=this.originY+g.height*this.scale;
+    c.save();c.beginPath();c.rect(this.originX,y,g.width*this.scale,Math.max(0,bottom-y));c.clip();c.fillStyle='#092638dd';c.fillRect(0,0,this.w,this.h);
+    c.strokeStyle='#3e9eb9';c.lineWidth=1;c.translate(this.originX,this.originY);c.scale(this.scale,this.scale);c.lineWidth=1/this.scale;if(this.coastPath)c.stroke(this.coastPath);c.restore();
+    c.save();c.strokeStyle='#a4edff';c.lineWidth=2;c.beginPath();c.moveTo(this.originX,y);c.lineTo(this.originX+g.width*this.scale,y);c.stroke();c.restore();
+  }
   route(path, color, dashed = true) {
     const c = this.ctx; c.strokeStyle = color; c.lineWidth = 1.2;
     c.setLineDash(dashed ? [4,5] : []); c.lineDashOffset = -this.game.time * 3; c.beginPath();

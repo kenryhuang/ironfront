@@ -44,7 +44,7 @@ export function drawRivers(ctx,game){
   const s=game.gridScale||1;ctx.lineCap='round';ctx.lineJoin='round';
   for(const river of riverPaths){
     ctx.beginPath();river.points.forEach(([lon,lat],i)=>{const x=(lon+180)*s,y=(90-lat)*s;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
-    ctx.strokeStyle='#b0bea3';ctx.lineWidth=riverWidth(river,s)+.18*s;ctx.stroke();
-    ctx.strokeStyle='#3e96b2';ctx.lineWidth=riverWidth(river,s);ctx.stroke();
+    ctx.strokeStyle='#667366';ctx.lineWidth=riverWidth(river,s)+.18*s;ctx.stroke();
+    ctx.strokeStyle='#496d80';ctx.lineWidth=riverWidth(river,s);ctx.stroke();
   }
 }

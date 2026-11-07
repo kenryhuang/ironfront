@@ -37,6 +37,7 @@ export function createFacilityModel(type, level = 1, color = '#c9a35d', options 
     }
     box(-.26,.23,.24,.27,.31,.025,'trim');
   } else if (type === 'factory') {
+    group.userData.smokeEmitters=[[.36,-.24,level>=3?.97:.70],[.36,.2,.70]];
     box(-.07,-.02,.025,.68,.66,.22);
     for (let i=0;i<4;i++) {
       roof(-.07,-.27+i*.17,.245,.72,.17,.1,'metal',-.067);

@@ -87,7 +87,7 @@ export class TerrainAtlas {
     const c=this.overview.getContext('2d');
     if(this.overview.width!==g.width)this.overview.width=g.width;
     if(this.overview.height!==g.height)this.overview.height=g.height;
-    c.setTransform(1,0,0,1,0,0);c.fillStyle='#b9dce8';c.fillRect(0,0,g.width,g.height);
+    c.setTransform(1,0,0,1,0,0);c.fillStyle='#2b4658';c.fillRect(0,0,g.width,g.height);
     c.save();if(o.coastPath)c.clip(o.coastPath,'evenodd');c.drawImage(o.climate,0,0);
     c.globalAlpha=.72;for(const {path,color}of o.territoryPaths.values()){c.fillStyle=color;c.fill(path,'evenodd');}
     c.restore();this.overviewRevision=o.revision;this.overviewVersion++;
@@ -99,18 +99,18 @@ export class TerrainAtlas {
     this.bounds=bounds;const a=bounds;
     if(changed){for(const c of [this.base,this.ownership]){if(c.width!==a.pixelWidth)c.width=a.pixelWidth;if(c.height!==a.pixelHeight)c.height=a.pixelHeight;}}
     if(changed||!this.baseVersion){
-      const c=this.base.getContext('2d');c.setTransform(1,0,0,1,0,0);c.fillStyle='#b9dce8';c.fillRect(0,0,this.base.width,this.base.height);
+      const c=this.base.getContext('2d');c.setTransform(1,0,0,1,0,0);c.fillStyle='#2b4658';c.fillRect(0,0,this.base.width,this.base.height);
       c.setTransform(a.density,0,0,a.density,-a.x0*a.density,-a.y0*a.density);
-      c.strokeStyle='#527f9826';c.lineWidth=.5/a.mapScale;
+      c.strokeStyle='#7b95a126';c.lineWidth=.5/a.mapScale;
       const spacing=30*g.gridScale;
       if(spacing>0){
         for(let x=Math.ceil(a.x0/spacing)*spacing;x<a.x0+a.width;x+=spacing){c.beginPath();c.moveTo(x,a.y0);c.lineTo(x,a.y0+a.height);c.stroke();}
         for(let y=Math.ceil(a.y0/spacing)*spacing;y<a.y0+a.height;y+=spacing){c.beginPath();c.moveTo(a.x0,y);c.lineTo(a.x0+a.width,y);c.stroke();}
-        c.textAlign='center';c.fillStyle='#3c708b8a';c.font=`italic ${12/a.mapScale}px Georgia`;
+        c.textAlign='center';c.fillStyle='#91a6ad8a';c.font=`italic ${12/a.mapScale}px Georgia`;
         for(const [label,x,y] of [['P A C I F I C',33,100],['A T L A N T I C',143,96],['I N D I A N   O C E A N',257,117]])c.fillText(label,x*g.gridScale,y*g.gridScale);
       }
       c.save();if(o.coastPath)c.clip(o.coastPath,'evenodd');c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';c.drawImage(o.climate,0,0);drawRivers(c,g);c.restore();
-      if(o.coastPath){c.lineWidth=.85/a.mapScale;c.strokeStyle='#528496';c.lineJoin='round';c.stroke(o.coastPath);}
+      if(o.coastPath){c.lineWidth=.85/a.mapScale;c.strokeStyle='#617e88';c.lineJoin='round';c.stroke(o.coastPath);}
       this.baseVersion++;this.canvasBaseVersion=this.baseVersion;
     }
     const visible=[...o.territoryPaths].filter(([,entry])=>!entry.bounds||
@@ -120,7 +120,7 @@ export class TerrainAtlas {
       const c=this.ownership.getContext('2d');c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,this.ownership.width,this.ownership.height);
       c.setTransform(a.density,0,0,a.density,-a.x0*a.density,-a.y0*a.density);c.save();if(o.coastPath)c.clip(o.coastPath,'evenodd');c.lineJoin='round';
       for(const [, {path,color}] of visible){c.fillStyle=color;c.strokeStyle=color;c.lineWidth=.12;c.fill(path,'evenodd');c.stroke(path);}
-      for(const [id,{path}] of visible){c.strokeStyle=id===o.selected?(id===1?'#8d5b10':'#345d76'):'#526f7580';c.lineWidth=(id===o.selected?1.5:.7)/a.mapScale;c.stroke(path);}
+      for(const [id,{path}] of visible){c.strokeStyle=id===o.selected?(id===1?'#e4c488':'#9dc6d3'):'#82948d99';c.lineWidth=(id===o.selected?1.5:.7)/a.mapScale;c.stroke(path);}
       c.restore();this.stateKey=key;this.ownershipVersion++;this.canvasOwnershipVersion=this.ownershipVersion;
     }
     this.canvasBounds=a;

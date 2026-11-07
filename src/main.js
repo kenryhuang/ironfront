@@ -13,19 +13,21 @@ import { AirRenderer as Renderer } from './air-renderer.js';
 import { updateBattleEvents,isGroundCombatTask } from './battle-events.js';
 import { createRenderDiagnostics } from './render-diagnostics.js';
 import { createZoomInput } from './navigation-input.js';
-import { BattleAudio } from './battle-audio.js';
+import {createBattleVoices} from './battle-voices.js';
 
 const $ = id => document.getElementById(id);
-const battleAudio=new BattleAudio();
 const number = n => Math.floor(n).toLocaleString('en-US');
 const time = n => `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(Math.floor(n % 60)).padStart(2, '0')}`;
 let countryCode=Number(new URLSearchParams(location.search).get('country'))||710;
 const newCampaign=()=>prepareHistoricalCampaign(new Game(createHistoricalTheater(countryCode)));
 let game = newCampaign();
+const battleVoices=createBattleVoices(game,()=>({zoom:renderer.zoom,w:renderer.w,h:renderer.h,airView:renderer.airView,project:p=>{const x=renderer.originX+p.x*renderer.scale,y=renderer.originY+p.y*renderer.scale;return renderer.surface?.active?renderer.surface.project(x,y):[x,y];}}));
+addEventListener('pagehide',()=>battleVoices.dispose(),{once:true});
 countryCode=game.nations.get(1).code;
 for(const n of COUNTRY_OPTIONS){const option=document.createElement('option');option.value=n.code;option.textContent=n.name;$('scenario-country').append(option);}
 $('scenario-country').value=String(countryCode);
 const renderer = new Renderer($('battlefield'), game);
+renderer.startMapScan();
 const renderDiagnostics=createRenderDiagnostics(renderer);
 let selected = null, selectedTile = null, selectedForLanding = false, mode = null, paused = false, speed = 1, accumulator = 0;
 let lastTime = performance.now(), lastUI = -1, lastAI = -1, toastUntil = 0, ended = false;
@@ -59,6 +61,7 @@ function toast(message, error = false) {
   toastUntil = performance.now() + 3500;
 }
 function command(result, message) {
+  battleVoices.update(game);
   if (!result.ok) toast(result.message, true);
   else if (message) toast(message);
   renderer.cacheTime = -1; updateUI();
@@ -129,6 +132,8 @@ function reset() {
   zoomInput.flush();
   if(planState)cancelCustomPlan();
   game = newCampaign(); renderer.setGame(game); selected = null; selectedTile = null; selectedForLanding = false; renderer.selected = null; renderer.hover = null;
+  renderer.startMapScan();
+  battleVoices.reset(game);
   renderer.plannedRoute = null; renderer.destination = null;
   mode=null;
   $('facilities').replaceChildren();
@@ -485,6 +490,7 @@ const campaignBench=new URLSearchParams(location.search).has('campaignBench')?
     accumulator=0;lastTime=performance.now();lastAI=Math.floor(game.time/3);updateUI();
   }}):null;
 function frame(now) {
+  battleVoices.pause(paused);
   const frameStart=performance.now();campaignBench?.before();
   zoomInput.flush();
   const afterNavigation=performance.now();
@@ -494,10 +500,11 @@ function frame(now) {
     while (accumulator >= 0.1) {
       const aiPeriod = Math.floor(game.time / 3);
       if (aiPeriod !== lastAI) { runAI(game); lastAI = aiPeriod; }
-      game.step(0.1); battleAudio.observe(game); accumulator -= 0.1;
+      game.step(0.1); battleVoices.update(game); accumulator -= 0.1;
     }
   }
   renderer.airRenderTime=paused||game.phase!=='running'?game.time:Math.max(0,game.time-.1+accumulator);
+  battleVoices.update(game);
   const afterSimulation=performance.now();
   if (now - lastUI > 200) { updateUI(); lastUI = now; }
   if (now > toastUntil) $('toast').hidden = true;
