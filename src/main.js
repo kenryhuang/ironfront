@@ -21,13 +21,16 @@ const time = n => `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(Math.
 let countryCode=Number(new URLSearchParams(location.search).get('country'))||710;
 const newCampaign=()=>prepareHistoricalCampaign(new Game(createHistoricalTheater(countryCode)));
 let game = newCampaign();
+const loadingLabel=document.querySelector('#battle-loading-status');
+if(loadingLabel)loadingLabel.textContent='正在构建立体地形…';
 const battleVoices=createBattleVoices(game,()=>({zoom:renderer.zoom,w:renderer.w,h:renderer.h,airView:renderer.airView,project:p=>{const x=renderer.originX+p.x*renderer.scale,y=renderer.originY+p.y*renderer.scale;return renderer.surface?.active?renderer.surface.project(x,y):[x,y];}}));
 addEventListener('pagehide',()=>battleVoices.dispose(),{once:true});
 countryCode=game.nations.get(1).code;
 for(const n of COUNTRY_OPTIONS){const option=document.createElement('option');option.value=n.code;option.textContent=n.name;$('scenario-country').append(option);}
 $('scenario-country').value=String(countryCode);
 const renderer = new Renderer($('battlefield'), game);
-renderer.startMapScan();
+if(loadingLabel)loadingLabel.textContent='正在准备战场画面…';
+
 const renderDiagnostics=createRenderDiagnostics(renderer);
 let selected = null, selectedTile = null, selectedForLanding = false, mode = null, paused = false, speed = 1, accumulator = 0;
 let lastTime = performance.now(), lastUI = -1, lastAI = -1, toastUntil = 0, ended = false;
@@ -132,7 +135,7 @@ function reset() {
   zoomInput.flush();
   if(planState)cancelCustomPlan();
   game = newCampaign(); renderer.setGame(game); selected = null; selectedTile = null; selectedForLanding = false; renderer.selected = null; renderer.hover = null;
-  renderer.startMapScan();
+  
   battleVoices.reset(game);
   renderer.plannedRoute = null; renderer.destination = null;
   mode=null;
@@ -510,6 +513,15 @@ function frame(now) {
   if (now > toastUntil) $('toast').hidden = true;
   const renderStart=performance.now(),painted=!$('research-dialog').open&&!document.hidden&&renderer.render(now);
   unitUI?.update(now);
+  const loading=document.querySelector('#battle-loading');
+  if(painted&&loading&&!loading.dataset.ready){
+    loading.dataset.ready='true';
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      loading.classList.add('leaving');
+      loading.addEventListener('transitionend',()=>loading.remove(),{once:true});
+      setTimeout(()=>loading.remove(),750);
+    }));
+  }
   const phases={total:performance.now()-frameStart,navigation:afterNavigation-frameStart,simulation:afterSimulation-afterNavigation,ui:renderStart-afterSimulation,render:performance.now()-renderStart};
   campaignBench?.after({...phases,...(painted?renderer.timings:{rebuild:0,atlas:0,surface:0})});
   renderDiagnostics(now,painted?phases.render:null,phases);requestAnimationFrame(frame);

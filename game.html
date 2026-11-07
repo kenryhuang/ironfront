@@ -2,21 +2,48 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
+  <script>
+  // The battlefield is entered through the cinematic cover, including direct links.
+  try {
+    if (sessionStorage.getItem('ironfront.battle-access') === '1') {
+      sessionStorage.removeItem('ironfront.battle-access');
+    } else {
+      document.documentElement.style.visibility = 'hidden';
+      location.replace('/' + location.search);
+    }
+  } catch { location.replace('/' + location.search); }
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#141b20">
   <meta name="description" content="IronFront 全球战场：扩张领土、指挥陆军、跨海登陆，实时观察双方兵力。">
   <title>IRONFRONT · 铁锋指挥部</title>
-  <script>try{if(sessionStorage.getItem('ironfront.entering')){sessionStorage.removeItem('ironfront.entering');document.documentElement.style.background='#000';const s=document.createElement('style');s.textContent='body::after{content:"";position:fixed;inset:0;background:#000;z-index:99999;pointer-events:none;animation:battle-arrival 1s .15s both}@keyframes battle-arrival{from{opacity:1}to{opacity:0}}';document.head.append(s);}}catch{}</script>
+
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='8' fill='%23141b20'/%3E%3Cpath d='M24 6 39 14v16L24 43 9 30V14Z' fill='none' stroke='%23d6b66b' stroke-width='3'/%3E%3Cpath d='M18 16h12v4h-4v12h-4V20h-4Z' fill='%23d6b66b'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/src/style.css">
   <link rel="stylesheet" href="/src/air-ui.css">
   <link rel="stylesheet" href="/src/map-command-ui.css">
 </head>
 <body>
+  <style>
+  #battle-loading{position:fixed;inset:0;z-index:99999;background:#02050a;color:#b6cce2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;font-family:system-ui,sans-serif;transition:opacity .65s ease;}
+  #battle-loading.leaving{opacity:0;pointer-events:none}
+  #battle-loading .loading-brand{font-size:14px;letter-spacing:.55em;color:#456b96}
+  #battle-loading h1{font-size:25px;letter-spacing:.2em;font-weight:400;margin:0}
+  #battle-loading p{font-size:12px;letter-spacing:.12em;color:#7187a2;margin:0}
+  #battle-loading .loading-ring{width:36px;height:36px;border:1px solid #142338;border-top-color:#6c9ccc;border-radius:50%;animation:loading-turn 1.3s linear infinite}
+  #battle-loading a{color:#8bb6dc;font-size:13px}
+  @keyframes loading-turn{to{transform:rotate(360deg)}}
+  @media(prefers-reduced-motion:reduce){#battle-loading{transition:none}#battle-loading .loading-ring{animation:none;border-top-color:#a4c5e5}}
+  </style>
+  <section id="battle-loading" role="status" aria-live="polite" aria-label="正在加载战场">
+    <span class="loading-brand">IRONFRONT</span><div class="loading-ring" aria-hidden="true"></div>
+    <h1>正在建立战场</h1><p id="battle-loading-status">准备地图与作战系统…</p>
+    <a href="/" hidden id="battle-loading-back">返回封面重试</a>
+  </section>
   <header class="masthead">
     <a class="brand" href="/" aria-label="IronFront 首页"><span class="insignia">I</span><span>IRONFRONT<small>铁锋 · 战区指挥部</small></span></a>
     <div class="header-center"><span class="live-dot"></span> 1939.08.31 <span class="divider">/</span> 历史疆域 · 自由战役</div>
-    <div class="header-actions"><button id="help-button" class="text-button">操作手册 <span>?</span></button><span class="version">原型 0.6</span></div>
+    <div class="header-actions"><a class="text-button" href="/" aria-label="返回蓝图封面">返回封面</a><button id="help-button" class="text-button">操作手册 <span>?</span></button><span class="version">原型 0.6</span></div>
   </header>
   <div class="operation-bar">
     <div><span class="eyebrow">OPERATION / 02</span><strong>全球争锋</strong><span class="muted theater-sub">全球地图 · 陆海空作战</span></div>
@@ -86,6 +113,16 @@
   </main>
   <dialog id="research-dialog" aria-labelledby="research-title"><div class="research-dialog-heading"><div><span class="eyebrow">RESEARCH & DEVELOPMENT</span><h2 id="research-title">国家科技树</h2></div><span>战役继续运行 · 研发完成后效果立即生效</span><button id="close-research" aria-label="关闭科技树">关闭 ×</button></div><iframe id="research-frame" title="国家研发科技树" src="/docs/research/research-browser.html?game=1"></iframe></dialog>
   <dialog id="help-dialog"><div class="dialog-heading"><span class="eyebrow">FIELD MANUAL</span><button id="close-help" aria-label="关闭操作手册">×</button></div><h2>全球作战手册</h2><ol><li><b>1939战备开局</b>：默认中国，使用1939年8月31日的近似历史疆域，开局有3分钟发育期（按模拟时间，暂停冻结、加速同步），AI暂不主动开战。玩家提前进攻会引起目标国反击。之后各国按扩张、谨慎、防守倾向行动，不再优先围攻玩家。右上角“指挥 → 国家”选择国家并点击“以此国家重开”可建立新战役（替换当前战况）。玩家开局500万资金、100万正规军；城市提升人口上限与增长，兵力通过训练或强征补充。</li><li><b>国家建设</b>：右键己方空地打开建筑轮盘，点击设施立即开工。建筑可以相邻，每格一座；右键建筑管理生产、训练、升级和维修。建设消耗资金和时间，选址时战役继续，Esc 取消。城市花费2400、20秒建成，增加5000人口上限和每秒12人口；其余设施15秒建成。</li><li><b>国家研发</b>：打开科技树选择项目，满足前置科技与设施要求后支付资金开始研发。研发可暂停与恢复，已支付项目保留进度；打开科技树不会暂停战役。科技解锁新设施与设施等级，完成后加成立即生效。设施卡显示升级费用、时间与要求。</li><li><b>生产与训练</b>：工厂花费1800，占用200工人，每秒消耗8资金生产6装备，停产释放工人。兵营花费1600，每批100人、100装备、10秒训练正规军；可切换整编留守强征军。停产或切换模式退回预留资源，资源不足等待。</li><li><b>强征与防御</b>：输入人数可立即将可用人力1:1强征入伍，效能为正规军40%。要塞花费1600，附近5地理单位敌军推进消耗×2.4。被占设施保留在建进度，新国接管默认停产。</li><li><b>空军</b>：T07解锁战斗机、攻击机、侦察机和机场；T14解锁战术轰炸机与运输机；T21解锁B-29（需Ⅱ级机场）。在航空指挥中付费生产后，点击或圈画地图派出任务。右上角切换空中战场，战斗机在场才获得制空权，遇敌自动交战。非机场敌方设施需要侦察；旧情报不会实时更新。航空任务栏可召回，飞机返航后归还库存。</li><li><b>部队微操</b>：点击地图上的部队或标记选中，Shift点击加选；Shift拖动或点击「框选」后拖动可多选。右键己方陆地移动，右键敌方陆地进攻；S原地停止，R沿己方陆路撤退，Esc取消选择。选中面板可单独撤退一支部队。原部队保留兵力、装备、组织度与补给，到达目标后原地待命，可反复下令。未选中时右键仍打开指令轮盘。</li><li><b>自定义进攻</b>：点击自定义进攻后按住鼠标圈画，松开闭合。输入投入人数，再确认执行。规划期间战役继续，无需指定国家，部队推进圈内可达的非己方陆地，任务完成后余兵归队；Esc取消不扣兵。</li><li><b>跨海登陆</b>：直接在自定义进攻中圈选不接壤的沿海区域，系统预览自动海运路线。确认后，步兵或装甲从当前驻地走到岸边登船；无需单独点击运兵船按钮。没有可达海岸的选区不能海运。</li><li><b>航行与登陆</b>：船队沿水路航行，不会穿越陆地。到达无主海岸后建立据点；敌岸先进行登陆战，再只在原圈选区域内推进。</li><li><b>兵力显示</b>：地图箭头显示攻击兵力和目标全国守军；船只显示载兵数与倒计时。金色为我方，红色为来袭敌军，灰色为其他国家作战。</li><li><b>部队管理</b>：前线和海运列表可撤回部队，返还全部剩余兵力。左上角点击“作战事件”展开列表。</li></ol><div class="manual-note">使用 Natural Earth 陆地轮廓与架空国家，不代表历史国界。当前不含舰队拦截与多人联机。运输撤回会直接返还兵力；地面战斗仍采用全国守军模型。</div><p class="shortcut-hint">空格：暂停 / 继续　Esc：取消建设 / 选岸 / 自定义规划　滚轮：缩放</p></dialog>
-  <script type="module" src="/src/main.js"></script>
+  <script type="module">
+  // Paint the loading screen before evaluating the simulation and terrain modules.
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    import('/src/main.js').catch(error=>{
+      console.error('战场初始化失败',error);
+      document.querySelector('#battle-loading-status').textContent='战场加载失败，请返回封面重试。';
+      document.querySelector('#battle-loading-back').hidden=false;
+      document.querySelector('.loading-ring').style.animation='none';
+    });
+  }));
+  </script>
 </body>
 </html>

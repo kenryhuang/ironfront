@@ -77,7 +77,7 @@ entry.addEventListener('click',e=>{
  document.querySelector('#sound').disabled=true;audio.fadeOut(1.2);
  const black=document.createElement('div');black.id='battle-transition';Object.assign(black.style,{position:'fixed',inset:'0',background:'#000',zIndex:'99999',opacity:'0',transition:'opacity 1.2s ease',pointerEvents:'all'});document.body.append(black);
  requestAnimationFrame(()=>requestAnimationFrame(()=>black.style.opacity='1'));
- setTimeout(()=>{try{sessionStorage.setItem('ironfront.entering','1');}catch{}location.assign(entry.href);},1300);
+ setTimeout(()=>{try{sessionStorage.setItem('ironfront.entering','1');sessionStorage.setItem('ironfront.battle-access','1');}catch{}location.assign(entry.href);},1300);
 });
 addEventListener('pagehide',()=>audio.dispose(),{once:true});
 const query=new URLSearchParams(location.search),shot=Number(query.get('shot'));const fixed=query.has('shot')&&Number.isFinite(shot);
