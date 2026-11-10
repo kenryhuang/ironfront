@@ -95,8 +95,8 @@ export function createMapCommandUI({getGame,isPaused,command,prepareContext,adva
     center.querySelector('button').textContent=page==='root'?'关闭':'返回';center.querySelector('button').onclick=page==='root'?()=>closeContext():back;
     if(page==='root'){
       arrange([
-        wheelOption('建筑','▥',()=>showWheel('build'),'选择设施'),
-        wheelOption('联盟','◇',()=>{wheel.hidden=true;diplomacy.hidden=false;dipText.textContent=(owner>1?`当前国家：${g.nations.get(owner)?.name}。`:'请在其他国家领土上使用联盟入口。')+'联盟入口已预留，结盟与互不进攻规则尚未启用。';position(diplomacy,300,180);},'外交关系'),
+        ...(g.campaign==='1939'?[]:[wheelOption('建筑','▥',()=>showWheel('build'),'选择设施')]),
+        ...(g.campaign==='1939'?[]:[wheelOption('联盟','◇',()=>{wheel.hidden=true;diplomacy.hidden=false;dipText.textContent=(owner>1?`当前国家：${g.nations.get(owner)?.name}。`:'请在其他国家领土上使用联盟入口。')+'联盟入口已预留，结盟与互不进攻规则尚未启用。';position(diplomacy,300,180);},'外交关系')]),
         wheelOption('进攻','↗',()=>showWheel('attack'),'选择战法')
       ]);setHint('右键下令 · 点击空白或 Esc 关闭');
     }else if(page==='attack'){

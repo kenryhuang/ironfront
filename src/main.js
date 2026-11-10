@@ -1,3 +1,8 @@
+import {createInGameAirSimulation,stepAirSimulationEnemy,focusAirSimulation} from './air-simulation.js';
+import {WorkshopAirRenderer} from './workshop-air-renderer.js';
+import {createAirMapUI} from './air-map-ui.js';
+import {createAirSquadronUI} from './air-squadron-ui.js';
+import {SimulationGame} from './simulation-game.js';
 import {createGroundUnitUI} from './ground-unit-ui.js';
 import {createMapCommandUI} from './map-command-ui.js';
 import { createStrategicUI } from './strategic-ui.js';
@@ -19,23 +24,27 @@ const $ = id => document.getElementById(id);
 const number = n => Math.floor(n).toLocaleString('en-US');
 const time = n => `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(Math.floor(n % 60)).padStart(2, '0')}`;
 let countryCode=Number(new URLSearchParams(location.search).get('country'))||710;
-const newCampaign=()=>prepareHistoricalCampaign(new Game(createHistoricalTheater(countryCode)));
+if(!COUNTRY_OPTIONS.some(n=>n.code===countryCode))countryCode=({276:255,250:220,826:200,840:2,643:365,392:740})[countryCode]||710;
+const airSimulation=new URLSearchParams(location.search).get('simulation')==='air';
+const simulationCampaign=new URLSearchParams(location.search).get('campaign')==='skirmish';
+const campaignMode=simulationCampaign?'1939':'1936'; // The historical 1939 campaign remains unavailable.
+const newCampaign=()=>{if(airSimulation)return createInGameAirSimulation();if(campaignMode==='1939')return new SimulationGame(countryCode);const g=prepareHistoricalCampaign(new Game(createHistoricalTheater(countryCode)));g.campaign='1936';g.scenarioDate='1936 · 全球霸权（开发中）';return g;};
 let game = newCampaign();
 const loadingLabel=document.querySelector('#battle-loading-status');
 if(loadingLabel)loadingLabel.textContent='正在构建立体地形…';
 const battleVoices=createBattleVoices(game,()=>({zoom:renderer.zoom,w:renderer.w,h:renderer.h,airView:renderer.airView,project:p=>{const x=renderer.originX+p.x*renderer.scale,y=renderer.originY+p.y*renderer.scale;return renderer.surface?.active?renderer.surface.project(x,y):[x,y];}}));
 addEventListener('pagehide',()=>battleVoices.dispose(),{once:true});
-countryCode=game.nations.get(1).code;
+countryCode=game.nations.get(1).code??countryCode;
 for(const n of COUNTRY_OPTIONS){const option=document.createElement('option');option.value=n.code;option.textContent=n.name;$('scenario-country').append(option);}
 $('scenario-country').value=String(countryCode);
-const renderer = new Renderer($('battlefield'), game);
+const renderer = new (airSimulation?WorkshopAirRenderer:Renderer)($('battlefield'), game);
 if(loadingLabel)loadingLabel.textContent='正在准备战场画面…';
 
 const renderDiagnostics=createRenderDiagnostics(renderer);
 let selected = null, selectedTile = null, selectedForLanding = false, mode = null, paused = false, speed = 1, accumulator = 0;
 let lastTime = performance.now(), lastUI = -1, lastAI = -1, toastUntil = 0, ended = false;
 let drag = null, suppressClick = false, helpWasPaused = false;
-let planState=null,drawing=null,airDrawing=null,mapUI=null,unitUI=null;
+let planState=null,drawing=null,airDrawing=null,mapUI=null,unitUI=null,airUnitUI=null;
 const zoomInput=createZoomInput({getZoom:()=>renderer.zoom,zoomAt:(...args)=>{
   const px=renderer.panX,py=renderer.panY;
   renderer.zoomAt(...args);
@@ -48,14 +57,17 @@ const strategicUI=createStrategicUI({root:$('strategic-section'),getGame:()=>gam
   beginTarget(kind){groundView();clearAirDrawing();if(planState)cancelCustomPlan();mode='strike:'+kind;renderer.plannedRoute=null;toast('点击敌方陆地预览打击范围，再确认发射。');updateUI();},
   onPreview(preview){renderer.strikePreview=preview;},onExit(){if(mode?.startsWith('strike:'))mode=null;updateUI();}});
 
-const airUI=createAirUI({root:$('air-section'),events:$('air-events'),getGame:()=>game,command,isPaused:()=>paused,getMode:()=>mode,
- beginMode(value){if(planState)cancelCustomPlan();mode=value;clearAirDrawing();renderer.localMode=null;renderer.plannedRoute=null;renderer.strikePreview=null;if(value)toast('点击目标或按住鼠标圈画航空任务区域；Esc取消，战役继续。');updateUI();},
- focusFlight(id){const f=game.air.flights.find(f=>f.id===id);if(!f)return;zoomInput.flush();renderer.zoom=Math.max(renderer.zoom,60);const [x,y]=renderer.projectAir(f.x,f.y,renderer.airView?10:5);renderer.panX+=renderer.w/2-x;renderer.panY+=(renderer.h/2-y)/Math.cos(renderer.surface?.active?renderer.surface.tilt:0);renderer.constrainView();renderer.updateReliefBounds();updateZoomLabel();}
+const airUI=(airSimulation?createAirSquadronUI:createAirUI)({root:$('air-section'),events:$('air-events'),getGame:()=>game,command,isPaused:()=>paused,getMode:()=>mode,
+ beginMode(value){if(planState)cancelCustomPlan();mode=value;clearAirDrawing();renderer.localMode=null;renderer.plannedRoute=null;renderer.strikePreview=null;if(value){if(airSimulation)mapUI?.closeDrawer();toast('点击目标或按住鼠标圈画航空任务区域；Esc取消，战役继续。');}updateUI();},
+ onPreview(preview){renderer.targetPreview=preview;renderer.lastRender=0;},
+ onSelection(s){if(airUnitUI)airUnitUI.choose([s.id]);else{game.air.selected.clear();if(s.flightId)game.air.selected.add(s.flightId);}renderer.lastRender=0;},
+ onTargetReady(){mapUI?.openDrawer('air');},
+ focusFlight(id,home){const f=game.air.flights.find(f=>f.id===id)??(home!==undefined?game.air.position(home):null);if(!f)return;zoomInput.flush();renderer.zoom=Math.max(renderer.zoom,airSimulation?22:60);const [x,y]=renderer.projectAir(f.x,f.y,renderer.airView?10:5);renderer.panX+=renderer.w/2-x;renderer.panY+=(renderer.h/2-y)/Math.cos(renderer.surface?.active?renderer.surface.tilt:0);renderer.constrainView();renderer.updateReliefBounds();updateZoomLabel();}
 });
 function clearAirDrawing(){airDrawing=null;renderer.drawing=null;renderer.targetPreview=null;}
 function airViewLabels(){$('air-toggle').textContent=renderer.airView?'✈ 返回地面':'✈ 空中战场';$('air-toggle').setAttribute('aria-pressed',String(!!renderer.airView));$('air-legend').hidden=!renderer.airView;$('map-tooltip').hidden=true;}
 function groundView(){if(renderer.airView){renderer.toggleAir();airViewLabels();}}
-$('air-toggle').onclick=()=>{zoomInput.flush();if(planState)cancelCustomPlan();mode=null;clearAirDrawing();renderer.localMode=null;renderer.strikePreview=null;renderer.toggleAir();airViewLabels();airUI.open();mapUI?.openDrawer('air');updateUI();};
+$('air-toggle').onclick=()=>{zoomInput.flush();if(planState)cancelCustomPlan();mode=null;clearAirDrawing();renderer.localMode=null;renderer.strikePreview=null;renderer.toggleAir();airViewLabels();if(!airSimulation){airUI.open();mapUI?.openDrawer('air');}else mapUI?.closeDrawer();updateUI();};
 
 function updateZoomLabel(){ $('zoom-level').textContent = `${Math.round(renderer.zoom * 100)}%`; }
 
@@ -145,7 +157,7 @@ function reset() {
   $('end-card').hidden = true; $('deployment').hidden = true; $('toast').hidden = true; $('map-tooltip').hidden = true;
   $('armies').replaceChildren(); $('fleets').replaceChildren(); $('ranking').replaceChildren();
   $('intelligence').classList.remove('open'); $('intel-toggle').setAttribute('aria-expanded', 'false');
-  $('ratio').value = '30'; $('speed').textContent = '1×'; updateUI();
+  $('ratio').value = '30'; $('speed').textContent = '1×'; if(airSimulation){renderer.toggleAir();airViewLabels();focusAirSimulation(renderer);mapUI?.closeDrawer();updateZoomLabel();}updateUI();
 }
 
 // Retain interactive nodes across refreshes: a statistics tick must not cancel
@@ -364,7 +376,7 @@ $('pause').addEventListener('click', () => { paused = !paused; accumulator = 0; 
 $('speed').addEventListener('click', () => { speed = speed === 1 ? 2 : speed === 2 ? 4 : 1; $('speed').textContent = `${speed}×`; updateUI(); });
 $('zoom-in').addEventListener('click', () => { zoomInput.flush();renderer.zoomAt(1.25);updateZoomLabel(); });
 $('zoom-out').addEventListener('click', () => { zoomInput.flush();renderer.zoomAt(0.8);updateZoomLabel(); });
-$('fit-map').addEventListener('click', () => { zoomInput.flush();renderer.fit();updateZoomLabel(); });
+$('fit-map').addEventListener('click', () => { zoomInput.flush();if(airSimulation)focusAirSimulation(renderer);else renderer.fit();updateZoomLabel(); });
 const viewButton=$('terrain-view');
 function updateTerrainView(){
   const active=!!renderer.surface?.active;viewButton.textContent=active?'2.5D 沙盘':'俯视地图';
@@ -502,8 +514,8 @@ function frame(now) {
     accumulator += elapsed * speed;
     while (accumulator >= 0.1) {
       const aiPeriod = Math.floor(game.time / 3);
-      if (aiPeriod !== lastAI) { runAI(game); lastAI = aiPeriod; }
-      game.step(0.1); battleVoices.update(game); accumulator -= 0.1;
+      if (aiPeriod !== lastAI) { if(!airSimulation&&campaignMode!=='1939')runAI(game); lastAI = aiPeriod; }
+      game.step(0.1);if(airSimulation)stepAirSimulationEnemy(game); battleVoices.update(game); accumulator -= 0.1;
     }
   }
   renderer.airRenderTime=paused||game.phase!=='running'?game.time:Math.max(0,game.time-.1+accumulator);
@@ -512,7 +524,8 @@ function frame(now) {
   if (now - lastUI > 200) { updateUI(); lastUI = now; }
   if (now > toastUntil) $('toast').hidden = true;
   const renderStart=performance.now(),painted=!$('research-dialog').open&&!document.hidden&&renderer.render(now);
-  unitUI?.update(now);
+  unitUI?.update(now);airUnitUI?.update();
+  if(game.campaign==='1939')updateBlitzHUD();
   const loading=document.querySelector('#battle-loading');
   if(painted&&loading&&!loading.dataset.ready){
     loading.dataset.ready='true';
@@ -531,4 +544,30 @@ mapUI=createMapCommandUI({getGame:()=>game,isPaused:()=>paused,command,
   advance(id,tile){groundView();chooseTarget(id,tile);},custom:startCustomPlan});
 canvas.addEventListener('contextmenu',e=>{e.preventDefault();const [x,y]=local(e);mapUI.openContext(renderer.tileAt(x,y),x,y);updateUI();});
 unitUI=createGroundUnitUI({canvas,getGame:()=>game,getRenderer:()=>renderer,available:()=>!mode&&!renderer.airView&&!$('help-dialog').open&&!$('research-dialog').open&&game.phase==='running',prepare(){zoomInput.flush();mapUI.closeContext(false);$('map-tooltip').hidden=true;},notify(result){toast(result.message,!result.ok);updateUI();}});
+if(airSimulation)airUnitUI=createAirMapUI({canvas,getGame:()=>game,getRenderer:()=>renderer,isPaused:()=>paused,available:()=>!mode&&renderer.airView&&!$('research-dialog').open&&!$('help-dialog').open&&game.phase==='running',prepare(){mapUI.closeContext(false);mapUI.closeDrawer();$('map-tooltip').hidden=true;},onSelection(ids){airUI.selectFlights(ids);},notify(result){toast(result.message,!result.ok);updateUI();}});
 updateUI(); requestAnimationFrame(frame);
+
+function updateBlitzHUD(){
+ const hud=document.querySelector('#blitz-hud');if(!hud)return;
+ const targets=[...game.objectives,...[...game.nations.values()].map(n=>({tile:n.capitalTile,name:n.id===1?'我方司令部':'敌方司令部'}))];
+ for(const [i,o]of targets.entries()){const marker=document.querySelector('#blitz-objective-'+i);if(!marker)continue;const x=renderer.originX+(o.tile%game.width+.5)*renderer.scale,y=renderer.originY+(Math.floor(o.tile/game.width)+.5)*renderer.scale;const p=renderer.surface?.active?renderer.surface.project(x,y):[x,y];marker.style.left=p[0]+'px';marker.style.top=p[1]+'px';marker.hidden=p[0]<0||p[0]>renderer.w||p[1]<0||p[1]>renderer.h;marker.className='blitz-objective '+(game.owners[o.tile]===1?'friendly':game.owners[o.tile]===2?'enemy':'');}
+
+ hud.querySelector('strong').textContent=`我方 ${Math.floor(game.scores[1])} : ${Math.floor(game.scores[2])} 敌方 / ${game.goal}`;
+ hud.querySelector('small').textContent=game.objectives.map(o=>o.name+'：'+(game.owners[o.tile]===1?'我方':game.owners[o.tile]===2?'敌方':'中立')).join(' · ')+` ｜ 增援 ${Math.floor(game.reinforcementPoints[1])} 点`;
+ for(const b of hud.querySelectorAll('button'))b.disabled=game.phase!=='running'||game.reinforcementPoints[1]<(b.dataset.reinforceType==='armor'?100:50);
+}
+if(airSimulation){
+ document.querySelector('.header-center').textContent='空军模拟战役';document.querySelector('.operation-bar strong').textContent='空军模拟 · 编队作战';
+ $('scenario-country').hidden=true;$('scenario-start').hidden=true;
+ $('help-dialog').querySelector('ol').innerHTML='<li>点击机场旁的编队标记或空中飞机；Shift 拖动或点击「框选飞机」选择多队，右键目标弹出任务菜单。</li><li>空中战场可点击飞机或 Shift 框选；右键空域选择巡逻、敌方陆地选择支援或轰炸，右键友方轰炸机选择护航；Esc 关闭菜单或取消选择。</li><li>召回后飞机返航并付费整备，编队保留。损失的飞机从库存补充。</li><li>运输机选择现有步兵执行运输或敌后空降，部队需先到机场登机。敌机在首次下达任务后出动。</li>';
+ renderer.toggleAir();airViewLabels();focusAirSimulation(renderer);updateZoomLabel();mapUI.closeDrawer();
+}else if(campaignMode==='1939'){
+ document.body.classList.add('blitz-mode');
+ document.querySelector('.header-center').textContent='模拟战役 / 步坦小型冲突';document.querySelector('.operation-bar strong').textContent='模拟战役 · 争夺三处枢纽';
+ const hud=document.createElement('section');hud.id='blitz-hud';hud.innerHTML='<strong></strong><small></small><div><button data-reinforce-type="infantry">步兵增援 · 50点</button><button data-reinforce-type="armor">坦克增援 · 100点</button><span>选中部队 → 右键进攻 · S停止 · R撤退</span></div>';document.querySelector('.map-panel').append(hud);
+ hud.onclick=e=>{const type=e.target.dataset.reinforceType;if(type)command(game.requestBlitzReinforcement(1,type));};
+ document.querySelector('#help-dialog ol').innerHTML='<li>双方开局各4支步兵、2支装甲，立即进入战斗。选中地图部队，右键敌方地面下达突击命令。</li><li>占领北、中、南三个枢纽，每个每秒增加1分；先到1200分，或占领对方司令部获胜。</li><li>每20秒获得40增援点，每个已占枢纽额外提供10点。步兵50点，坦克100点，从后方基地到场。</li><li>仅步兵与坦克，不开放建设、科研、炮兵、空军和海运。时间流速为全球模式的2倍。</li>';
+ const targets=[...game.objectives,...[...game.nations.values()].map(n=>({tile:n.capitalTile,name:n.id===1?'我方司令部':'敌方司令部'}))];for(const [i,o]of targets.entries()){const marker=document.createElement('div');marker.id='blitz-objective-'+i;marker.className='blitz-objective';marker.textContent=o.name;document.querySelector('.map-panel').append(marker);}
+ document.querySelector('#arms-section h2').textContent='步坦突击';
+ updateBlitzHUD();
+}else{document.querySelector('.header-center').textContent='1936 · 全球霸权 / 开发中 · 暂沿用现有地图';}

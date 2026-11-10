@@ -100,6 +100,7 @@ export function requestReinforcement(g,owner,key,enabled=true){
 }
 
 export function regimentStationaryReason(g,a){
+ if(a.airborne&&a.airborne.phase!=='ready')return '空降部队正在集结或争夺落点';
  if(a.groundOrder?.type!=='hold')return '移动或进攻中 · 补员暂停';
  if(a.artillery?.target!=null)return '炮击任务中 · 请先停止炮击再补员';
  const positions=unitPositions(a),tiles=positions.map(p=>tileAt(g,p));

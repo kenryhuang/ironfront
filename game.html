@@ -5,7 +5,13 @@
   <script>
   // The battlefield is entered through the cinematic cover, including direct links.
   try {
-    if (sessionStorage.getItem('ironfront.battle-access') === '1') {
+    if (new URLSearchParams(location.search).get('simulation') === 'air') {
+      // The local air simulation uses this same battlefield and command HUD.
+    } else if (new URLSearchParams(location.search).get('campaign') === '1939') {
+      document.documentElement.style.visibility = 'hidden';
+      sessionStorage.removeItem('ironfront.battle-access');
+      location.replace('/?campaign=1939');
+    } else if (sessionStorage.getItem('ironfront.battle-access') === '1') {
       sessionStorage.removeItem('ironfront.battle-access');
     } else {
       document.documentElement.style.visibility = 'hidden';

@@ -14,6 +14,7 @@ export function supplyClaim(g,tile,previous,owner){
  const gained=g.groundSupply?.get(owner),raw=g.supplyHomes?.get(owner),home=(Array.isArray(raw)?raw:[raw]).includes(tile)||g.beachheads?.get(tile)?.owner===owner;if(gained&&home)gained.dirty=true;else if(gained&&!gained.dirty&&!gained.seen.has(tile)){const parent=g.adjacent[tile].find(t=>gained.seen.has(t));if(parent!==undefined){gained.seen.add(tile);gained.parents.set(tile,parent);gained.queue.push(tile);}}
 }
 export function frontSupplied(g,a){
+ if(a.airborne?.suppliedUntil>g.time)return {connected:true,pending:false,airborne:true};
  const cells=a.frontline?.cells??[],lanes=a.frontline?.contingents?.length&&!a.frontline.ready?[...a.frontline.lanes,...a.frontline.contingents]:a.frontline?.lanes??[];
  const positions=a.frontline?.ready?cells:lanes.map(p=>Math.floor(p.y)*g.width+Math.floor(p.x));
  const hasPath=t=>(g.owners[t]===a.owner&&a.supplyPath.has(t))||g.adjacent[t]?.some(n=>g.owners[n]===a.owner&&a.supplyPath.has(n));

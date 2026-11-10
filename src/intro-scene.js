@@ -71,9 +71,13 @@ const embersGeo=new T.BufferGeometry(),stars=[];for(let i=0;i<140;i++)stars.push
 const world=new T.Group();for(const child of [...scene.children]){if(!child.isLight)world.add(child);}world.scale.setScalar(4);scene.add(world);
 let start=performance.now(),elapsed=0,freeze=reduced,skip=reduced,raf;
 const audio=new IntroAudio({button:document.querySelector('#sound'),subtitle:document.querySelector('#radio-subtitle'),onStart(){skip=false;start=performance.now();}});
-let entering=false;
+let entering=false,campaignChosen=false;
+const campaignDialog=document.querySelector('#campaign-select');
+document.querySelector('#campaign-close').onclick=()=>campaignDialog.close();
+const countrySelect=document.querySelector('#campaign-country');countrySelect.value=String(({276:255,250:220,826:200,840:2,643:365,392:740})[entryParams.get('country')]||entryParams.get('country')||710);
+campaignDialog.addEventListener('click',e=>{const card=e.target.closest('[data-campaign]');if(!card||card.disabled||card.dataset.campaign==='1939')return;const url=new URL(entry.href);url.searchParams.set('campaign',card.dataset.campaign);url.searchParams.set('country',countrySelect.value);entry.href=url.href;campaignChosen=true;campaignDialog.close();entry.click();});
 entry.addEventListener('click',e=>{
- if(e.ctrlKey||e.metaKey||e.shiftKey||e.altKey)return;e.preventDefault();if(entering)return;entering=true;
+ if(e.ctrlKey||e.metaKey||e.shiftKey||e.altKey)return;e.preventDefault();if(!campaignChosen){campaignDialog.showModal();return;}if(entering)return;entering=true;
  document.querySelector('#sound').disabled=true;audio.fadeOut(1.2);
  const black=document.createElement('div');black.id='battle-transition';Object.assign(black.style,{position:'fixed',inset:'0',background:'#000',zIndex:'99999',opacity:'0',transition:'opacity 1.2s ease',pointerEvents:'all'});document.body.append(black);
  requestAnimationFrame(()=>requestAnimationFrame(()=>black.style.opacity='1'));

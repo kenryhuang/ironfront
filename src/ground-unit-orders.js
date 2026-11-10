@@ -107,6 +107,7 @@ export function issueGroundOrder(g,owner,keys,tile,{kind='auto'}={}){
  if(g.phase!=='running'||!g.nations.get(owner)?.alive)return {ok:false,message:'战役未运行，无法下令。'};
  const units=listGroundUnits(g,owner),chosen=[...new Set(keys)].map(key=>units.find(u=>u.key===key));
  if(!chosen.length||chosen.some(u=>!u))return {ok:false,message:'请选择仍然存在的己方部队。'};
+ if(chosen.some(u=>u.army?.airborne&&u.army.airborne.phase!=='ready'))return {ok:false,message:'空降部队正在集结或争夺落点，请等待落点安全。'};
  if(!['auto','move','attack','retreat','halt','bombard'].includes(kind))return {ok:false,message:'未知部队命令。'};
  if(kind!=='halt'&&!(kind==='retreat'&&tile==null)&&(!Number.isInteger(tile)||tile<0||tile>=g.owners.length||g.owners[tile]<0))return {ok:false,message:'请选择地图内的陆地。'};
  const orders=[];
@@ -137,7 +138,7 @@ export function issueGroundOrder(g,owner,keys,tile,{kind='auto'}={}){
 
 function exposure(g,a){
  let pressure=0;const positions=a.groundOrder.groups;
- for(const other of g.armies){if(other===a||other.owner===a.owner||other.troops<1)continue;const enemy=unitPositions(other);if(positions.some(p=>enemy.some(q=>distance(p,q)<2.5)))pressure+=other.troops;}
+ for(const other of g.armies){if(other===a||other.owner===a.owner||other.troops<1)continue;const enemy=unitPositions(other);if(positions.some(p=>enemy.some(q=>distance(p,q)<2.5)))pressure+=other.troops*(g.air?.groundEffect?.(other).firepower??1);}
  return Math.min(3,pressure/Math.max(1,a.troops));
 }
 
@@ -157,7 +158,7 @@ export function advanceGroundOrder(g,a,dt){
   if(supplied.connected&&threat===0)a.organization=Math.min(100,(a.organization??100)+dt*2);
   for(const p of order.groups){p.firing=threat>0||(p.firingUntil??0)>g.time;p.status=a.orderState;}return true;
  }
- let arrived=true,blocked=false;for(const p of order.groups){p.firing=(p.firingUntil??0)>g.time;let travel=dt*(a.artillery?4:7+2*armorReadiness(a))*Math.min(4,Math.sqrt(g.gridScale??1))*(.5+.5*(a.supply??1));
+ let arrived=true,blocked=false;for(const p of order.groups){p.firing=(p.firingUntil??0)>g.time;let travel=dt*(a.artillery?4:7+2*armorReadiness(a))*Math.min(4,Math.sqrt(g.gridScale??1))*(.5+.5*(a.supply??1))*(order.type==='retreat'?1:g.air?.groundEffect?.(a).movement??1);
   while(p.pathHead<p.path.length&&travel>0){const t=p.path[p.pathHead];if(g.owners[t]!==a.owner){blocked=true;break;}const q=point(g,t),d=distance(p,q);if(d<1e-7){p.pathHead++;continue;}const step=Math.min(travel,d);p.angle=Math.atan2(q.y-p.y,q.x-p.x);p.x+=(q.x-p.x)/d*step;p.y+=(q.y-p.y)/d*step;travel-=step;if(step>=d-1e-7)p.pathHead++;}
   arrived&&=p.pathHead>=p.path.length;p.status=order.type==='retreat'?'retreating':'moving';
  }
