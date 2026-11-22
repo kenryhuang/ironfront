@@ -124,8 +124,8 @@ export class Renderer {
     this.planPreviewRevision++;
     this.planPreviewLoops=null;this.planPreviewPath=null;
   }
-  tileAt(x, y) {
-    [x,y]=this.sourceAt(x,y,true);
+  tileAt(x, y, includeModels = true) {
+    [x,y]=this.sourceAt(x,y,includeModels);
     const wx=(x-this.originX)/this.scale,wy=(y-this.originY)/this.scale;
     const tx=Math.floor(wx),ty=Math.floor(wy),g=this.game;
     if(tx<0||tx>=g.width||ty<0||ty>=g.height)return null;
@@ -382,11 +382,12 @@ export class Renderer {
       const [x,y] = this.point(this.destination); c.strokeStyle = '#f2d28c'; c.lineWidth = 1.5;
       c.beginPath(); c.arc(x,y,6,0,Math.PI*2); c.stroke();
     }
-    const fleets = [...g.transports].sort((a,b)=>Number(b.owner===1)-Number(a.owner===1));
+    const player=this.playerId??1;
+    const fleets = [...g.transports].sort((a,b)=>Number(b.owner===player)-Number(a.owner===player));
     for (const f of fleets) {
-      const incoming = g.owners[f.destination] === 1, important = f.owner === 1 || incoming;
-      const color = f.owner===1 ? '#f2d28c' : incoming ? '#f09987' : '#91a6b2';
-      this.route(f.path, f.owner===1?'#9c681bca':incoming?'#ae3d30d0':'#52778780');
+      const incoming = g.owners[f.destination] === player, important = f.owner === player || incoming;
+      const color = f.owner===player ? '#f2d28c' : incoming ? '#f09987' : '#91a6b2';
+      this.route(f.path, f.owner===player?'#9c681bca':incoming?'#ae3d30d0':'#52778780');
       const p = transportPosition(g,f), [x,y] = this.displayPoint(this.originX+p.x*this.scale,this.originY+p.y*this.scale);
       if (x < -15 || x > this.w+15 || y < 0 || y > this.h) continue;
       c.fillStyle = color; c.strokeStyle = '#172b34'; c.lineWidth = 1.2;
@@ -399,10 +400,11 @@ export class Renderer {
 
   drawBattles(boxes = [], activeArmies = this.game.armies) {
     const {game:g,ctx:c} = this;
-    const armies = [...activeArmies].sort((a,b)=>Number(b.owner===1||b.target===1)-Number(a.owner===1||a.target===1));
+    const player=this.playerId??1;
+    const armies = [...activeArmies].sort((a,b)=>Number(b.owner===player||b.target===player)-Number(a.owner===player||a.target===player));
     let otherShown = 0;
     for (const a of armies) {
-      const important = a.owner===1||a.target===1;
+      const important = a.owner===player||a.target===player;
       if (!important && otherShown++ >= 10) continue;
       const tile = a.front.find((t,i)=>i>=a.head&&(a.target===null?g.owners[t]>=0&&g.owners[t]!==a.owner:g.owners[t]===a.target)&&((a.landing&&t===a.landingTile)||g.adjacent[t].some(n=>g.owners[n]===a.owner)));
       if (tile === undefined) continue;
@@ -410,7 +412,7 @@ export class Renderer {
       const source = g.adjacent[tile].find(t=>g.owners[t]===a.owner) ?? g.adjacent[tile].find(t=>g.owners[t]===-1);
       if(source===undefined)continue;
       const [sx,sy] = this.point(source), angle = Math.atan2(y-sy,x-sx);
-      const color = a.owner===1 ? '#f3d28c' : a.target===1 ? '#f09987' : '#9cb0ab';
+      const color = a.owner===player ? '#f3d28c' : a.target===player ? '#f09987' : '#9cb0ab';
       const startX=x-Math.cos(angle)*26,startY=y-Math.sin(angle)*26;
       c.strokeStyle=important?'#6b5527':'#496d77';c.lineWidth=important?3.5:2;c.beginPath();c.moveTo(startX,startY);c.lineTo(x,y);c.stroke();
       c.strokeStyle=color;c.lineWidth=important?2:1.2;c.beginPath();c.moveTo(startX,startY);c.lineTo(x,y);c.stroke();

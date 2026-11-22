@@ -1,0 +1,28 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>1939 生产与船队回归场景</title><link rel="stylesheet" href="../../src/territory-1939/style.css">
+<style>body{margin:0;background:#182b3a;color:#e4eef3;font:14px system-ui}header,footer{padding:16px 24px}h1{font-size:20px;margin:0 0 8px}p{margin:4px 0}canvas{display:block;width:100%;height:auto}button{padding:8px 14px;background:#304b61;border:1px solid #749bb5;color:white;cursor:pointer}.controls{display:flex;gap:10px}#inspector{position:absolute;right:20px;top:120px;width:300px;background:#172b3bf0;padding:15px;border:1px solid #ffffff30;border-radius:6px}#status{font-variant-numeric:tabular-nums}a{color:#f1d48b}</style>
+<body><header><h1>1939 · 工厂与商船队</h1><p>真实 Market 模拟与游戏共用小点绘制；两岸港口持续派船，工厂向城市发车。</p><div class="controls"><button id="port">查看港口</button><button id="factory">查看工厂</button><button id="toggle">暂停选中设施</button></div></header>
+<main class="territory-1939"><canvas width="1200" height="560" aria-label="商船队往返运输场景"></canvas><section id="inspector" aria-label="设施详情"></section></main>
+<footer><output id="status"></output><p>这是固定地图回归场景，船队和收益由正式经济系统计算。</p><a href="../../game.html?campaign=1939&build=production-convoys">进入正式1939战役</a></footer>
+<script type="module">
+import {RoomGame} from '../../src/territory-1939/rules.js';
+import {WarVisuals} from '../../src/territory-1939/war-visuals.js';
+import {drawBuilding} from '../../src/territory-1939/pixel-art.js';
+import {buildingDetails} from '../../src/territory-1939/building-cards.js';
+import {productionGauge} from '../../src/territory-1939/economy.js';
+const W=120,H=56,owners=Array.from({length:W*H},(_,t)=>t%W<20?1:t%W>=87?2:-1);
+const g=new RoomGame({width:W,height:H,owners,terrain:owners.map(()=>1),nations:[{id:1,name:'西岸',troops:25000},{id:2,name:'东岸',troops:25000}],logistics:false});g.buildings.clear();
+const tile=(x,y)=>y*W+x,add=(x,y,type,level=1)=>g.buildings.set(tile(x,y),{type,level,enabled:true,remaining:0});
+add(19,28,'port');add(87,28,'port');add(6,28,'factory');add(6,16,'city');
+for(let i=0;i<1300;i++)g.step(.05,{economy:true,ai:false});
+const canvas=document.querySelector('canvas'),c=canvas.getContext('2d'),fx=new WarVisuals(),inspector=document.querySelector('#inspector'),output=document.querySelector('#status');let selected=tile(19,28),last=performance.now(),shown=-1;
+const point=t=>[(t%W+.5)*10,(Math.floor(t/W)+.5)*10];
+const show=()=>{inspector.replaceChildren();buildingDetails(inspector,g.buildings.get(selected),g.time);document.querySelector('#toggle').textContent=g.buildings.get(selected).enabled?'暂停选中设施':'恢复选中设施';};
+document.querySelector('#port').onclick=()=>{selected=tile(19,28);show();};document.querySelector('#factory').onclick=()=>{selected=tile(6,28);show();};document.querySelector('#toggle').onclick=()=>{const b=g.buildings.get(selected);b.enabled=!b.enabled;show();};show();
+function frame(now){requestAnimationFrame(frame);if(document.hidden){last=now;return;}if(now-last<33)return;const dt=Math.min(.1,(now-last)/1000);last=now;g.step(dt,{ai:false});
+ c.fillStyle='#427eaa';c.fillRect(0,0,1200,560);c.fillStyle='#c8b77f';c.fillRect(0,0,200,560);c.fillStyle='#8fae8a';c.fillRect(870,0,330,560);
+ for(const j of g.market.journeys)if(j.kind==='ship')fx.drawMerchant(c,j,{point,w:1200,h:560});else{const t=j.path[Math.min(j.path.length-1,Math.floor(j.distance))],p=point(t);c.fillStyle='#e7ddc4';c.fillRect(p[0]-2,p[1]-2,4,4);}
+ for(const [t,b]of g.buildings){const p=point(t);drawBuilding(c,b,...p,32);if(['factory','port'].includes(b.type)){const s=productionGauge(b,g.time);c.fillStyle=s.color;c.beginPath();c.arc(p[0]-10,p[1]-13,3,0,Math.PI*2);c.fill();c.fillRect(p[0]-12,p[1]+15,24*s.progress,2);}}
+ if(Math.floor(g.time)!==shown){shown=Math.floor(g.time);show();output.textContent='模拟 '+shown+' 秒 · 在途 '+g.market.journeys.length+' 批 · 西岸累计贸易收入 '+Math.floor(g.nations.get(1).tradeEarned??0).toLocaleString()+' 金币';}
+}requestAnimationFrame(frame);
+</script></body></html>

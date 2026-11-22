@@ -1,5 +1,6 @@
 import {FACILITIES} from './facilities.js';
 import {overlayPlacement} from './map-command-layout.js';
+import {createDiplomacyPanel} from './diplomacy-ui.js';
 
 // DOM-only command layer. Existing controls retain their IDs, state and listeners.
 export function createMapCommandUI({getGame,isPaused,command,prepareContext,advance,custom}){
@@ -33,6 +34,7 @@ export function createMapCommandUI({getGame,isPaused,command,prepareContext,adva
 
   const tools=make('nav','map-tools');tools.setAttribute('aria-label','战区工具');
   move(tools,'open-research','air-toggle');
+  tools.append(button('1939 全球争夺',()=>location.assign('?campaign=1939')));
   const commandButton=button('☷ 指挥',()=>drawerName?closeDrawer():openDrawer('arms'));commandButton.setAttribute('aria-expanded','false');tools.append(commandButton);map.append(tools);
   const drawer=make('section','command-drawer hud-surface');drawer.hidden=true;drawer.setAttribute('aria-label','指挥面板');
   const drawerHead=make('div','hud-panel-heading','<strong>指挥中心</strong>');drawerHead.append(button('×',closeDrawer,'hud-close'));
@@ -61,8 +63,9 @@ export function createMapCommandUI({getGame,isPaused,command,prepareContext,adva
   const buildingHead=make('div','hud-panel-heading','<strong>设施任务</strong>');buildingHead.append(button('×',()=>closeContext(),'hud-close'));
   move(buildingPanel,buildingHead,'facilities');
   const buildingActions=make('div','building-actions');buildingActions.append(button('地图指令',()=>showWheel('root')),button('相关任务',()=>{const type=getGame().buildings.get(facilityTile)?.type;openDrawer(type==='airfield'?'air':type==='researchCenter'?'research':type==='barracks'?'arms':'nation');}));buildingPanel.append(buildingActions);map.append(buildingPanel);
-  const diplomacy=make('section','diplomacy-context hud-surface');diplomacy.hidden=true;diplomacy.setAttribute('aria-label','联盟');
-  const dipHead=make('div','hud-panel-heading','<strong>联盟</strong>');dipHead.append(button('×',()=>closeContext(),'hud-close'));const dipText=make('p','');diplomacy.append(dipHead,dipText);map.append(diplomacy);
+  const diplomacyUI=createDiplomacyPanel({getGame,command,close:()=>closeContext()}),diplomacy=diplomacyUI.element;map.append(diplomacy);
+  function openDiplomacy(owner){closeContext(false);closeDrawer();diplomacyUI.show(owner);map.dataset.commandContext='diplomacy';position(diplomacy,310,420);}
+  const allianceButton=button('联盟',()=>{context={tile:null,x:16,y:58};showIntel(null);openDiplomacy(null);});intelTabs.append(allianceButton);
 
   function position(el,width,height){
     const r=map.getBoundingClientRect(),bottom=r.bottom-dock.getBoundingClientRect().top+10;
@@ -96,7 +99,7 @@ export function createMapCommandUI({getGame,isPaused,command,prepareContext,adva
     if(page==='root'){
       arrange([
         ...(g.campaign==='1939'?[]:[wheelOption('建筑','▥',()=>showWheel('build'),'选择设施')]),
-        ...(g.campaign==='1939'?[]:[wheelOption('联盟','◇',()=>{wheel.hidden=true;diplomacy.hidden=false;dipText.textContent=(owner>1?`当前国家：${g.nations.get(owner)?.name}。`:'请在其他国家领土上使用联盟入口。')+'联盟入口已预留，结盟与互不进攻规则尚未启用。';position(diplomacy,300,180);},'外交关系')]),
+        wheelOption('联盟','◇',()=>openDiplomacy(owner),'结盟 · 共同防御'),
         wheelOption('进攻','↗',()=>showWheel('attack'),'选择战法')
       ]);setHint('右键下令 · 点击空白或 Esc 关闭');
     }else if(page==='attack'){
@@ -126,6 +129,6 @@ export function createMapCommandUI({getGame,isPaused,command,prepareContext,adva
   return {
     get facilityTile(){return facilityTile;},openContext,openDrawer,closeDrawer,closeContext,
     reset(){closeContext(false);closeDrawer();showIntel(null);},
-    update(){refreshBuild();if(facilityTile!=null&&(!getGame().buildings.has(facilityTile)||getGame().owners[facilityTile]!==1))closeContext(false);if(!plan.hidden&&drawerName==='advance')closeDrawer();}
+    update(){refreshBuild();diplomacyUI.update();const d=getGame().diplomacy,pending=[...d.invitations.values()].filter(until=>until>getGame().time).length;allianceButton.textContent=pending?`联盟 · ${pending}邀请`:'联盟';if(facilityTile!=null&&(!getGame().buildings.has(facilityTile)||getGame().owners[facilityTile]!==1))closeContext(false);if(!plan.hidden&&drawerName==='advance')closeDrawer();}
   };
 }

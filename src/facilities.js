@@ -6,7 +6,7 @@ export const FACILITIES=Object.freeze({
   barracks:{name:'兵营',cost:1600,seconds:15,icon:'⚑'},
   fort:{name:'要塞',cost:1600,seconds:15,icon:'⛨'},
   researchCenter:{name:'研究所',cost:4000,seconds:25,icon:'⚗',description:'每级科研速度 +5%'},
-  port:{name:'港口',cost:5000,seconds:30,icon:'⚓',description:'每级贸易收入 +20/秒，须沿海建设'},
+  port:{name:'港口',cost:5000,seconds:30,icon:'⚓',description:'每级贸易收入 +20/秒；沿海建造，右键港口可排队建造已研发舰船'},
   airfield:{name:'机场',cost:5000,seconds:30,icon:'✈',description:'生产与出动飞机 · 每级容量32架；Ⅱ级支持B-29及原子弹投送'},
   radarStation:{name:'雷达站',cost:3000,seconds:25,icon:'◉',description:'满足电子研究条件'},
   railway:{name:'铁路节点',cost:2000,seconds:20,icon:'═',description:'满足铁路研究条件；运输炮待开放'},

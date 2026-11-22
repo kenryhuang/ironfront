@@ -1,3 +1,4 @@
+import {landAccess} from './diplomacy.js';
 // National reserve totals remain authoritative. These records locate that pool
 // on the map; they are not a second source of soldiers.
 export function reserveStations(g,owner){
@@ -17,9 +18,9 @@ export function stationSurvivors(g,a,count){
  g.groundGarrisons.set(a.owner,stations.filter(p=>p.troops>.01));
 }
 export function reserveRoute(g,owner,goals,amount=1,partial=false){
- const stations=reserveStations(g,owner).filter(p=>p.troops>=1&&g.owners[p.tile]===owner),queue=[...new Set(goals)].filter(t=>g.owners[t]===owner),toward=new Map(queue.map(t=>[t,null]));
+ const stations=reserveStations(g,owner).filter(p=>p.troops>=1&&g.owners[p.tile]===owner),queue=[...new Set(goals)].filter(t=>landAccess(g,owner,g.owners[t])),toward=new Map(queue.map(t=>[t,null]));
  const byTile=new Map(stations.map(p=>[p.tile,p]));let available=0;const selected=[];
- for(let i=0;i<queue.length;i++){const t=queue[i],s=byTile.get(t);if(s){selected.push(s);available+=s.troops;if(available+1e-6>=amount)break;}for(const n of g.adjacent[t])if(g.owners[n]===owner&&!toward.has(n)){toward.set(n,t);queue.push(n);}}
+ for(let i=0;i<queue.length;i++){const t=queue[i],s=byTile.get(t);if(s){selected.push(s);available+=s.troops;if(available+1e-6>=amount)break;}for(const n of g.adjacent[t])if(landAccess(g,owner,g.owners[n])&&!toward.has(n)){toward.set(n,t);queue.push(n);}}
  if(available<1||(!partial&&available+1e-6<amount))return null;
  const first=selected[0],path=[];for(let t=first.tile;t!==null;t=toward.get(t))path.push(t);
  let remaining=Math.min(amount,available);const contingents=[];for(const p of selected){const troops=Math.min(p.troops,remaining);if(troops<=0)break;const route=[];for(let t=p.tile;t!==null;t=toward.get(t))route.push(t);contingents.push({x:p.x,y:p.y,angle:p.angle??0,troops,path:route,pathHead:0,status:'gathering',joined:false});remaining-=troops;}
@@ -28,9 +29,9 @@ export function reserveRoute(g,owner,goals,amount=1,partial=false){
 export function debitStations(base,amount){let left=amount;for(const p of base.stations){const part=Math.min(left,p.troops);p.troops-=part;left-=part;if(left<=1e-6)break;}}
 
 export function deployStandingFront(g,owner,front,amount){
- const targets=[...new Set(front)].sort((a,b)=>a-b),goals=targets.flatMap(t=>g.adjacent[t].filter(n=>g.owners[n]===owner)),base=reserveRoute(g,owner,goals,amount,true);if(!base)return null;
+ const targets=[...new Set(front)].sort((a,b)=>a-b),goals=targets.flatMap(t=>g.adjacent[t].filter(n=>landAccess(g,owner,g.owners[n]))),base=reserveRoute(g,owner,goals,amount,true);if(!base)return null;
  const queue=[],prev=new Map(),roots=new Map();for(const p of base.stations){queue.push(p.tile);prev.set(p.tile,null);roots.set(p.tile,p);}
- for(let i=0;i<queue.length;i++)for(const n of g.adjacent[queue[i]])if(g.owners[n]===owner&&!prev.has(n)){prev.set(n,queue[i]);roots.set(n,roots.get(queue[i]));queue.push(n);}
+ for(let i=0;i<queue.length;i++)for(const n of g.adjacent[queue[i]])if(landAccess(g,owner,g.owners[n])&&!prev.has(n)){prev.set(n,queue[i]);roots.set(n,roots.get(queue[i]));queue.push(n);}
  const frontCells=targets.filter(t=>g.adjacent[t].some(n=>prev.has(n))),lanes=[],count=Math.min(32,frontCells.length);
  for(let i=0;i<count;i++){const target=frontCells[Math.floor(i*frontCells.length/count)],shore=g.adjacent[target].find(t=>prev.has(t)),source=roots.get(shore),path=[];for(let t=shore;t!==null;t=prev.get(t))path.push(t);path.reverse();lanes.push({x:source.x,y:source.y,angle:source.angle??0,status:'gathering',path,pathHead:0,target,initialTarget:target,joined:false,firing:false});}
  return lanes.length?{source:base.tile,base,amount:Math.min(amount,Math.floor(base.available)),contingents:base.contingents,lanes,cells:frontCells,phase:0,ready:false,seen:new Set(frontCells)}:null;

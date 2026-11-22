@@ -4,6 +4,7 @@ import {productionMethods} from './facilities.js';
 import {researchMethods} from './research.js';
 import {strategicMethods} from './strategic-weapons.js';
 import {effectiveness,takeTroops,addTroops,returnTroops} from './troops.js';
+import {Diplomacy,canFight,treatyProtected,landAccess} from './diplomacy.js';
 
 export const RULES = Object.freeze({
   baseCapacity: 2000, landCapacity: 65, cityCapacity: 5000,
@@ -23,6 +24,7 @@ export class Game {
     this.nations = new Map(nations.map(n => [n.id, { color: '#b5b5a0', troops: 1600, gold: 2000, militia:0, manpower:logistics?4000:0, equipment:logistics?400:0, ...n, alive: true, tiles: new Set() }]));
     this.territoryVersions=new Map(nations.map(n=>[n.id,0]));
     this.armies = []; this.transports = []; this.buildings = new Map(); this.events = [];
+    this.diplomacy=new Diplomacy(this);
     this.strikes=[];this.strikeZones=[];this.strikeReports=[];this.nextStrike=1;
     this.radiationZones=[];this.scorchZones=[];this.nextRadiationTick=null;
     this.adjacent = this.owners.map((_, i) => {
@@ -74,6 +76,7 @@ export class Game {
 
   claim(tile, owner) {
     const previous = this.owners[tile];
+    if(treatyProtected(this,owner,previous))return;
     if(previous===owner)return;
     if(this.logistics&&this.buildings.has(tile)){this.releaseFacility(tile,previous);this.buildings.get(tile).enabled=false;this.buildings.get(tile).status='已接管 · 停产';}
     for(const id of [previous,owner])if(this.territoryVersions.has(id))this.territoryVersions.set(id,this.territoryVersions.get(id)+1);
@@ -100,8 +103,9 @@ export class Game {
   }
 
   frontier(owner, target) {
+    if(!canFight(this,owner,target))return [];
     const result = new Set();
-    for (const tile of this.nations.get(owner)?.tiles ?? []) {
+    for(const side of this.diplomacy.members(owner).length?this.diplomacy.members(owner):[owner]) for (const tile of this.nations.get(side)?.tiles ?? []) {
       for (const next of this.adjacent[tile]) if (this.owners[next] === target) result.add(next);
     }
     return [...result];
@@ -116,6 +120,7 @@ export class Game {
   }
 
   attack(owner, target, ratio) {
+    if(treatyProtected(this,owner,target))return {ok:false,message:'不能进攻盟友或互不侵犯期内的国家'};
     const n = this.nations.get(owner);
     if (this.phase !== 'running' || !n?.alive) return { ok: false, message: '当前无法下达进攻命令' };
     if (!Number.isFinite(ratio) || ratio <= 0 || ratio > 1 || target === owner || target < 0 || (target !== 0 && !this.nations.get(target)?.alive)) return { ok: false, message: '无效的进攻目标或出兵比例' };
@@ -143,10 +148,11 @@ export class Game {
   }
 
   armyTargets(army,target){
-    return army.owner!==target&&(army.target===target||(army.target===null&&army.allowedTiles&&[...army.allowedTiles].some(t=>this.owners[t]===target)));
+    return canFight(this,army.owner,target)&&(army.target===target||(army.target===null&&army.allowedTiles&&[...army.allowedTiles].some(t=>this.owners[t]===target)));
   }
 
   commitAttack(owner,target,amount,front,allowedTiles=null,planPolygon=null){
+    front=front.filter(t=>canFight(this,owner,this.owners[t]));if(!front.length)return {ok:false,message:'该区域没有可进攻目标（盟友受到保护）'};
     const n=this.nations.get(owner);
     const contingent=takeTroops(n,amount);
     const committed = amount;
@@ -176,6 +182,7 @@ export class Game {
   }
 
   commitTransport(owner, destination, ratio, path) {
+    if(treatyProtected(this,owner,this.owners[destination]))return {ok:false,message:'不能登陆盟友领土'};
     const n = this.nations.get(owner);
     if (this.phase !== 'running' || !n?.alive) return { ok: false, message: '当前无法下达海运命令' };
     if (!Number.isFinite(ratio) || ratio <= 0 || ratio > 1) return { ok: false, message: '无效的出兵比例' };
@@ -207,7 +214,7 @@ export class Game {
       if (fleet.distance < fleet.path.length - 1) continue;
       this.transports = this.transports.filter(f => f !== fleet);
       const target = this.owners[fleet.destination];
-      if (target === fleet.owner) { addTroops(this.nations.get(fleet.owner),fleet); continue; }
+      if (!canFight(this,fleet.owner,target)) { addTroops(this.nations.get(fleet.owner),fleet); continue; }
       this.armies.push({ id: fleet.id, owner: fleet.owner, target, hostilityTargets:fleet.hostilityTargets, troops: fleet.troops, militia:fleet.militia??0, committed: fleet.troops, defenderLosses: 0, progress: 0,
         front: [fleet.destination], head: 0, queued: new Set([fleet.destination]), naval: true, landing: true, landingTile: fleet.destination });
       if (fleet.owner === 1 || target === 1) this.log(`${this.nations.get(fleet.owner).name}的 ${Math.floor(fleet.troops).toLocaleString()} 人已抵达海岸，开始登陆`, fleet.owner === 1 ? 'player' : 'war');
@@ -293,11 +300,11 @@ export class Game {
       let tile;
       while (army.head < army.front.length) {
         const t = army.front[army.head++]; army.queued.delete(t);
-        if ((!army.allowedTiles||army.allowedTiles.has(t))&&(army.target===null?this.owners[t]>=0&&this.owners[t]!==army.owner:this.owners[t] === army.target) && ((army.landing && t === army.landingTile) || this.adjacent[t].some(a => this.owners[a] === army.owner))) { tile = t; break; }
+        if (canFight(this,army.owner,this.owners[t])&&(!army.allowedTiles||army.allowedTiles.has(t))&&(army.target===null?canFight(this,army.owner,this.owners[t]):this.owners[t] === army.target) && ((army.landing && t === army.landingTile) || this.adjacent[t].some(a => landAccess(this,army.owner,this.owners[a])))) { tile = t; break; }
       }
       if (tile === undefined) {
         if (army.naval) { this.finishArmy(army); break; }
-        army.front = (army.target===null?[...army.allowedTiles].filter(t=>this.owners[t]>=0&&this.owners[t]!==army.owner&&this.adjacent[t].some(n=>this.owners[n]===army.owner)):this.frontier(army.owner, army.target)).filter(t=>!army.allowedTiles||army.allowedTiles.has(t)); army.head = 0; army.queued = new Set(army.front);
+        army.front = (army.target===null?[...army.allowedTiles].filter(t=>canFight(this,army.owner,this.owners[t])&&this.adjacent[t].some(n=>landAccess(this,army.owner,this.owners[n]))):this.frontier(army.owner, army.target)).filter(t=>!army.allowedTiles||army.allowedTiles.has(t)); army.head = 0; army.queued = new Set(army.front);
         if (!army.front.length) { this.finishArmy(army); break; }
         tile = army.front[army.head++]; army.queued.delete(tile);
       }
@@ -316,7 +323,7 @@ export class Game {
         army.captured=(army.captured??0)+1;
         if(army.allowedTiles)army.planCaptured++;
         army.landing = false;
-        for (const a of this.adjacent[tile]) if ((!army.allowedTiles||army.allowedTiles.has(a))&&(army.target===null?this.owners[a]>=0&&this.owners[a]!==army.owner:this.owners[a] === army.target) && !army.queued.has(a)) { army.front.push(a); army.queued.add(a); }
+        for (const a of this.adjacent[tile]) if (canFight(this,army.owner,this.owners[a])&&(!army.allowedTiles||army.allowedTiles.has(a))&&(army.target===null?this.owners[a]>=0&&this.owners[a]!==army.owner:this.owners[a] === army.target) && !army.queued.has(a)) { army.front.push(a); army.queued.add(a); }
         if (tileTarget !== 0) this.eliminate(tileTarget, army.owner);
       }
       if (army.troops < 1) this.finishArmy(army, false);
@@ -329,6 +336,7 @@ export class Game {
     let left = dt;
     while (left > 1e-8 && this.phase === 'running') {
       const tick = Math.min(0.1, left); left -= tick; this.time += tick;
+      this.diplomacy.step();
       if(economy&&this.logistics){this.advanceProduction(tick);this.advanceResearch(tick);}
       if(this.logistics)this.advanceStrategic(tick,{production:economy});
       if (economy&&!this.logistics) for (const n of this.nations.values()) if (n.alive) {
@@ -341,7 +349,7 @@ export class Game {
       const active = [...this.armies]; const offset = active.length ? Math.floor(this.time * 10) % active.length : 0;
       for (let i = 0; i < active.length; i++) this.advanceArmy(active[(i + offset) % active.length], tick);
       const living = [...this.nations.values()].filter(n => n.alive);
-      if (living.length === 1) { for(const army of [...this.armies])this.finishArmy(army); this.phase = 'finished'; this.winner = living[0].id; this.log(`${living[0].name}统一战区`, 'war'); }
+      if (living.length === 1 && this.autoEliminationVictory !== false) { for(const army of [...this.armies])this.finishArmy(army); this.phase = 'finished'; this.winner = living[0].id; this.log(`${living[0].name}统一战区`, 'war'); }
     }
   }
 }

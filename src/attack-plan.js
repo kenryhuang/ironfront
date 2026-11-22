@@ -1,3 +1,4 @@
+import {canFight,treatyProtected,landAccess} from './diplomacy.js';
 export function polygonCells(points,width,height){
   const cells=new Set();
   if(!Array.isArray(points)||points.length<3||points.length>2048||points.some(p=>!Array.isArray(p)||p.length!==2||!p.every(Number.isFinite)||p[0]<0||p[0]>width||p[1]<0||p[1]>height))return cells;
@@ -21,9 +22,9 @@ export function buildAttackPlan(game,owner,target,points){
   if(!game.nations.get(owner)?.alive||(target!==null&&(target===owner||target<0||(target!==0&&!game.nations.get(target)?.alive))))return {ok:false,message:'请选择有效的进攻目标'};
   const polygon=polygonCells(points,game.width,game.height);
   if(!polygon.size)return {ok:false,message:'请按住鼠标圈出有面积的闭合区域'};
-  const eligible=new Set([...polygon].filter(t=>(target===null?game.owners[t]>=0&&game.owners[t]!==owner:game.owners[t]===target)));
+  const eligible=new Set([...polygon].filter(t=>canFight(game,owner,game.owners[t])&&(target===null?game.owners[t]>=0&&game.owners[t]!==owner:game.owners[t]===target)));
   if(!eligible.size)return {ok:false,message:'圈选区域没有可进攻的陆地'};
-  const starts=[...eligible].filter(t=>game.adjacent[t].some(n=>game.owners[n]===owner));
+  const starts=[...eligible].filter(t=>game.adjacent[t].some(n=>landAccess(game,owner,game.owners[n])));
   if(!starts.length)return {ok:false,message:'圈内目标未接触我方前线，请重新圈画'};
   const allowedTiles=new Set(starts),queue=[...starts];
   for(let i=0;i<queue.length;i++)for(const next of game.adjacent[queue[i]])if(eligible.has(next)&&!allowedTiles.has(next)){allowedTiles.add(next);queue.push(next);}

@@ -1,0 +1,27 @@
+.naval-mode #open-research,.naval-mode #air-toggle,.naval-mode .ground-unit-ui:not(.naval-unit-ui),.naval-mode .map-target-card{display:none!important}
+.naval-unit-ui .air-map-menu{color:#e4f7ee;z-index:22;font-size:12px}
+.naval-unit-ui .air-map-menu button{display:block;width:100%;margin-top:6px;text-align:left}
+.naval-unit-ui .unit-controls{top:70px}
+.naval-unit-ui .unit-roster{top:108px;width:320px;max-height:52%}
+.naval-unit-ui .unit-selection{bottom:140px}
+.naval-unit-ui .unit-selected-list{max-height:112px}
+.naval-unit-ui .naval-wing-list{max-height:170px;overflow:auto;border-top:1px solid #52787d55}
+.naval-unit-ui .air-map-menu{width:280px;max-height:65vh;overflow:auto}
+.naval-unit-ui .air-map-menu p{line-height:1.55;max-width:260px;color:#c0cacc}
+.naval-unit-ui .unit-selection{max-height:48vh;overflow:auto}
+.naval-unit-ui .unit-controls{gap:5px}
+.campaign-navy .naval-unit-ui .unit-controls{top:142px}
+.campaign-navy .naval-unit-ui .unit-roster{top:180px}
+.naval-mode #air-section{display:none!important}
+.naval-mode .intel-body>section:has(#battle-events),.naval-mode .intel-body>section:has(#armies),.naval-mode .intel-body>section:has(#air-events),.naval-mode #fleets,.naval-mode .section-label:has(#fleet-count){display:none!important}
+.naval-shipyard{margin-top:12px;padding-top:10px;border-top:1px solid #57707866;color:#d6e5e7}
+.building-context:has(.naval-shipyard){top:70px!important;max-height:calc(100dvh - 220px)}
+.naval-shipyard-heading,.naval-shipyard-hull-top,.naval-shipyard-job>div{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.naval-shipyard-heading h3{font-size:13px;margin:0;color:#d2e8ed}.naval-shipyard-heading span{font:11px monospace;color:#b5cad1}
+.naval-shipyard-hint,.naval-shipyard-empty{font-size:10px;line-height:1.6;margin:6px 0;color:#9fb6bf}
+.naval-shipyard-hulls{display:grid;gap:5px;margin-top:8px}.naval-shipyard-hull,.naval-shipyard-job{padding:7px 8px;border:1px solid #607a8238;border-radius:4px;background:#20343c88}
+.naval-shipyard-hull b,.naval-shipyard-job b{font-size:11px;font-weight:600}.naval-shipyard small{display:block;font-size:10px;line-height:1.55;color:#a6bdc5}
+.naval-shipyard .naval-shipyard-cost{color:#d4c49a}.naval-shipyard .naval-shipyard-blocked{color:#cfab99;margin-top:3px}.naval-shipyard-blocked:empty{display:none}
+.naval-shipyard button{flex:none;min-width:43px;padding:4px 8px;font-size:10px;color:#deecec;background:#355462;border:1px solid #6b8e9b88;border-radius:3px;cursor:pointer}
+.naval-shipyard button:disabled{opacity:.45;cursor:default}.naval-shipyard button:focus-visible{outline:2px solid #e3d19a;outline-offset:2px}
+.naval-shipyard-queue{display:grid;gap:5px;margin-top:7px}.naval-shipyard-job button{background:#433e36;color:#e0c9ac}.naval-shipyard-job progress{height:5px;margin:5px 0 0;accent-color:#8fb9c4}

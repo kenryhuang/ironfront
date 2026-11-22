@@ -1,6 +1,11 @@
 import {Game} from './engine.js';
 import {CombinedArmsGame} from './combined-arms-game.js';
-import {AirOperations} from './air-operations.js';
+import {NavalCarrierAir} from './naval-carrier-air.js';
+import {NavalOperations} from './naval-operations.js';
+import {NavalShipyard} from './naval-shipyard.js';
+import {AirborneOperations} from './airborne-operations.js';
+import {AirSquadrons} from './air-squadrons.js';
+import {issueGroundOrder} from './ground-unit-orders.js';
 import {advanceHistoricalNavigation} from './deferred-navigation.js';
 import {registerHostilities,registerOrderTargets} from './campaign-pacing.js';
 import {advanceRegiments} from './regiments.js';
@@ -8,8 +13,10 @@ import {advanceRegimentGunProduction} from './regiment-equipment.js';
 import {advanceArtilleryRegiments} from './artillery-regiments.js';
 
 export class CampaignGame extends CombinedArmsGame {
- constructor(config){super(config);this.air=new AirOperations(this);this.facilityVisible=tile=>this.air.facilityVisible(tile);this.mergeAttacks=false;for(const n of this.nations.values())if(n.tiles.size)this.startingBarracks(n.id);}
- step(dt,options){if(!Number.isFinite(dt)||dt<=0||dt>10)return;let left=dt;while(left>1e-8&&this.phase==='running'){const tick=Math.min(.1,left);left-=tick;super.step(tick,options);this.air.step(tick);advanceHistoricalNavigation(this);advanceRegimentGunProduction(this,tick);advanceArtilleryRegiments(this);advanceRegiments(this,tick);}}
+ constructor(config){super(config);this.navy=new NavalOperations(this,{campaign:true});this.shipyard=new NavalShipyard(this);this.air=new NavalCarrierAir(this,{campaign:true});this.air.airborneOps=new AirborneOperations(this.air);this.air.squadrons=new AirSquadrons(this.air);this.facilityVisible=tile=>this.air.facilityVisible(tile);this.mergeAttacks=false;for(const n of this.nations.values())if(n.tiles.size)this.startingBarracks(n.id);}
+ step(dt,options){if(!Number.isFinite(dt)||dt<=0||dt>10)return;let left=dt;while(left>1e-8&&this.phase==='running'){const tick=Math.min(.1,left);left-=tick;for(const a of this.armies)if(a.airSuppression?.level>.15&&a.artillery)a.artillery.readyAt=Math.max(a.artillery.readyAt,this.time+tick+.5);super.step(tick,options);this.air.step(tick);this.navy.step(tick);this.shipyard.step(tick);advanceHistoricalNavigation(this);advanceRegimentGunProduction(this,tick);advanceArtilleryRegiments(this);advanceRegiments(this,tick);}}
+ population(owner){return super.population(owner)+(this.navy?.ships??[]).reduce((sum,s)=>sum+(s.owner===owner&&s.hp>0?s.cargo:0),0);}
+ advanceArmy(a,dt){if(this.air.airborneOps.handlesArmy?.(a,dt))return;const effect=this.air.groundEffect(a),retreat=a.groundOrder?.type==='retreat';if(effect.halt&&!retreat){a.organization=Math.max(0,(a.organization??100)-dt*1.2);const holding=a.holding,order=a.groundOrder;a.holding=true;if(order&&order.type!=='hold')a.groundOrder={...order,type:'hold'};super.advanceArmy(a,dt);a.holding=holding;if(order)a.groundOrder=order;a.orderState='resupplying';if(a.organization<18&&this.time>(a.airFallbackAt??0)){a.airFallbackAt=this.time+5;issueGroundOrder(this,a.owner,[a.unitKey],null,{kind:'retreat'});}return;}super.advanceArmy(a,dt);}
  startingBarracks(owner,preferred){const n=this.nations.get(owner);if(!n?.tiles.size)return;const tile=preferred??n.tiles.values().next().value;if(!this.buildings.has(tile))this.buildings.set(tile,{type:'barracks',level:1,remaining:0,enabled:false,workers:0,trainingMode:'recruit',queue:null,status:'初始兵营 · 停训'});if(owner===1)this.battery.tile=tile;}
  deploy(tile){const result=super.deploy(tile);if(result.ok){this.startingBarracks(1,tile);this.log('初始兵营已建立。步兵与海运开局可用；坦克需T08，炮兵需T11。','player');}return result;}
  usableFacility(owner,tile,type){const b=this.buildings.get(tile);return this.owners[tile]===owner&&b?.type===type&&!(b.remaining>0)&&!(b.suppressedUntil>this.time)&&(b.integrity??100)>0&&!this.radiationAt(tile);}

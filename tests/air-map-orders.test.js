@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createInGameAirSimulation} from '../src/air-simulation.js';
 import {issueAirMapOrder,airMapCandidates} from '../src/air-map-orders.js';
 test('mixed selection dispatches only compatible squadrons and preserves stock',()=>{
- const g=createInGameAirSimulation(),a=g.air,ids=a.squadrons.units.map(s=>s.id),stock={...a.reserve(1)};
+ const g=createInGameAirSimulation(),a=g.air,ids=a.squadrons.units.slice(0,3).map(s=>s.id),stock={...a.reserve(1)};
  assert.equal(airMapCandidates(a,1,ids,'patrol').length,1);
  const r=issueAirMapOrder(a,1,ids,'patrol',{x:743,y:168});assert.ok(r.ok);assert.equal(r.count,1);assert.equal(r.skipped,2);
  assert.equal(a.flights.length,1);assert.deepEqual(a.reserve(1),stock);
@@ -22,7 +22,7 @@ test('escort requires live friendly target and recall preserves squadron',()=>{
  issueAirMapOrder(a,1,[bomber.id],'support',{x:744,y:168});
  assert.ok(issueAirMapOrder(a,1,[fighter.id],'escort',null,{escortId:bomber.flightId}).ok);
  assert.equal(a.flights.find(f=>f.id===fighter.flightId).escortId,bomber.flightId);
- assert.ok(issueAirMapOrder(a,1,[fighter.id],'recall').ok);assert.equal(a.squadrons.units.length,3);
+ assert.ok(issueAirMapOrder(a,1,[fighter.id],'recall').ok);assert.equal(a.squadrons.units.length,8);
 });
 test('spent ammunition and in-progress cargo cannot be reset by retasking',()=>{
  const g=createInGameAirSimulation(),a=g.air,s=a.squadrons.units[1];issueAirMapOrder(a,1,[s.id],'support',{x:744,y:168});const f=a.flights[0];for(const p of f.planes)p.ammo=0;
@@ -35,4 +35,15 @@ test('switching continuous patrol to escort stops repeat sorties',()=>{
  issueAirMapOrder(a,1,[bomber.id],'support',{x:744,y:168});
  assert.ok(issueAirMapOrder(a,1,[fighter.id],'escort',null,{escortId:bomber.flightId}).ok);
  assert.equal(a.flights.find(f=>f.id===fighter.flightId).continuous,false);assert.equal(fighter.continuous,false);
+});
+test('right-click pursuit binds a live enemy and cannot pursue a friendly or vanished aircraft',()=>{
+ const g=createInGameAirSimulation(),a=g.air,s=a.squadrons.units[0];const enemy=a.order(2,'fighter','patrol',{x:744,y:168},{count:4});
+ assert.ok(issueAirMapOrder(a,1,[s.id],'pursue',null,{enemyId:enemy.id}).ok);
+ const f=a.flights.find(f=>f.id===s.flightId);assert.equal(f.focusId,enemy.id);
+ const e=a.flights.find(f=>f.id===enemy.id);e.x+=10;e.y+=5;a.combat(.1);assert.equal(f.target.x,e.x);assert.equal(f.target.y,e.y);
+ e.x=1000;a.combat(.1);assert.equal(f.pursuitId,null);assert.equal(f.combatTarget,null);e.x=760;
+ issueAirMapOrder(a,1,[s.id],'pursue',null,{enemyId:enemy.id});assert.ok(a.squadrons.recall(1,s.id).ok);assert.equal(f.pursuitId,null);f.state='working';
+ assert.ok(issueAirMapOrder(a,1,[s.id],'patrol',{x:735,y:170}).ok);a.combat(.1);assert.equal(f.target.x,735);assert.equal(f.pursuitId,null);
+ assert.equal(issueAirMapOrder(a,1,[s.id],'pursue',null,{enemyId:f.id}).ok,false);
+ a.flights=a.flights.filter(e=>e.id!==enemy.id);assert.equal(issueAirMapOrder(a,1,[s.id],'pursue',null,{enemyId:enemy.id}).ok,false);
 });

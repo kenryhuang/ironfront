@@ -1,3 +1,8 @@
+import {createNavalWorldSimulation,stepNavalWorldSimulation,focusNavalWorldSimulation} from './naval-world-simulation.js';
+import {NavalSimulationGame,focusNavalSimulation} from './naval-simulation.js';
+import {NavalRenderer} from './naval-renderer.js';
+import {createNavalMapUI} from './naval-map-ui.js';
+import {createNavalShipyardUI} from './naval-shipyard-ui.js';
 import {createInGameAirSimulation,stepAirSimulationEnemy,focusAirSimulation} from './air-simulation.js';
 import {WorkshopAirRenderer} from './workshop-air-renderer.js';
 import {createAirMapUI} from './air-map-ui.js';
@@ -26,9 +31,13 @@ const time = n => `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(Math.
 let countryCode=Number(new URLSearchParams(location.search).get('country'))||710;
 if(!COUNTRY_OPTIONS.some(n=>n.code===countryCode))countryCode=({276:255,250:220,826:200,840:2,643:365,392:740})[countryCode]||710;
 const airSimulation=new URLSearchParams(location.search).get('simulation')==='air';
-const simulationCampaign=new URLSearchParams(location.search).get('campaign')==='skirmish';
+const navalWorldSimulation=new URLSearchParams(location.search).get('simulation')==='naval-world';
+const navalSimulation=new URLSearchParams(location.search).get('simulation')==='naval';
+const squadronAir=airSimulation||navalWorldSimulation||new URLSearchParams(location.search).get('campaign')!=='skirmish';
+const simulationCampaign=!navalWorldSimulation&&new URLSearchParams(location.search).get('campaign')==='skirmish';
+const navalEnabled=navalSimulation||(!airSimulation&&!simulationCampaign);
 const campaignMode=simulationCampaign?'1939':'1936'; // The historical 1939 campaign remains unavailable.
-const newCampaign=()=>{if(airSimulation)return createInGameAirSimulation();if(campaignMode==='1939')return new SimulationGame(countryCode);const g=prepareHistoricalCampaign(new Game(createHistoricalTheater(countryCode)));g.campaign='1936';g.scenarioDate='1936 · 全球霸权（开发中）';return g;};
+const newCampaign=()=>{if(navalWorldSimulation)return createNavalWorldSimulation();if(navalSimulation)return new NavalSimulationGame();if(airSimulation)return createInGameAirSimulation();if(campaignMode==='1939')return new SimulationGame(countryCode);const g=prepareHistoricalCampaign(new Game(createHistoricalTheater(countryCode)));g.campaign='1936';g.scenarioDate='1936 · 全球霸权（开发中）';return g;};
 let game = newCampaign();
 const loadingLabel=document.querySelector('#battle-loading-status');
 if(loadingLabel)loadingLabel.textContent='正在构建立体地形…';
@@ -37,14 +46,14 @@ addEventListener('pagehide',()=>battleVoices.dispose(),{once:true});
 countryCode=game.nations.get(1).code??countryCode;
 for(const n of COUNTRY_OPTIONS){const option=document.createElement('option');option.value=n.code;option.textContent=n.name;$('scenario-country').append(option);}
 $('scenario-country').value=String(countryCode);
-const renderer = new (airSimulation?WorkshopAirRenderer:Renderer)($('battlefield'), game);
+const renderer = new (navalEnabled?NavalRenderer:squadronAir?WorkshopAirRenderer:Renderer)($('battlefield'), game);
 if(loadingLabel)loadingLabel.textContent='正在准备战场画面…';
 
 const renderDiagnostics=createRenderDiagnostics(renderer);
-let selected = null, selectedTile = null, selectedForLanding = false, mode = null, paused = false, speed = 1, accumulator = 0;
+let selected = null, selectedTile = null, selectedForLanding = false, mode = null, paused = navalWorldSimulation, speed = 1, accumulator = 0;
 let lastTime = performance.now(), lastUI = -1, lastAI = -1, toastUntil = 0, ended = false;
 let drag = null, suppressClick = false, helpWasPaused = false;
-let planState=null,drawing=null,airDrawing=null,mapUI=null,unitUI=null,airUnitUI=null;
+let planState=null,drawing=null,airDrawing=null,mapUI=null,unitUI=null,airUnitUI=null,navalUnitUI=null,shipyardUI=null;
 const zoomInput=createZoomInput({getZoom:()=>renderer.zoom,zoomAt:(...args)=>{
   const px=renderer.panX,py=renderer.panY;
   renderer.zoomAt(...args);
@@ -57,8 +66,8 @@ const strategicUI=createStrategicUI({root:$('strategic-section'),getGame:()=>gam
   beginTarget(kind){groundView();clearAirDrawing();if(planState)cancelCustomPlan();mode='strike:'+kind;renderer.plannedRoute=null;toast('点击敌方陆地预览打击范围，再确认发射。');updateUI();},
   onPreview(preview){renderer.strikePreview=preview;},onExit(){if(mode?.startsWith('strike:'))mode=null;updateUI();}});
 
-const airUI=(airSimulation?createAirSquadronUI:createAirUI)({root:$('air-section'),events:$('air-events'),getGame:()=>game,command,isPaused:()=>paused,getMode:()=>mode,
- beginMode(value){if(planState)cancelCustomPlan();mode=value;clearAirDrawing();renderer.localMode=null;renderer.plannedRoute=null;renderer.strikePreview=null;if(value){if(airSimulation)mapUI?.closeDrawer();toast('点击目标或按住鼠标圈画航空任务区域；Esc取消，战役继续。');}updateUI();},
+const airUI=(squadronAir?createAirSquadronUI:createAirUI)({root:$('air-section'),events:$('air-events'),getGame:()=>game,command,isPaused:()=>paused,getMode:()=>mode,
+ beginMode(value){if(planState)cancelCustomPlan();mode=value;clearAirDrawing();renderer.localMode=null;renderer.plannedRoute=null;renderer.strikePreview=null;if(value){if(squadronAir)mapUI?.closeDrawer();toast('点击目标或按住鼠标圈画航空任务区域；Esc取消，战役继续。');}updateUI();},
  onPreview(preview){renderer.targetPreview=preview;renderer.lastRender=0;},
  onSelection(s){if(airUnitUI)airUnitUI.choose([s.id]);else{game.air.selected.clear();if(s.flightId)game.air.selected.add(s.flightId);}renderer.lastRender=0;},
  onTargetReady(){mapUI?.openDrawer('air');},
@@ -67,7 +76,7 @@ const airUI=(airSimulation?createAirSquadronUI:createAirUI)({root:$('air-section
 function clearAirDrawing(){airDrawing=null;renderer.drawing=null;renderer.targetPreview=null;}
 function airViewLabels(){$('air-toggle').textContent=renderer.airView?'✈ 返回地面':'✈ 空中战场';$('air-toggle').setAttribute('aria-pressed',String(!!renderer.airView));$('air-legend').hidden=!renderer.airView;$('map-tooltip').hidden=true;}
 function groundView(){if(renderer.airView){renderer.toggleAir();airViewLabels();}}
-$('air-toggle').onclick=()=>{zoomInput.flush();if(planState)cancelCustomPlan();mode=null;clearAirDrawing();renderer.localMode=null;renderer.strikePreview=null;renderer.toggleAir();airViewLabels();if(!airSimulation){airUI.open();mapUI?.openDrawer('air');}else mapUI?.closeDrawer();updateUI();};
+$('air-toggle').onclick=()=>{zoomInput.flush();if(planState)cancelCustomPlan();mode=null;clearAirDrawing();renderer.localMode=null;renderer.strikePreview=null;renderer.toggleAir();airViewLabels();if(!squadronAir){airUI.open();mapUI?.openDrawer('air');}else mapUI?.closeDrawer();updateUI();};
 
 function updateZoomLabel(){ $('zoom-level').textContent = `${Math.round(renderer.zoom * 100)}%`; }
 
@@ -153,11 +162,11 @@ function reset() {
   mode=null;
   $('facilities').replaceChildren();
   researchUI.reset();strategicUI.reset();airUI.reset();clearAirDrawing();renderer.airView=false;airViewLabels();
-  paused = false; speed = 1; accumulator = 0; lastAI = -1; lastUI = -1; ended = false;
+  paused = navalWorldSimulation; speed = 1; accumulator = 0; lastAI = -1; lastUI = -1; ended = false;
   $('end-card').hidden = true; $('deployment').hidden = true; $('toast').hidden = true; $('map-tooltip').hidden = true;
   $('armies').replaceChildren(); $('fleets').replaceChildren(); $('ranking').replaceChildren();
   $('intelligence').classList.remove('open'); $('intel-toggle').setAttribute('aria-expanded', 'false');
-  $('ratio').value = '30'; $('speed').textContent = '1×'; if(airSimulation){renderer.toggleAir();airViewLabels();focusAirSimulation(renderer);mapUI?.closeDrawer();updateZoomLabel();}updateUI();
+  $('ratio').value = '30'; $('speed').textContent = '1×'; if(navalWorldSimulation){focusNavalWorldSimulation(renderer);updateZoomLabel();}if(navalSimulation){focusNavalSimulation(renderer);updateZoomLabel();}if(airSimulation){renderer.toggleAir();airViewLabels();focusAirSimulation(renderer);mapUI?.closeDrawer();updateZoomLabel();}updateUI();
 }
 
 // Retain interactive nodes across refreshes: a statistics tick must not cancel
@@ -255,11 +264,12 @@ function updateUI() {
   $('conscript').disabled=!active||!Number.isInteger(conscripts)||conscripts<1||conscripts>Math.floor(n.manpower??0);
   $('conscript-info').textContent=`可征 ${number(n.manpower??0)} 人 · 强征减少可用人力，不增加总人口`;
   mapUI?.update();
-  updateFacilities(active);
+  updateFacilities(active);shipyardUI?.update(active);
   airUI.update();armsUI.update();researchUI.update();strategicUI.setMode(mode?.startsWith('strike:')?mode.slice(7):null);strategicUI.update();
   $('capacity-fill').style.width = `${Math.min(100, population / capacity * 100)}%`;
   const netIncome=game.logistics?game.income(1)-[...game.buildings].filter(([tile,b])=>game.owners[tile]===1&&b.type==='factory'&&b.enabled&&!(b.remaining>0)&&b.workers>0).reduce((sum,[,b])=>sum+game.factoryOperatingCost(1,b),0):0;
-  $('income').textContent = `${game.logistics?(netIncome>=0?'+':'−')+number(Math.abs(netIncome))+'资金/秒 · ':''}海上 ${number(ownFleets.reduce((s,f)=>s+f.troops,0))} 人`;
+  $('income').textContent = `${game.logistics?(netIncome>=0?'+':'−')+number(Math.abs(netIncome))+'资金/秒 · ':''}海上 ${number(ownFleets.reduce((s,f)=>s+f.troops,0)+(game.navy?.ships??[]).reduce((sum,s)=>sum+(s.owner===1&&s.hp>0?s.cargo:0),0))} 人`;
+  if(navalSimulation)$('income').textContent=`海上 ${number(game.navy.ships.reduce((sum,s)=>sum+(s.owner===1&&s.hp>0?s.cargo:0),0))} 人 · 已送达 ${number(game.navy.delivered)} 人`;
   $('income').title=`${ownFleets.length} 支运输船队 · 资金收入已扣运行工厂支出`; 
   const land = game.landTileCount;
   $('land-share').textContent = n.tiles.size ? `战区陆地 ${(n.tiles.size / land * 100).toFixed(1)}%` : game.phase === 'deployment' ? '尚未部署' : '国家已灭亡';
@@ -376,7 +386,7 @@ $('pause').addEventListener('click', () => { paused = !paused; accumulator = 0; 
 $('speed').addEventListener('click', () => { speed = speed === 1 ? 2 : speed === 2 ? 4 : 1; $('speed').textContent = `${speed}×`; updateUI(); });
 $('zoom-in').addEventListener('click', () => { zoomInput.flush();renderer.zoomAt(1.25);updateZoomLabel(); });
 $('zoom-out').addEventListener('click', () => { zoomInput.flush();renderer.zoomAt(0.8);updateZoomLabel(); });
-$('fit-map').addEventListener('click', () => { zoomInput.flush();if(airSimulation)focusAirSimulation(renderer);else renderer.fit();updateZoomLabel(); });
+$('fit-map').addEventListener('click', () => { zoomInput.flush();if(navalWorldSimulation)focusNavalWorldSimulation(renderer);else if(navalSimulation)focusNavalSimulation(renderer);else if(airSimulation)focusAirSimulation(renderer);else renderer.fit();updateZoomLabel(); });
 const viewButton=$('terrain-view');
 function updateTerrainView(){
   const active=!!renderer.surface?.active;viewButton.textContent=active?'2.5D 沙盘':'俯视地图';
@@ -514,8 +524,8 @@ function frame(now) {
     accumulator += elapsed * speed;
     while (accumulator >= 0.1) {
       const aiPeriod = Math.floor(game.time / 3);
-      if (aiPeriod !== lastAI) { if(!airSimulation&&campaignMode!=='1939')runAI(game); lastAI = aiPeriod; }
-      game.step(0.1);if(airSimulation)stepAirSimulationEnemy(game); battleVoices.update(game); accumulator -= 0.1;
+      if (aiPeriod !== lastAI) { if(!airSimulation&&!navalSimulation&&!navalWorldSimulation&&campaignMode!=='1939')runAI(game); lastAI = aiPeriod; }
+      game.step(0.1);if(navalWorldSimulation)stepNavalWorldSimulation(game);if(airSimulation)stepAirSimulationEnemy(game); battleVoices.update(game); accumulator -= 0.1;
     }
   }
   renderer.airRenderTime=paused||game.phase!=='running'?game.time:Math.max(0,game.time-.1+accumulator);
@@ -524,7 +534,7 @@ function frame(now) {
   if (now - lastUI > 200) { updateUI(); lastUI = now; }
   if (now > toastUntil) $('toast').hidden = true;
   const renderStart=performance.now(),painted=!$('research-dialog').open&&!document.hidden&&renderer.render(now);
-  unitUI?.update(now);airUnitUI?.update();
+  unitUI?.update(now);airUnitUI?.update();navalUnitUI?.update(now);
   if(game.campaign==='1939')updateBlitzHUD();
   const loading=document.querySelector('#battle-loading');
   if(painted&&loading&&!loading.dataset.ready){
@@ -543,8 +553,10 @@ mapUI=createMapCommandUI({getGame:()=>game,isPaused:()=>paused,command,
   prepareContext(){zoomInput.flush();if(planState)cancelCustomPlan();mode=null;clearAirDrawing();renderer.localMode=null;renderer.strikePreview=null;renderer.plannedRoute=null;$('map-tooltip').hidden=true;},
   advance(id,tile){groundView();chooseTarget(id,tile);},custom:startCustomPlan});
 canvas.addEventListener('contextmenu',e=>{e.preventDefault();const [x,y]=local(e);mapUI.openContext(renderer.tileAt(x,y),x,y);updateUI();});
-unitUI=createGroundUnitUI({canvas,getGame:()=>game,getRenderer:()=>renderer,available:()=>!mode&&!renderer.airView&&!$('help-dialog').open&&!$('research-dialog').open&&game.phase==='running',prepare(){zoomInput.flush();mapUI.closeContext(false);$('map-tooltip').hidden=true;},notify(result){toast(result.message,!result.ok);updateUI();}});
-if(airSimulation)airUnitUI=createAirMapUI({canvas,getGame:()=>game,getRenderer:()=>renderer,isPaused:()=>paused,available:()=>!mode&&renderer.airView&&!$('research-dialog').open&&!$('help-dialog').open&&game.phase==='running',prepare(){mapUI.closeContext(false);mapUI.closeDrawer();$('map-tooltip').hidden=true;},onSelection(ids){airUI.selectFlights(ids);},notify(result){toast(result.message,!result.ok);updateUI();}});
+if(navalEnabled)navalUnitUI=createNavalMapUI({canvas,getGame:()=>game,getRenderer:()=>renderer,isPaused:()=>paused,campaign:!navalSimulation,available:()=>!mode&&!$("help-dialog").open&&!$("research-dialog").open&&game.phase==="running",prepare(){unitUI?.clear();airUnitUI?.clear();zoomInput.flush();mapUI.closeContext(false);mapUI.closeDrawer();$('map-tooltip').hidden=true;},notify(result){toast(result.message,!result.ok);updateUI();}});
+if(navalEnabled){shipyardUI=createNavalShipyardUI({container:$("facilities"),getGame:()=>game,getTile:()=>mapUI.facilityTile,isPaused:()=>paused,notify(result){toast(result.message,!result.ok);updateUI();}});if(!navalSimulation)document.body.classList.add("campaign-navy");}
+unitUI=createGroundUnitUI({canvas,getGame:()=>game,getRenderer:()=>renderer,available:()=>!navalSimulation&&!mode&&!renderer.airView&&!$('help-dialog').open&&!$('research-dialog').open&&game.phase==='running',prepare(){navalUnitUI?.clear();zoomInput.flush();mapUI.closeContext(false);$('map-tooltip').hidden=true;},notify(result){toast(result.message,!result.ok);updateUI();}});
+if(squadronAir&&!navalSimulation)airUnitUI=createAirMapUI({canvas,getGame:()=>game,getRenderer:()=>renderer,isPaused:()=>paused,available:()=>!mode&&renderer.airView&&!$('research-dialog').open&&!$('help-dialog').open&&game.phase==='running',prepare(){navalUnitUI?.clear();mapUI.closeContext(false);mapUI.closeDrawer();$('map-tooltip').hidden=true;},onSelection(ids){airUI.selectFlights(ids);},onManage(){airUI.open();mapUI.openDrawer('air');},notify(result){toast(result.message,!result.ok);updateUI();}});
 updateUI(); requestAnimationFrame(frame);
 
 function updateBlitzHUD(){
@@ -556,7 +568,12 @@ function updateBlitzHUD(){
  hud.querySelector('small').textContent=game.objectives.map(o=>o.name+'：'+(game.owners[o.tile]===1?'我方':game.owners[o.tile]===2?'敌方':'中立')).join(' · ')+` ｜ 增援 ${Math.floor(game.reinforcementPoints[1])} 点`;
  for(const b of hud.querySelectorAll('button'))b.disabled=game.phase!=='running'||game.reinforcementPoints[1]<(b.dataset.reinforceType==='armor'?100:50);
 }
-if(airSimulation){
+if(navalWorldSimulation){
+ document.querySelector('.header-center').textContent='北海海军测试 · 正式世界地图';$('scenario-country').hidden=true;$('scenario-start').hidden=true;document.querySelector('.operation-bar strong').textContent='英德舰队 · 全海军科技 · 右键港口造船';focusNavalWorldSimulation(renderer);updateZoomLabel();mapUI.closeDrawer();toast('海军测试已就绪：双方各9艘，继续后20秒交战。右键港口可造船。');
+}else if(navalSimulation){
+ document.body.classList.add('naval-mode');document.querySelector('.header-center').textContent='海军模拟 · 舰种专属作战';document.querySelector('.operation-bar strong').textContent='驱逐突击 · 巡洋护航 · 战列齐射 · 航母出击 · 运兵登陆';$('scenario-country').hidden=true;$('scenario-start').hidden=true;
+ $('help-dialog').querySelector('ol').innerHTML='<li>点击舰船或 Shift 框选，多艘可同时行动。也可从「舰船」列表选择。</li><li>选中舰船后右键目标，菜单按舰种显示任务；混编框选会分别向对应舰种下令。</li><li>驱逐舰预览并确认鱼雷突击；巡洋舰贴身护航、前出警戒；战列舰保持距离炮击或集中齐射。</li><li>S停止，R返港维修；选择面板可以单舰返港。维修消耗资金装备，沉没舰船不会自动恢复。</li><li>航母搭载两支战斗机队、一支轰炸机队，可直接点选或框选飞机并右键巡逻、护航、对舰打击。运兵船右键海岸逐批卸载，登陆部队可单独移动；靠近己方港口可装载预备兵或港口步兵。敌军在首次下令10秒后出动。</li>';document.querySelector('.manual-note').textContent='局部海军模拟，五种舰船各有专属任务。甲板严重受损会暂停起降，舰载机返航后消耗资金装备整备；暂不开放潜艇、海军生产或正式战役海战。';focusNavalSimulation(renderer);updateZoomLabel();mapUI.closeDrawer();
+}else if(airSimulation){
  document.querySelector('.header-center').textContent='空军模拟战役';document.querySelector('.operation-bar strong').textContent='空军模拟 · 编队作战';
  $('scenario-country').hidden=true;$('scenario-start').hidden=true;
  $('help-dialog').querySelector('ol').innerHTML='<li>点击机场旁的编队标记或空中飞机；Shift 拖动或点击「框选飞机」选择多队，右键目标弹出任务菜单。</li><li>空中战场可点击飞机或 Shift 框选；右键空域选择巡逻、敌方陆地选择支援或轰炸，右键友方轰炸机选择护航；Esc 关闭菜单或取消选择。</li><li>召回后飞机返航并付费整备，编队保留。损失的飞机从库存补充。</li><li>运输机选择现有步兵执行运输或敌后空降，部队需先到机场登机。敌机在首次下达任务后出动。</li>';

@@ -1,14 +1,15 @@
+import {canFight,treatyProtected,landAccess} from './diplomacy.js';
 import {takeTroops,effectiveness,armorReadiness} from './troops.js';
 import {frontSupplied} from './ground-supply.js';
 import {prepareFrontMotion,moveFrontModels} from './front-motion.js';
 import {respondToFront,engageGroundDefenders} from './ground-defense.js';
 
-const eligible=(g,a,t)=>g.owners[t]>=0&&g.owners[t]!==a.owner&&(a.allowedTiles?a.allowedTiles.has(t):g.owners[t]===a.target);
+const eligible=(g,a,t)=>canFight(g,a.owner,g.owners[t])&&(a.allowedTiles?a.allowedTiles.has(t):g.owners[t]===a.target);
 const point=(g,t)=>({x:t%g.width+.5,y:Math.floor(t/g.width)+.5});
 export const groundStateLabel=a=>a.orderState==='holding'&&a.holdReason==='losses'?'损失过重 · 暂停攻势':({assembling:'空降集结','landing-combat':'落地交火',gathering:'集结至战线',engaging:'交火推进',advancing:'全线推进',isolated:'被切断 · 停止深入',resupplying:'补给核验 / 受压制',recovering:'组织度低 · 就地整顿',holding:'原地驻守',stationed:'原地待命',moving:'移动中',retreating:'撤退中',blocked:'路线被切断',defending:'防御交火',bombarding:'持续炮击',deploying:'火炮展开中','no-ammo':'炮弹耗尽 · 需停止补弹','no-guns':'火炮损失殆尽 · 需补充',packed:'待展开'}[a.orderState]??'行军');
 
 function moveGathering(g,a,dt){let ready=true;for(const p of [...a.frontline.lanes,...a.frontline.contingents??[]]){let travel=dt*8*Math.sqrt(g.gridScale??1)*(g.air?.groundEffect?.(a).movement??1);p.firing=false;p.status='gathering';
- while(p.pathHead<p.path.length&&travel>0){const t=p.path[p.pathHead];if(g.owners[t]!==a.owner){a.orderState='isolated';return false;}const q=point(g,t),dx=q.x-p.x,dy=q.y-p.y,d=Math.hypot(dx,dy);if(d<1e-7){p.pathHead++;continue;}const step=Math.min(travel,d);p.x+=dx/d*step;p.y+=dy/d*step;p.angle=Math.atan2(dy,dx);travel-=step;if(step>=d-1e-8)p.pathHead++;}
+ while(p.pathHead<p.path.length&&travel>0){const t=p.path[p.pathHead];if(!landAccess(g,a.owner,g.owners[t])){a.orderState='isolated';return false;}const q=point(g,t),dx=q.x-p.x,dy=q.y-p.y,d=Math.hypot(dx,dy);if(d<1e-7){p.pathHead++;continue;}const step=Math.min(travel,d);p.x+=dx/d*step;p.y+=dy/d*step;p.angle=Math.atan2(dy,dx);travel-=step;if(step>=d-1e-8)p.pathHead++;}
  p.joined=p.pathHead>=p.path.length;ready&&=p.joined;
  }return ready;
 }
@@ -18,7 +19,7 @@ function prepareBand(g,a){const f=a.frontline;f.cells=f.cells.filter(t=>eligible
  f.terrain/=f.cells.length;f.fighting=[...f.losses.values()].some(n=>n>.01);f.phase=0;f.prepared=true;
  f.bandCaptured=false;prepareFrontMotion(g,a);return true;
 }
-function nearEnemyPressure(g,a){let pressure=0;const lanes=a.frontline.lanes;for(const other of g.armies){if(other===a||other.owner===a.owner||other.troops<1)continue;const enemy=other.frontline?.lanes??[];let contact=0;for(const p of lanes)if(enemy.some(q=>Math.hypot(q.x-p.x,q.y-p.y)<2.5))contact++;if(contact)pressure+=other.troops*contact/Math.max(1,lanes.length)*(g.air?.groundEffect?.(other).firepower??1);}
+function nearEnemyPressure(g,a){let pressure=0;const lanes=a.frontline.lanes;for(const other of g.armies){if(other===a||!canFight(g,a.owner,other.owner)||other.troops<1)continue;const enemy=other.frontline?.lanes??[];let contact=0;for(const p of lanes)if(enemy.some(q=>Math.hypot(q.x-p.x,q.y-p.y)<2.5))contact++;if(contact)pressure+=other.troops*contact/Math.max(1,lanes.length)*(g.air?.groundEffect?.(other).firepower??1);}
  return pressure/Math.max(1,a.troops);
 }
 function setState(a,state,fire=false){a.orderState=state;for(const p of a.frontline.lanes){p.status=state;p.firing=fire;}}
@@ -46,7 +47,7 @@ export function advanceContinuousFront(g,a,dt){
  if(a.troops<(a.lossStopAt??a.committed*.4)){a.holding=true;a.holdReason='losses';setState(a,'holding');}
  f.phase+=fraction;
  const next=new Set(),defenders=new Set();
- if(!f.bandCaptured&&!local.blocked&&f.phase>=f.captureAt-1e-8){for(const t of f.cells){if(!eligible(g,a,t))continue;if(!g.adjacent[t].some(n=>g.owners[n]===a.owner)&&!(a.landing&&t===a.landingTile))continue;defenders.add(g.owners[t]);g.claim(t,a.owner);if(a.landing){g.beachheads??=new Map();g.beachheads.set(t,{owner:a.owner,source:a.seaSource});const supply=g.groundSupply?.get(a.owner);if(supply)supply.dirty=true;}a.landing=false;a.captured=(a.captured??0)+1;if(a.allowedTiles)a.planCaptured++;}
+ if(!f.bandCaptured&&!local.blocked&&f.phase>=f.captureAt-1e-8){for(const t of f.cells){if(!eligible(g,a,t))continue;if(!g.adjacent[t].some(n=>landAccess(g,a.owner,g.owners[n]))&&!(a.landing&&t===a.landingTile))continue;defenders.add(g.owners[t]);g.claim(t,a.owner);if(a.landing){g.beachheads??=new Map();g.beachheads.set(t,{owner:a.owner,source:a.seaSource});const supply=g.groundSupply?.get(a.owner);if(supply)supply.dirty=true;}a.landing=false;a.captured=(a.captured??0)+1;if(a.allowedTiles)a.planCaptured++;}
  f.bandCaptured=true;
  }
  moveFrontModels(f);

@@ -1,3 +1,4 @@
+import {canFight,treatyProtected,allied,allianceSide} from './diplomacy.js';
 import {AIRCRAFT,AIR_MISSIONS} from './air-operations.js';
 import {AIR_STANCES} from './workshop-air.js';
 import {registerHostilities} from './campaign-pacing.js';
@@ -48,7 +49,7 @@ export class AirSquadrons {
   if(options.base!==undefined&&options.base!==s.home||options.count!==undefined&&options.count!==count)return fail('航空队机场或飞机数量已变化');
   if(air.flights.length>=24||air.flights.filter(f=>f.owner===owner).length>=12)return fail('最多同时指挥12支编队');
   const origin=air.position(s.home);if(distance(origin,target)>c.range)return fail('目标超出航空队驻地航程');
-  const tile=air.tile(target);
+  const tile=air.tile(target);if(['support','bomb','airdrop'].includes(mission)&&treatyProtected(g,owner,g.owners[tile]))return fail('盟友或互不侵犯国家受到保护');
   if(['support','bomb','airdrop','transport'].includes(mission)&&g.owners[tile]<0)return fail('此任务需要陆地目标');
   if(mission==='bomb'&&!air.intel(owner,tile))return fail('未发现此处设施，请先侦察');
   if(mission==='bomb'&&g.owners[tile]===owner)return fail('不能轰炸己方设施');

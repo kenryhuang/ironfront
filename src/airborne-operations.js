@@ -1,3 +1,4 @@
+import {canFight,treatyProtected,allied,allianceSide} from './diplomacy.js';
 import {AIRCRAFT} from './air-operations.js';
 import {REGIMENT_LIMIT} from './regiments.js';
 import {issueGroundOrder,parkGroundUnit,unitPositions} from './ground-unit-orders.js';
@@ -24,8 +25,8 @@ export class AirborneOperations {
  constructor(air){this.air=air;this.game=air.game;this.pending=[];this.landings=[];this.parachutes=[];this.nextId=1;}
  source(owner,key){return this.game.armies.find(a=>a.owner===owner&&a.unitKey===key&&a.troops>=1);}
  infantry(a){const c=a?.regiment?.composition;return !!a?.regiment&&!a.armor&&!a.artillery&&!(c?.tanks>0)&&!(c?.guns>0)&&(!a.airborne||a.airborne.phase==='ready');}
- validTarget(owner,target,mission){const g=this.game;if(!this.air.validPoint(target))return fail('请选择地图内的投送点');const t=this.air.tile(target);if(g.owners[t]<0||g.terrain[t]>1.5||g.radiationAt?.(t))return fail('海面、山地或核污染区域不能投送');if(mission==='transport'&&g.owners[t]!==owner)return fail('运输必须选择己方陆地，敌后请使用空降');return {ok:true};}
- safeBase(owner,t){const g=this.game;if(!this.air.baseUsable(t,owner,1))return false;const p=this.air.position(t);return !g.armies.some(a=>a.owner!==owner&&a.troops>=1&&unitPositions(a).some(q=>distance(p,q)<6));}
+ validTarget(owner,target,mission){const g=this.game;if(!this.air.validPoint(target))return fail('请选择地图内的投送点');const t=this.air.tile(target);if(treatyProtected(g,owner,g.owners[t]))return fail('不能空降或空运至盟友领土');if(g.owners[t]<0||g.terrain[t]>1.5||g.radiationAt?.(t))return fail('海面、山地或核污染区域不能投送');if(mission==='transport'&&g.owners[t]!==owner)return fail('运输必须选择己方陆地，敌后请使用空降');return {ok:true};}
+ safeBase(owner,t){const g=this.game;if(!this.air.baseUsable(t,owner,1))return false;const p=this.air.position(t);return !g.armies.some(a=>canFight(g,owner,a.owner)&&a.troops>=1&&unitPositions(a).some(q=>distance(p,q)<6));}
  order(owner,target,options={}){
   const g=this.game,n=g.nations.get(owner),mission=options.mission??'airdrop',count=options.count??4;
   if(g.phase!=='running'||!n?.alive)return fail('战斗已结束');if(!['airdrop','transport','resupply'].includes(mission))return fail('未知空运任务');
@@ -109,7 +110,7 @@ export class AirborneOperations {
   const supplied=frontSupplied(g,a);a.supplyConnected=supplied.connected;
   if(!supplied.pending)a.supply=Math.max(0,Math.min(1,(a.supply??1)+(supplied.connected?dt/12:-dt/60)));
   if(a.supply<=0)takeTroops(a,a.troops*.002*dt);
-  const defenders=g.armies.filter(q=>q!==a&&q.owner!==a.owner&&q.troops>=1&&unitPositions(q).some(p=>distance(p,l)<2.5));
+  const defenders=g.armies.filter(q=>q!==a&&canFight(g,a.owner,q.owner)&&q.troops>=1&&unitPositions(q).some(p=>distance(p,l)<2.5));
   const contacts=defenders.map(unit=>({unit,power:groundPower(g,unit)})),defensePower=contacts.reduce((n,c)=>n+c.power,0);
   if(g.time<l.assemblyUntil){combatLoss(a,defensePower*.006*dt);a.orderState='assembling';a.organization=Math.max(0,Math.min(65,a.organization+(defenders.length?-2:3)*dt));if(a.troops<1)g.armies=g.armies.filter(q=>q!==a);g.defenseContactIndex=null;return true;}
   l.phase='fighting';a.orderState='landing-combat';

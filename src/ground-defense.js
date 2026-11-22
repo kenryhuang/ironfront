@@ -1,3 +1,4 @@
+import {canFight,treatyProtected} from './diplomacy.js';
 import {regimentCombatStats} from './regiment-composition.js';
 import {takeTroops,effectiveness,armorReadiness} from './troops.js';
 import {listGroundUnits,issueGroundOrder,unitPositions} from './ground-unit-orders.js';
@@ -6,7 +7,7 @@ import {listGroundUnits,issueGroundOrder,unitPositions} from './ground-unit-orde
 // country per three seconds. It does not increase peacetime AI aggression.
 export function respondToFront(g,a){
  const f=a.frontline;if(!f?.cells?.length)return;g.defenseResponseAt??=new Map();
- const owners=new Set(f.cells.map(t=>g.owners[t]).filter(id=>id>1&&id!==a.owner));
+ const owners=new Set(f.cells.map(t=>g.owners[t]).filter(id=>id>1&&canFight(g,a.owner,id)));
  for(const owner of owners){if(g.time<(g.defenseResponseAt.get(owner)??0))continue;g.defenseResponseAt.set(owner,g.time+3);const nation=g.nations.get(owner);if(!nation?.ai||!nation.alive)continue;
   const existing=g.armies.find(b=>b.owner===owner&&b.defendingAgainst===a.id);
   if(existing?.groundOrder?.type==='move'&&g.owners[existing.groundOrder.target]===owner&&existing.orderState!=='blocked')continue;
@@ -28,7 +29,8 @@ function contactIndex(g){if(g.defenseContactIndex?.time===g.time)return g.defens
 // debited together with its station, so casualties never create a second pool.
 export function engageGroundDefenders(g,a,dt){
  const attackPoints=a.frontline.lanes,contacts=[],targets=new Set(a.frontline.losses?.keys()??a.frontline.cells.map(t=>g.owners[t]));let power=0;
- const add=(owner,unit,positions,station=false)=>{if(owner===a.owner||!targets.has(owner)||unit.troops<1)return;let count=0,closest=null,min=Infinity;
+ for(const target of [...targets])for(const ally of g.diplomacy?.members(target)??[])targets.add(ally);
+ const add=(owner,unit,positions,station=false)=>{if(!canFight(g,a.owner,owner)||!targets.has(owner)||unit.troops<1)return;let count=0,closest=null,min=Infinity;
   for(const p of positions){let target=null,d=Infinity;for(const q of attackPoints){const n=Math.hypot(p.x-q.x,p.y-q.y);if(n<d){d=n;target=q;}}if(d>2.5)continue;count++;p.firingUntil=g.time+.3;p.firing=true;p.angle=Math.atan2(target.y-p.y,target.x-p.x);if(d<min){min=d;closest=p;}}
   if(!count)return;const fraction=count/Math.max(1,positions.length),troops=unit.troops*fraction,n=g.nations.get(owner),quality=station?effectiveness(n):effectiveness(unit),tile=Math.floor(closest.y)*g.width+Math.floor(closest.x),suppression=g.logistics?g.defenseSuppression(tile):1,org=station?1:Math.max(.15,(unit.organization??100)/100),supply=station?1:.25+.75*(unit.supply??1);
   const value=(regimentCombatStats(unit)?.defense??unit.troops)*fraction*quality*org*supply*Math.min(suppression,g.air?.groundEffect?.(unit).firepower??1);power+=value;contacts.push({owner,unit,station,power:value});

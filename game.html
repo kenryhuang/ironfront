@@ -5,19 +5,17 @@
   <script>
   // The battlefield is entered through the cinematic cover, including direct links.
   try {
-    if (new URLSearchParams(location.search).get('simulation') === 'air') {
-      // The local air simulation uses this same battlefield and command HUD.
+    if (['air','naval','naval-world'].includes(new URLSearchParams(location.search).get('simulation'))) {
+      // Local simulations use this same battlefield and command HUD.
     } else if (new URLSearchParams(location.search).get('campaign') === '1939') {
-      document.documentElement.style.visibility = 'hidden';
-      sessionStorage.removeItem('ironfront.battle-access');
-      location.replace('/?campaign=1939');
+      document.documentElement.classList?.add('territory-mode');
     } else if (sessionStorage.getItem('ironfront.battle-access') === '1') {
       sessionStorage.removeItem('ironfront.battle-access');
     } else {
       document.documentElement.style.visibility = 'hidden';
-      location.replace('/' + location.search);
+      location.replace('./' + location.search);
     }
-  } catch { location.replace('/' + location.search); }
+  } catch { location.replace('./' + location.search); }
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#141b20">
@@ -25,9 +23,11 @@
   <title>IRONFRONT · 铁锋指挥部</title>
 
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='8' fill='%23141b20'/%3E%3Cpath d='M24 6 39 14v16L24 43 9 30V14Z' fill='none' stroke='%23d6b66b' stroke-width='3'/%3E%3Cpath d='M18 16h12v4h-4v12h-4V20h-4Z' fill='%23d6b66b'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="/src/style.css">
-  <link rel="stylesheet" href="/src/air-ui.css">
-  <link rel="stylesheet" href="/src/map-command-ui.css">
+  <link rel="stylesheet" href="./src/style.css">
+  <link rel="stylesheet" href="./src/air-ui.css">
+  <link rel="stylesheet" href="./src/naval-ui.css">
+  <link rel="stylesheet" href="./src/map-command-ui.css">
+  <link rel="stylesheet" href="./src/territory-1939/style.css">
 </head>
 <body>
   <style>
@@ -44,12 +44,12 @@
   <section id="battle-loading" role="status" aria-live="polite" aria-label="正在加载战场">
     <span class="loading-brand">IRONFRONT</span><div class="loading-ring" aria-hidden="true"></div>
     <h1>正在建立战场</h1><p id="battle-loading-status">准备地图与作战系统…</p>
-    <a href="/" hidden id="battle-loading-back">返回封面重试</a>
+    <a href="./" hidden id="battle-loading-back">返回封面重试</a>
   </section>
   <header class="masthead">
-    <a class="brand" href="/" aria-label="IronFront 首页"><span class="insignia">I</span><span>IRONFRONT<small>铁锋 · 战区指挥部</small></span></a>
+    <a class="brand" href="./" aria-label="IronFront 首页"><span class="insignia">I</span><span>IRONFRONT<small>铁锋 · 战区指挥部</small></span></a>
     <div class="header-center"><span class="live-dot"></span> 1939.08.31 <span class="divider">/</span> 历史疆域 · 自由战役</div>
-    <div class="header-actions"><a class="text-button" href="/" aria-label="返回蓝图封面">返回封面</a><button id="help-button" class="text-button">操作手册 <span>?</span></button><span class="version">原型 0.6</span></div>
+    <div class="header-actions"><a class="text-button" href="./" aria-label="返回蓝图封面">返回封面</a><button id="help-button" class="text-button">操作手册 <span>?</span></button><span class="version">原型 0.6</span></div>
   </header>
   <div class="operation-bar">
     <div><span class="eyebrow">OPERATION / 02</span><strong>全球争锋</strong><span class="muted theater-sub">全球地图 · 陆海空作战</span></div>
@@ -59,7 +59,7 @@
     <aside class="command-panel">
       <div class="panel-heading"><span class="eyebrow">YOUR COMMAND</span><span class="tag">玩家</span></div>
       <div class="nation-title"><span class="nation-mark">✦</span><div><h1 id="nation-name">中国</h1><p>1939 战备开局 · 先发展再交战</p></div></div>
-      <div class="scenario-choice"><label for="scenario-country">扮演国家</label><select id="scenario-country" aria-label="选择重开战役的国家"></select><button id="scenario-start" class="text-button">以此国家重开</button><a href="/docs/historical-scenario.html" target="_blank" rel="noopener">疆域与战役说明 ↗</a></div>
+      <div class="scenario-choice"><label for="scenario-country">扮演国家</label><select id="scenario-country" aria-label="选择重开战役的国家"></select><button id="scenario-start" class="text-button">以此国家重开</button><a href="./docs/historical-scenario.html" target="_blank" rel="noopener">疆域与战役说明 ↗</a></div>
       <div class="resource-card"><div class="resource-heading"><span>预备兵力</span><span class="resource-symbol">⚑</span></div><div class="resource-value" id="troops">2,200</div><small id="troop-composition" class="resource-detail">正规军 — · 强征军 —</small><div class="capacity-track"><span id="capacity-fill"></span></div><div class="resource-foot"><span id="capacity">容量 —</span><span class="positive" id="growth">+0 / 秒</span></div></div>
       <div class="minor-resources"><div><span>国家资金</span><strong id="gold">0</strong><small id="income">0 支运输船队</small></div><div><span>领土面积</span><strong id="land">0</strong><small id="land-share">尚未部署</small></div></div>
       <div id="logistics-resources" class="logistics-resources"><div><span>总人口 / 上限</span><strong id="population">—</strong></div><div><span>可用人力</span><strong id="manpower">—</strong></div><div><span>装备库存</span><strong id="equipment">—</strong></div><div><span>生产工人</span><strong id="workers">—</strong></div></div>
@@ -117,12 +117,91 @@
       <div class="intel-footer"><span class="live-dot"></span> 本地模拟 · 无需联网</div>
     </aside>
   </main>
-  <dialog id="research-dialog" aria-labelledby="research-title"><div class="research-dialog-heading"><div><span class="eyebrow">RESEARCH & DEVELOPMENT</span><h2 id="research-title">国家科技树</h2></div><span>战役继续运行 · 研发完成后效果立即生效</span><button id="close-research" aria-label="关闭科技树">关闭 ×</button></div><iframe id="research-frame" title="国家研发科技树" src="/docs/research/research-browser.html?game=1"></iframe></dialog>
+  <template id="territory-template">
+<div id="territory-1939" class="territory-1939">
+<div class="territory-nav"><h2>1939 全球争夺</h2><button id="exit" hidden>返回大厅</button><a id="return-campaign" href="?campaign=1936">返回原战场</a></div>
+<section id="lobby">
+  <h2>选择对局</h2>
+  <p>从小领地扩张，经营城市与贸易，建造军舰和导弹井。右键地图建设；同盟、赠送与禁运决定合作关系。</p>
+  <label>昵称 <input id="name" maxlength="16" value="指挥官" autocomplete="nickname"></label>
+  <div class="choices"><button id="solo" disabled>单人练习</button><button id="create" disabled>创建联机房间</button></div>
+  <form id="join"><label>房间码 <input id="code" maxlength="2048" autocomplete="off" spellcheck="false" placeholder="六位房间码或完整邀请链接" aria-describedby="join-help join-status"></label><button id="join-room" type="submit" disabled>加入房间</button><button type="button" id="watch-room">观战</button></form>
+  <p id="join-help">输入后按回车或点击“加入房间”。房主需先创建房间；自己试玩请点击“单人练习”。</p>
+  <p id="join-status" role="status" aria-live="polite"></p>
+  <section id="public-lobby"><h3>公开房</h3><div id="public-rooms" aria-label="公开房列表"></div></section>
+  <form id="resume-room"><label>重连码 <input id="recovery" type="password" maxlength="48" autocomplete="off"></label><button>恢复席位</button></form>
+ </section>
+ <section id="waiting" hidden>
+  <h2>联机房间 <strong id="room-code"></strong></h2>
+  <p>把房间码发给好友。2–6 人，由房主开始。</p>
+  <p>房主可直接分配国家。启用双阵营后，可把好友分到同一边对抗 AI。</p>
+  <ul id="members"></ul>
+  <p id="room-count"></p>
+  <p id="public-start" hidden></p>
+  <div id="visibility-controls" hidden>
+   <label>自动开局倒计时 <select id="publish-delay"><option value="10">10 秒</option><option value="30" selected>30 秒</option><option value="60">60 秒</option></select></label>
+   <button id="publish-room" type="button">发布公开房</button>
+  </div>
+  <p id="room-rules" aria-live="polite"></p>
+  <form id="room-settings" hidden>
+   <label>比赛速度 <select id="room-speed"><option value="1">1×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label>
+   <label>胜利条件 <select id="room-victory"><option value="last">最后一方存活</option><option value="majority">达到领土阈值</option></select></label>
+   <label><input id="room-ai" type="checkbox" checked> AI 接管无人国家</label>
+   <label>AI 强度 <select id="room-difficulty"><option value="easy">简单</option><option value="normal" selected>标准</option><option value="hard">困难</option></select></label>
+   <label>对局模式 <select id="room-mode"><option value="free">自由混战</option><option value="teams">双阵营对抗</option></select></label>
+   <label>初始兵力 <select id="room-starting"><option value="40">上限的 40%</option><option value="65" selected>上限的 65%</option><option value="80">上限的 80%</option></select></label>
+   <label>玩家上限 <select id="room-limit"><option>2</option><option>3</option><option>4</option><option>5</option><option selected>6</option></select></label>
+   <label>房规预设 <select id="room-preset"><option value="">选择预设</option><option value="classic">经典</option><option value="coop">好友打 AI</option><option value="quick">快速对局</option></select></label>
+   <label>AI 参战国家数 <input id="room-ai-count" type="number" min="-1" max="64" value="-1">（-1 表示全部）</label>
+   <label>开局保护（战局秒） <input id="room-protection" type="number" min="0" max="300" value="0"></label>
+   <label>对局时限（战局秒，0 为不限） <input id="room-time" type="number" min="0" max="7200" value="0"></label>
+   <label>领土胜利阈值（%） <input id="room-threshold" type="number" min="51" max="100" value="60"></label>
+   <label><input id="room-random" type="checkbox"> 开局随机分配国家</label>
+   <button type="submit">保存设置</button>
+  </form>
+  <button id="copy">复制邀请链接</button> <button id="start">开始对局</button>
+ </section>
+ <section id="battle" hidden>
+  <div class="battle-top"><div id="stats"></div><div id="target">选择空地或敌方领土</div></div>
+  <div data-battlefield-slot></div>
+  <div class="controls">
+   <label for="ratio">出兵 <output id="ratio-value" for="ratio">30%</output></label>
+   <input id="ratio" type="range" min="1" max="100" value="30">
+   <button id="expand">扩张空地</button><button id="stop">撤回全部</button><output id="dispatch-preview"></output><output id="command-status" role="status" aria-live="polite"></output>
+  </div>
+  <section id="diplomacy-panel">
+   <label>外交对象 <select id="diplomacy-target"></select></label>
+   <p id="diplomacy-status" role="status"></p>
+   <div class="choices">
+    <button id="alliance-request" type="button">请求结盟</button>
+    <button id="alliance-accept" type="button" hidden>接受结盟</button>
+    <button id="alliance-reject" type="button" hidden>拒绝结盟</button>
+    <button id="alliance-leave" type="button" hidden>解除同盟</button>
+    <button id="alliance-gift" type="button" hidden>给盟友送兵</button>
+   </div>
+   <p>送兵使用出兵滑杆比例，直接从守军扣除并交给盟友，上限为盟友可容纳的守军。真人结盟需对方接受。固定阵营内可直接送兵。</p>
+  </section>
+  <div id="active-fronts" aria-label="正在进行的攻势"></div>
+  <div class="battle-foot"><p id="mission">消灭其他势力获胜。</p><div id="ranking" aria-label="各方领土"></div></div>
+ </section>
+ <div class="choices" id="room-actions" hidden>
+  <button id="copy-recovery">复制重连码</button>
+  <output id="recovery-display" hidden></output>
+  <button id="vote-end" hidden>同意结束本局</button>
+  <button id="rematch" hidden>再来一局</button>
+  <span id="round-status" role="status"></span>
+ </div>
+ <p id="message" role="status" aria-live="polite"></p>
+</div>
+  </template>
+  <dialog id="research-dialog" aria-labelledby="research-title"><div class="research-dialog-heading"><div><span class="eyebrow">RESEARCH & DEVELOPMENT</span><h2 id="research-title">国家科技树</h2></div><span>战役继续运行 · 研发完成后效果立即生效</span><button id="close-research" aria-label="关闭科技树">关闭 ×</button></div><iframe id="research-frame" title="国家研发科技树" src="./docs/research/research-browser.html?game=1"></iframe></dialog>
   <dialog id="help-dialog"><div class="dialog-heading"><span class="eyebrow">FIELD MANUAL</span><button id="close-help" aria-label="关闭操作手册">×</button></div><h2>全球作战手册</h2><ol><li><b>1939战备开局</b>：默认中国，使用1939年8月31日的近似历史疆域，开局有3分钟发育期（按模拟时间，暂停冻结、加速同步），AI暂不主动开战。玩家提前进攻会引起目标国反击。之后各国按扩张、谨慎、防守倾向行动，不再优先围攻玩家。右上角“指挥 → 国家”选择国家并点击“以此国家重开”可建立新战役（替换当前战况）。玩家开局500万资金、100万正规军；城市提升人口上限与增长，兵力通过训练或强征补充。</li><li><b>国家建设</b>：右键己方空地打开建筑轮盘，点击设施立即开工。建筑可以相邻，每格一座；右键建筑管理生产、训练、升级和维修。建设消耗资金和时间，选址时战役继续，Esc 取消。城市花费2400、20秒建成，增加5000人口上限和每秒12人口；其余设施15秒建成。</li><li><b>国家研发</b>：打开科技树选择项目，满足前置科技与设施要求后支付资金开始研发。研发可暂停与恢复，已支付项目保留进度；打开科技树不会暂停战役。科技解锁新设施与设施等级，完成后加成立即生效。设施卡显示升级费用、时间与要求。</li><li><b>生产与训练</b>：工厂花费1800，占用200工人，每秒消耗8资金生产6装备，停产释放工人。兵营花费1600，每批100人、100装备、10秒训练正规军；可切换整编留守强征军。停产或切换模式退回预留资源，资源不足等待。</li><li><b>强征与防御</b>：输入人数可立即将可用人力1:1强征入伍，效能为正规军40%。要塞花费1600，附近5地理单位敌军推进消耗×2.4。被占设施保留在建进度，新国接管默认停产。</li><li><b>空军</b>：T07解锁战斗机、攻击机、侦察机和机场；T14解锁战术轰炸机与运输机；T21解锁B-29（需Ⅱ级机场）。在航空指挥中付费生产后，点击或圈画地图派出任务。右上角切换空中战场，战斗机在场才获得制空权，遇敌自动交战。非机场敌方设施需要侦察；旧情报不会实时更新。航空任务栏可召回，飞机返航后归还库存。</li><li><b>部队微操</b>：点击地图上的部队或标记选中，Shift点击加选；Shift拖动或点击「框选」后拖动可多选。右键己方陆地移动，右键敌方陆地进攻；S原地停止，R沿己方陆路撤退，Esc取消选择。选中面板可单独撤退一支部队。原部队保留兵力、装备、组织度与补给，到达目标后原地待命，可反复下令。未选中时右键仍打开指令轮盘。</li><li><b>自定义进攻</b>：点击自定义进攻后按住鼠标圈画，松开闭合。输入投入人数，再确认执行。规划期间战役继续，无需指定国家，部队推进圈内可达的非己方陆地，任务完成后余兵归队；Esc取消不扣兵。</li><li><b>跨海登陆</b>：直接在自定义进攻中圈选不接壤的沿海区域，系统预览自动海运路线。确认后，步兵或装甲从当前驻地走到岸边登船；无需单独点击运兵船按钮。没有可达海岸的选区不能海运。</li><li><b>航行与登陆</b>：船队沿水路航行，不会穿越陆地。到达无主海岸后建立据点；敌岸先进行登陆战，再只在原圈选区域内推进。</li><li><b>兵力显示</b>：地图箭头显示攻击兵力和目标全国守军；船只显示载兵数与倒计时。金色为我方，红色为来袭敌军，灰色为其他国家作战。</li><li><b>部队管理</b>：前线和海运列表可撤回部队，返还全部剩余兵力。左上角点击“作战事件”展开列表。</li></ol><div class="manual-note">使用 Natural Earth 陆地轮廓与架空国家，不代表历史国界。当前不含舰队拦截与多人联机。运输撤回会直接返还兵力；地面战斗仍采用全国守军模型。</div><p class="shortcut-hint">空格：暂停 / 继续　Esc：取消建设 / 选岸 / 自定义规划　滚轮：缩放</p></dialog>
   <script type="module">
   // Paint the loading screen before evaluating the simulation and terrain modules.
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    import('/src/main.js').catch(error=>{
+    const campaign=new URLSearchParams(location.search);
+    const territory=campaign.get('campaign')==='1939'&&!['air','naval','naval-world'].includes(campaign.get('simulation'));
+    import(territory?'./src/territory-1939/view.js':'./src/main.js').catch(error=>{
       console.error('战场初始化失败',error);
       document.querySelector('#battle-loading-status').textContent='战场加载失败，请返回封面重试。';
       document.querySelector('#battle-loading-back').hidden=false;

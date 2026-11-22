@@ -1,10 +1,8 @@
 import {createAirWorkshop} from './workshop-air-scenario.js';
-import {AirSquadrons} from './air-squadrons.js';
 
 export function createInGameAirSimulation(){
  const g=createAirWorkshop();g.campaign='air-simulation';g.scenarioDate='空军模拟战役';
- g.air.squadrons=new AirSquadrons(g.air);
- for(const [kind,name]of [['fighter','第1战斗机中队'],['bomber','第2轰炸机中队'],['transport','第3运输机中队']]){
+ for(const [kind,name]of [['fighter','第1战斗机中队'],['bomber','第2轰炸机中队'],['transport','第3运输机中队'],['fighter','第4战斗机中队'],['fighter','第5战斗机中队'],['fighter','第6战斗机中队'],['bomber','第7轰炸机中队'],['recon','第8侦察机中队']]){
   const result=g.air.squadrons.create(1,{kind,name,count:4});if(!result.ok)throw new Error(result.message);
  }
  g.airEnemyAt=null;return g;
@@ -21,7 +19,7 @@ export function stepAirSimulationEnemy(g){
 }
 
 export function focusAirSimulation(renderer){
- renderer.resize();renderer.zoom=22;renderer.panX=0;renderer.panY=0;renderer.updateReliefBounds();
+ renderer.resize();renderer.zoom=Math.max(1,Math.min(22,(renderer.w-160)/(44*renderer.baseScale)));renderer.panX=0;renderer.panY=0;renderer.updateReliefBounds();
  const [x,y]=renderer.projectAir(741,170,renderer.airView?10:0);
  renderer.panX+=renderer.w/2-x;renderer.panY+=(renderer.h/2-y)/Math.cos(renderer.surface?.active?renderer.surface.tilt:0);
  renderer.constrainView();renderer.updateReliefBounds();renderer.lastRender=0;

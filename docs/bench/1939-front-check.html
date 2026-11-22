@@ -1,0 +1,25 @@
+<!doctype html><meta charset="utf-8"><title>1939 GPU 前线回归检查</title>
+<style>body{background:#152333;color:#edf3fa;font:15px system-ui;margin:20px}#host{position:relative;width:640px;height:320px}canvas{width:100%;height:100%}pre{white-space:pre-wrap}</style>
+<h1>1939 GPU 前线回归检查</h1><div id="host"></div><pre id="result">正在验证真实 GPU 输出…</pre>
+<script type="module">
+import {FrontSurface} from '../../src/territory-1939/front-surface.js';
+import {WORLD_PIXEL_WIDTH as W,WORLD_PIXEL_HEIGHT as H} from '../../src/territory-1939/fine-pixel-map.js';
+const out=document.querySelector('#result');
+try{
+ const rgba=new Uint8ClampedArray(W*H*4);for(let i=0;i<rgba.length;i+=4)rgba.set([200,200,160,255],i);
+ const owners=Int16Array.from({length:32},(_,i)=>i%8<4?1:0),g={width:8,height:4,owners,nations:new Map([[1,{color:'#b41e1e'}]])};
+ const surface=FrontSurface.create(document.querySelector('#host'),g,{rgba,land:new Uint8Array(W*H).fill(1)},false);
+ if(!surface)throw Error('WebGL2 unavailable');
+ const r={w:640,h:320,dpr:1,scale:80,originX:0,originY:0},gl=surface.gl,pixels=new Uint8Array(640*4);
+ const border=now=>{surface.render(r,now);gl.readPixels(0,160,640,1,gl.RGBA,gl.UNSIGNED_BYTE,pixels);let last=-1;for(let x=0;x<640;x++)if(pixels[x*4+1]<100)last=x;return last;};
+ const start=surface.epoch+100,initial=border(start),tiles=[4,12,20,28];for(const t of tiles)owners[t]=1;surface.update(tiles,start);
+ const positions=[0,35,70,105,140].map(dt=>border(start+dt));
+ if(positions[0]!==initial||positions.at(-1)-initial<75||positions.some((x,i)=>i&&x<=positions[i-1]))throw Error('Non-continuous border: '+positions);
+ for(const t of tiles)owners[t]=0;surface.update(tiles,start+175);const reversal=[0,35,70,105,140].map(dt=>border(start+175+dt));
+ if(reversal.at(-1)!==initial)throw Error('Retreat did not converge');
+ if(gl.getError()!==gl.NO_ERROR)throw Error('WebGL error');
+ let frames=0,last=0;const intervals=[],submit=[];
+ const animate=now=>{if(last)intervals.push(now-last);last=now;r.originX=Math.sin(frames/20)*60;const began=performance.now();surface.render(r,now);submit.push(performance.now()-began);if(++frames<120)requestAnimationFrame(animate);else{intervals.sort((a,b)=>a-b);submit.sort((a,b)=>a-b);out.textContent=JSON.stringify({result:'PASS',boundaryPixels:positions,retreatPixels:reversal,frames,rafMedianMs:intervals[59],rafP95Ms:intervals[113],cpuSubmitP95Ms:submit[114],glError:gl.getError()},null,2);}};
+ requestAnimationFrame(animate);
+}catch(error){out.textContent='FAIL: '+error.stack;}
+</script>

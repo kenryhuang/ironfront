@@ -1,3 +1,4 @@
+import {landAccess} from './diplomacy.js';
 import {regimentCombatStats,ammoCapacity,isArtilleryOnly} from './regiment-composition.js';
 import {listGroundUnits,issueGroundOrder} from './ground-unit-orders.js';
 import {projectUnitPoint,pickGroundUnit,boxGroundUnits} from './ground-unit-selection.js';
@@ -8,7 +9,7 @@ import {requestReinforcement} from './regiments.js';
 import {regimentNeedsReinforcement,HEAVY_EQUIPMENT} from './regiment-equipment.js';
 
 export function createGroundUnitUI({canvas,getGame,getRenderer,available=()=>true,notify=()=>{},prepare=()=>{}}){
- const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='/src/ground-unit-ui.css';document.head.append(sheet);
+ const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href=new URL('./ground-unit-ui.css',import.meta.url).href;document.head.append(sheet);
  const host=canvas.parentElement,root=document.createElement('div');root.className='ground-unit-ui';host.append(root);
  root.innerHTML='<div class="unit-markers"></div><div class="unit-box" hidden></div><div class="unit-controls"><button type="button" class="unit-roster-toggle">部队</button><button type="button" class="unit-box-toggle" aria-pressed="false">框选</button></div><section class="unit-roster" hidden aria-label="我的部队"></section><section class="unit-selection" hidden aria-label="已选部队"><header><b></b><button data-bombard aria-pressed="false" hidden>炮击瞄准</button><button data-order="halt">停止 S</button><button data-order="retreat">撤退 R</button><button data-clear>取消 ×</button></header><p>右键己方地面移动 · 右键敌方地面进攻 · Shift 拖动框选</p><div class="unit-selected-list"></div></section>';
  const markers=root.querySelector('.unit-markers'),box=root.querySelector('.unit-box'),panel=root.querySelector('.unit-selection'),rows=root.querySelector('.unit-selected-list'),roster=root.querySelector('.unit-roster'),boxButton=root.querySelector('.unit-box-toggle'),selected=new Set(),nodes=new Map();
@@ -56,7 +57,7 @@ export function createGroundUnitUI({canvas,getGame,getRenderer,available=()=>tru
   else if(g.hit)choose(g.hit.key,g.add);else if(!g.add){selected.clear();drawPanels();}
  },true);
  const cancel=()=>{gesture=null;box.hidden=true;};canvas.addEventListener('pointercancel',cancel,true);canvas.addEventListener('lostpointercapture',cancel,true);
- canvas.addEventListener('contextmenu',e=>{if(!available()||!selected.size)return;consume(e);prepare();const tile=getRenderer().tileAt(...local(e));order(bombardMode&&game.owners[tile]!==1?'bombard':'auto',tile);},true);
+ canvas.addEventListener('contextmenu',e=>{if(!available()||!selected.size)return;consume(e);prepare();const tile=getRenderer().tileAt(...local(e));order(bombardMode&&!landAccess(game,1,game.owners[tile])?'bombard':'auto',tile);},true);
  document.addEventListener('keydown',e=>{if(!available()||!selected.size||e.target.closest('input,textarea,select,[contenteditable="true"]'))return;if(e.key==='Escape'){consume(e);selected.clear();drawPanels();}else if(['s','r'].includes(e.key.toLowerCase())){consume(e);order(e.key.toLowerCase()==='s'?'halt':'retreat');}},true);
  function update(now){root.hidden=!available();if(root.hidden){cancel();return;}if(now-lastRefresh>160||game!==getGame()){refresh();drawPanels();lastRefresh=now;}const r=getRenderer(),visible=new Set();
   for(const u of units){const p=u.positions[0];if(!p)continue;const [x,y]=project(p);if(x<0||y<0||x>r.w||y>r.h)continue;visible.add(u.key);let n=nodes.get(u.key);if(!n){n=document.createElement('button');n.className='unit-marker';n.onclick=e=>choose(u.key,e.shiftKey);n.oncontextmenu=e=>{e.preventDefault();};markers.append(n);nodes.set(u.key,n);}n.setAttribute('aria-label',`选择 ${u.name}`);n.title=`${u.name} · ${Math.floor(u.troops).toLocaleString()} 人`;n.textContent=u.kind==='mixed'?'✣':u.kind==='armor'?'▰':u.kind==='artillery'?'⊕':'Ⅱ';n.classList.toggle('selected',selected.has(u.key));n.style.transform=`translate(${x}px,${y}px)`;n.hidden=false;

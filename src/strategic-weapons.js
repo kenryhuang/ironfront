@@ -1,3 +1,4 @@
+import {canFight,treatyProtected,allied,allianceSide} from './diplomacy.js';
 import {registerHostilities} from './campaign-pacing.js';
 import {SCORCH_RECOVERY_SECONDS} from './contamination-visual.js';
 import {takeTroops} from './troops.js';
@@ -78,18 +79,18 @@ export const strategicMethods={
     return {ok:!missing.length,missing,source,target,distance,radius:d.radius,tiles,facilities,estimatedLosses,friendly};
   },
   launchWeapon(owner,kind,target){
-    const p=this.strikePreview(owner,kind,target);if(!p.ok)return {ok:false,message:p.missing.join('；')};
+    if(treatyProtected(this,owner,this.owners[target]))return {ok:false,message:'不能打击盟友或互不侵犯国家'};const p=this.strikePreview(owner,kind,target);if(!p.ok)return {ok:false,message:p.missing.join('；')};
     const d=STRATEGIC_WEAPONS[kind],s=this.strategicState(owner);s.stock[kind]--;s.cooldowns[kind]=this.time+d.cooldown;
     const strike={id:this.nextStrike++,owner,kind,source:p.source,target,launchedAt:this.time,impactAt:this.time+d.flight};this.strikes.push(strike);
     this.log(`${this.nations.get(owner).name}${kind==='atomic'?'派出原子弹投送机':'发射V-2导弹'} · ${d.flight}秒后抵达`,'war');return {ok:true,strike};
   },
-  defenseSuppression(tile){let factor=1;for(const zone of this.strikeZones)if(zone.until>this.time&&mapDistance(this,tile,zone.target)<=zone.radius)factor=Math.min(factor,zone.factor);return factor;},
-  radiationAt(tile){let remaining=0;for(const z of this.radiationZones)if(z.until>this.time+1e-8&&mapDistance(this,tile,z.target)<=z.radius)remaining=Math.max(remaining,z.until-this.time);return remaining;},
+  defenseSuppression(tile){let factor=1;for(const zone of this.strikeZones)if(zone.until>this.time&&!treatyProtected(this,zone.owner,this.owners[tile])&&mapDistance(this,tile,zone.target)<=zone.radius)factor=Math.min(factor,zone.factor);return factor;},
+  radiationAt(tile){let remaining=0;for(const z of this.radiationZones)if(z.until>this.time+1e-8&&!treatyProtected(this,z.owner,this.owners[tile])&&mapDistance(this,tile,z.target)<=z.radius)remaining=Math.max(remaining,z.until-this.time);return remaining;},
   advanceRadiation(){
     // Cache each blast footprint once, then sample current ownership only once per battle second.
     while(this.nextRadiationTick!==null&&this.nextRadiationTick<=this.time+1e-8){
       const tick=this.nextRadiationTick,area=new Set(),counts=new Map();this.nextRadiationTick++;
-      for(const z of this.radiationZones)if(z.createdAt<tick&&z.until>=tick-1e-8)for(const tile of z.tiles)area.add(tile);
+      for(const z of this.radiationZones)if(z.createdAt<tick&&z.until>=tick-1e-8)for(const tile of z.tiles)if(!treatyProtected(this,z.owner,this.owners[tile]))area.add(tile);
       for(const tile of area){const id=this.owners[tile];if(id>0)counts.set(id,(counts.get(id)??0)+1);}
       for(const [id,count]of counts){const n=this.nations.get(id);takeTroops(n,n.troops*count/Math.max(1,n.tiles.size)*(1-Math.exp(-.01)));}
       for(const a of [...this.armies])if(armyInArea(this,a,area))strikeArmy(this,a,a.troops*(1-Math.exp(-.02)));
@@ -103,16 +104,16 @@ export const strategicMethods={
     for(const t of tiles)if(this.owners[t]>0)counts.set(this.owners[t],(counts.get(this.owners[t])??0)+1);
     registerHostilities(this,strike.owner,counts.keys());
     let losses=0,friendlyLosses=0,destroyed=0,damaged=0;
-    for(const [id,count]of counts){const n=this.nations.get(id),amount=Math.floor(n.troops*count/Math.max(1,n.tiles.size)*d.casualties);takeTroops(n,amount);losses+=amount;if(id===strike.owner)friendlyLosses+=amount;}
-    for(const a of [...this.armies])if(armyInArea(this,a,area)){const amount=Math.floor(a.troops*d.armyDamage);strikeArmy(this,a,amount);losses+=amount;if(a.owner===strike.owner)friendlyLosses+=amount;}
-    for(const [tile,b]of [...this.buildings])if(area.has(tile)){
+    for(const [id,count]of counts){if(treatyProtected(this,strike.owner,id))continue;const n=this.nations.get(id),amount=Math.floor(n.troops*count/Math.max(1,n.tiles.size)*d.casualties);takeTroops(n,amount);losses+=amount;if(id===strike.owner)friendlyLosses+=amount;}
+    for(const a of [...this.armies])if(!treatyProtected(this,strike.owner,a.owner)&&armyInArea(this,a,area)){const amount=Math.floor(a.troops*d.armyDamage);strikeArmy(this,a,amount);losses+=amount;if(a.owner===strike.owner)friendlyLosses+=amount;}
+    for(const [tile,b]of [...this.buildings])if(area.has(tile)&&!treatyProtected(this,strike.owner,this.owners[tile])){
       this.releaseFacility(tile,this.owners[tile]);b.integrity=(b.integrity??100)-d.structureDamage;
       if(b.integrity<=0){this.buildings.delete(tile);destroyed++;}
       else{b.suppressedUntil=this.time+d.suppressionSeconds;b.status='受损 · 暂停运行';damaged++;}
     }
-    this.strikeZones.push({target:strike.target,radius:d.radius,until:this.time+d.suppressionSeconds,factor:d.suppression});
+    this.strikeZones.push({owner:strike.owner,target:strike.target,radius:d.radius,until:this.time+d.suppressionSeconds,factor:d.suppression});
     if(d.radiationSeconds){
-      this.radiationZones.push({id:strike.id,target:strike.target,radius:d.radius,createdAt:this.time,until:this.time+d.radiationSeconds,tiles});
+      this.radiationZones.push({owner:strike.owner,id:strike.id,target:strike.target,radius:d.radius,createdAt:this.time,until:this.time+d.radiationSeconds,tiles});
       this.scorchZones.push({id:strike.id,target:strike.target,radius:d.radius,until:this.time+d.radiationSeconds,recoverUntil:this.time+d.radiationSeconds+SCORCH_RECOVERY_SECONDS});
       this.nextRadiationTick??=this.time+1;
       this.log('核污染形成 · 120秒内不可清除，区域内兵力持续减员、设施停工，禁止建设与修复','war');

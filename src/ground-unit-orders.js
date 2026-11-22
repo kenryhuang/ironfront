@@ -1,3 +1,4 @@
+import {canFight,treatyProtected,landAccess} from './diplomacy.js';
 import {isArtilleryOnly} from './regiment-composition.js';
 import {takeTroops,armorReadiness} from './troops.js';
 import {frontSupplied,supplyNetwork} from './ground-supply.js';
@@ -27,23 +28,23 @@ export function listGroundUnits(g,owner=1){
   result.push({key:a.unitKey,name:a.unitName,owner,kind:a.regiment?.type==='custom'?'mixed':a.armor?'armor':a.artillery?'artillery':'infantry',troops:a.troops,capacity:a.regiment?.capacity,regiment:a.regiment,positions:unitPositions(a),army:a,state:a.orderState??'gathering',supply:a.supply??1,organization:a.organization??100});
  }
  const b=g.battery;
- if(owner===1&&b?.available&&g.owners[b.tile]===owner)result.push({key:'battery-1',name:'炮兵连',owner,kind:'artillery',troops:0,positions:[b.motion??b.position??point(g,b.tile)],battery:b,state:b.motion?'moving':b.autoTarget!==null?'bombarding':b.deployed?'stationed':'packed',supply:1,organization:100});
+ if(owner===1&&b?.available&&landAccess(g,owner,g.owners[b.tile],true))result.push({key:'battery-1',name:'炮兵连',owner,kind:'artillery',troops:0,positions:[b.motion??b.position??point(g,b.tile)],battery:b,state:b.motion?'moving':b.autoTarget!==null?'bombarding':b.deployed?'stationed':'packed',supply:1,organization:100});
  return result;
 }
 
 // A model can be partway across an enemy boundary when the player cancels an
 // attack. Walking back to its last friendly cell is movement, not a teleport.
-function friendlyStart(g,owner,p){
- const tile=tileAt(g,p);if(g.owners[tile]===owner)return tile;
+function friendlyStart(g,owner,p,withdraw=false){
+ const tile=tileAt(g,p);if(landAccess(g,owner,g.owners[tile],withdraw))return tile;
  const rear=Number.isFinite(p.fromX)&&Number.isFinite(p.fromY)?Math.floor(p.fromY)*g.width+Math.floor(p.fromX):-1;
- if(g.owners[rear]===owner&&distance(p,point(g,rear))<2)return rear;
- return g.adjacent[tile]?.filter(t=>g.owners[t]===owner).sort((a,b)=>distance(p,point(g,a))-distance(p,point(g,b)))[0];
+ if(landAccess(g,owner,g.owners[rear],withdraw)&&distance(p,point(g,rear))<2)return rear;
+ return g.adjacent[tile]?.filter(t=>landAccess(g,owner,g.owners[t],withdraw)).sort((a,b)=>distance(p,point(g,a))-distance(p,point(g,b)))[0];
 }
 
-function friendlyFlood(g,owner,starts,ends=null){
+function friendlyFlood(g,owner,starts,ends=null,withdraw=false){
  const queue=[...new Set(starts)],parents=new Map(queue.map(t=>[t,null])),roots=new Map(queue.map(t=>[t,t]));
  const pending=ends?new Set(ends):null;for(const t of queue)pending?.delete(t);
- for(let i=0;i<queue.length&&(!pending||pending.size);i++)for(const t of g.adjacent[queue[i]])if(g.owners[t]===owner&&!parents.has(t)){parents.set(t,queue[i]);roots.set(t,roots.get(queue[i]));queue.push(t);pending?.delete(t);}
+ for(let i=0;i<queue.length&&(!pending||pending.size);i++)for(const t of g.adjacent[queue[i]])if(landAccess(g,owner,g.owners[t],withdraw)&&!parents.has(t)){parents.set(t,queue[i]);roots.set(t,roots.get(queue[i]));queue.push(t);pending?.delete(t);}
  return {parents,roots};
 }
 
@@ -53,27 +54,28 @@ function snapshots(unit){
 }
 
 function movePlan(g,unit,target){
- if(g.owners[target]!==unit.owner)return {ok:false,message:'移动和撤退目标必须是己方陆地。'};
- const groups=snapshots(unit),{parents}=friendlyFlood(g,unit.owner,[target],groups.map(p=>friendlyStart(g,unit.owner,p)));
- for(const p of groups){const start=friendlyStart(g,unit.owner,p);if(!parents.has(start))return {ok:false,message:'部队与目的地之间没有连通的己方陆路，原命令保持不变。'};
+ const withdraw=g.owners[target]===unit.owner;
+ if(!landAccess(g,unit.owner,g.owners[target]))return {ok:false,message:'移动和撤退目标必须是己方或盟友陆地。'};
+ const groups=snapshots(unit),{parents}=friendlyFlood(g,unit.owner,[target],groups.map(p=>friendlyStart(g,unit.owner,p,withdraw)),withdraw);
+ for(const p of groups){const start=friendlyStart(g,unit.owner,p,withdraw);if(!parents.has(start))return {ok:false,message:'部队与目的地之间没有连通的己方或盟友陆路，原命令保持不变。'};
   p.path=[];for(let t=start;t!==null;t=parents.get(t))p.path.push(t);p.pathHead=0;p.status='moving';
  }
- return {ok:true,groups};
+ return {ok:true,groups,withdraw};
 }
 
 function retreatDestination(g,unit){
- const starts=unit.positions.map(p=>friendlyStart(g,unit.owner,p));if(starts.some(t=>t===undefined))return null;
+ const starts=unit.positions.map(p=>friendlyStart(g,unit.owner,p,true));if(starts.some(t=>t===undefined))return null;
  const supply=supplyNetwork(g,unit.owner),queue=[starts[0]],seen=new Set(queue),depth=new Map([[starts[0],0]]);let fallback=null;
- for(let i=0;i<queue.length;i++){const t=queue[i],d=depth.get(t),safe=supply.seen.has(t)&&g.adjacent[t].every(n=>g.owners[n]<0||g.owners[n]===unit.owner);
-  if(safe&&d>0){fallback??=t;if(d>=Math.max(3,Math.round(2*g.gridScale)))return t;}
-  for(const n of g.adjacent[t])if(g.owners[n]===unit.owner&&!seen.has(n)){seen.add(n);depth.set(n,d+1);queue.push(n);}
+ for(let i=0;i<queue.length;i++){const t=queue[i],d=depth.get(t),safe=supply.seen.has(t)&&g.adjacent[t].every(n=>g.owners[n]<0||landAccess(g,unit.owner,g.owners[n],true));
+  if(safe&&d>0&&g.owners[t]===unit.owner){fallback??=t;if(d>=Math.max(3,Math.round(2*g.gridScale)))return t;}
+  for(const n of g.adjacent[t])if(landAccess(g,unit.owner,g.owners[n],true)&&!seen.has(n)){seen.add(n);depth.set(n,d+1);queue.push(n);}
  }
  return fallback;
 }
 
 function attackPlan(g,unit,target){
  const owner=unit.owner,enemy=g.owners[target],groups=snapshots(unit),starts=groups.map(p=>friendlyStart(g,owner,p));
- if(enemy<0||enemy===owner)return {ok:false,message:'请选择非己方陆地作为进攻目标。'};
+ if(enemy<0||!canFight(g,owner,enemy))return {ok:false,message:'请选择非己方或盟友陆地作为进攻目标。'};
  if(starts.some(t=>t===undefined))return {ok:false,message:'部队已被包围，无法重新展开进攻。'};
  const friendly=friendlyFlood(g,owner,starts),queue=[target],toward=new Map([[target,null]]);let entry=null;
  for(let i=0;i<queue.length;i++){const t=queue[i];if(g.adjacent[t].some(n=>friendly.parents.has(n))){entry=t;break;}for(const n of g.adjacent[t])if(g.owners[n]===enemy&&!toward.has(n)){toward.set(n,t);queue.push(n);}}
@@ -110,12 +112,13 @@ export function issueGroundOrder(g,owner,keys,tile,{kind='auto'}={}){
  if(chosen.some(u=>u.army?.airborne&&u.army.airborne.phase!=='ready'))return {ok:false,message:'空降部队正在集结或争夺落点，请等待落点安全。'};
  if(!['auto','move','attack','retreat','halt','bombard'].includes(kind))return {ok:false,message:'未知部队命令。'};
  if(kind!=='halt'&&!(kind==='retreat'&&tile==null)&&(!Number.isInteger(tile)||tile<0||tile>=g.owners.length||g.owners[tile]<0))return {ok:false,message:'请选择地图内的陆地。'};
+ if(tile!=null&&treatyProtected(g,owner,g.owners[tile])&&(['attack','bombard'].includes(kind)||!landAccess(g,owner,g.owners[tile])&&!['halt'].includes(kind)))return {ok:false,message:'该国受到保护；停战期仅可撤回本土'};
  const orders=[];
- for(const unit of chosen){const target=kind==='retreat'&&tile==null?retreatDestination(g,unit):tile,type=kind==='auto'?(g.owners[target]===owner?'move':'attack'):kind;
+ for(const unit of chosen){const target=kind==='retreat'&&tile==null?retreatDestination(g,unit):tile,type=kind==='auto'?(landAccess(g,owner,g.owners[target])?'move':'attack'):kind;
   if(type==='bombard'&&!unit.army?.artillery)return {ok:false,message:'炮击模式只能用于带火炮的编制部队。'};
-  if(unit.battery){const b=unit.battery;if(!g.batteryReady())return {ok:false,message:'炮兵阵地不可用。'};
+  if(unit.battery){const b=unit.battery;if(!g.batteryReady(!['attack','bombard'].includes(type)&&g.owners[target]===owner))return {ok:false,message:'炮兵阵地不可用。'};
    if(type==='attack'){const d=distance(point(g,b.tile),point(g,target));if(d<3||d>32||g.owners[target]===owner)return {ok:false,message:'目标必须在炮兵3—32格射程内且不是己方领土。'};if(b.motion)return {ok:false,message:'炮兵正在转移，请到位后再下达炮击命令。'};if(b.deployed){const status=g.barrageStatus(target);if(!status.ok)return status;}else if(b.readyAt>g.time)return {ok:false,message:'炮兵正在展开，请稍候。'};}
-   else if(type!=='halt'){if(target==null||g.owners[target]!==owner||g.radiationAt?.(target)||b.reloadAt>g.time||g.localShells.some(s=>!s.regimentId&&s.start>g.time)||!batteryRoute(g,target))return {ok:false,message:'炮兵无法转移：请检查己方陆路、核污染、装填和当前齐射。'};}
+   else if(type!=='halt'){if(target==null||!landAccess(g,owner,g.owners[target])||g.radiationAt?.(target)||b.reloadAt>g.time||g.localShells.some(s=>!s.regimentId&&s.start>g.time)||!batteryRoute(g,target))return {ok:false,message:'炮兵无法转移：请检查己方或盟友陆路、核污染、装填和当前齐射。'};}
    orders.push({unit,type,target});continue;
   }
   if(type==='halt'){orders.push({unit,type,plan:{ok:true}});continue;}
@@ -131,14 +134,14 @@ export function issueGroundOrder(g,owner,keys,tile,{kind='auto'}={}){
   if(a.artillery){stopArtilleryRegiment(a);if(type!=='halt')a.artillery.deployed=false;}
   if(type==='halt'){parkGroundUnit(g,a);continue;}
   if(type==='attack'){a.groundOrder=null;a.frontline=plan.frontline;a.target=plan.enemy;a.allowedTiles=plan.allowed;a.planPolygon=null;a.front=[...plan.front];a.head=0;a.microTarget=target;a.captured=0;a.planCaptured=0;a.orderState='gathering';if(a.armor)a.armor.motion=a.frontline.lanes[0];if(a.infantry||!a.armor)a.infantry={motion:a.frontline.lanes[0]};registerOrderTargets(g,a,plan.allowed);}
-  else{a.target=null;a.allowedTiles=null;a.planPolygon=null;a.microTarget=null;a.front=[];a.head=0;a.groundOrder={type,target,groups:plan.groups};a.orderState=type==='retreat'?'retreating':'moving';setPositions(a,plan.groups);}
+  else{a.target=null;a.allowedTiles=null;a.planPolygon=null;a.microTarget=null;a.front=[];a.head=0;a.groundOrder={type,target,groups:plan.groups,withdraw:plan.withdraw};a.orderState=type==='retreat'?'retreating':'moving';setPositions(a,plan.groups);}
  }
- return {ok:true,count:orders.length,message:kind==='halt'?`${orders.length} 支部队原地待命。`:kind==='retreat'?`${orders.length} 支部队正在沿己方陆路撤退。`:`已向 ${orders.length} 支部队下达命令。`};
+ return {ok:true,count:orders.length,message:kind==='halt'?`${orders.length} 支部队原地待命。`:kind==='retreat'?`${orders.length} 支部队正在沿己方或盟友陆路撤退。`:`已向 ${orders.length} 支部队下达命令。`};
 }
 
 function exposure(g,a){
  let pressure=0;const positions=a.groundOrder.groups;
- for(const other of g.armies){if(other===a||other.owner===a.owner||other.troops<1)continue;const enemy=unitPositions(other);if(positions.some(p=>enemy.some(q=>distance(p,q)<2.5)))pressure+=other.troops*(g.air?.groundEffect?.(other).firepower??1);}
+ for(const other of g.armies){if(other===a||!canFight(g,a.owner,other.owner)||other.troops<1)continue;const enemy=unitPositions(other);if(positions.some(p=>enemy.some(q=>distance(p,q)<2.5)))pressure+=other.troops*(g.air?.groundEffect?.(other).firepower??1);}
  return Math.min(3,pressure/Math.max(1,a.troops));
 }
 
@@ -159,7 +162,7 @@ export function advanceGroundOrder(g,a,dt){
   for(const p of order.groups){p.firing=threat>0||(p.firingUntil??0)>g.time;p.status=a.orderState;}return true;
  }
  let arrived=true,blocked=false;for(const p of order.groups){p.firing=(p.firingUntil??0)>g.time;let travel=dt*(a.artillery?4:7+2*armorReadiness(a))*Math.min(4,Math.sqrt(g.gridScale??1))*(.5+.5*(a.supply??1))*(order.type==='retreat'?1:g.air?.groundEffect?.(a).movement??1);
-  while(p.pathHead<p.path.length&&travel>0){const t=p.path[p.pathHead];if(g.owners[t]!==a.owner){blocked=true;break;}const q=point(g,t),d=distance(p,q);if(d<1e-7){p.pathHead++;continue;}const step=Math.min(travel,d);p.angle=Math.atan2(q.y-p.y,q.x-p.x);p.x+=(q.x-p.x)/d*step;p.y+=(q.y-p.y)/d*step;travel-=step;if(step>=d-1e-7)p.pathHead++;}
+  while(p.pathHead<p.path.length&&travel>0){const t=p.path[p.pathHead];if(!landAccess(g,a.owner,g.owners[t],order.withdraw)){blocked=true;break;}const q=point(g,t),d=distance(p,q);if(d<1e-7){p.pathHead++;continue;}const step=Math.min(travel,d);p.angle=Math.atan2(q.y-p.y,q.x-p.x);p.x+=(q.x-p.x)/d*step;p.y+=(q.y-p.y)/d*step;travel-=step;if(step>=d-1e-7)p.pathHead++;}
   arrived&&=p.pathHead>=p.path.length;p.status=order.type==='retreat'?'retreating':'moving';
  }
  a.orderState=blocked?'blocked':order.type==='retreat'?'retreating':'moving';

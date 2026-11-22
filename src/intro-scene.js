@@ -7,7 +7,7 @@ const canvas=document.querySelector('#scene'),menu=document.querySelector('#menu
 const entry=document.querySelector('#menu a.primary');
 const entryParams=new URLSearchParams(location.search);
 for(const key of ['shot','v'])entryParams.delete(key);
-entry.href='/game.html'+(entryParams.size?'?'+entryParams.toString():'');
+entry.href='./game.html'+(entryParams.size?'?'+entryParams.toString():'');
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 let renderer;
 try{renderer=new T.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});}catch{
@@ -75,7 +75,7 @@ let entering=false,campaignChosen=false;
 const campaignDialog=document.querySelector('#campaign-select');
 document.querySelector('#campaign-close').onclick=()=>campaignDialog.close();
 const countrySelect=document.querySelector('#campaign-country');countrySelect.value=String(({276:255,250:220,826:200,840:2,643:365,392:740})[entryParams.get('country')]||entryParams.get('country')||710);
-campaignDialog.addEventListener('click',e=>{const card=e.target.closest('[data-campaign]');if(!card||card.disabled||card.dataset.campaign==='1939')return;const url=new URL(entry.href);url.searchParams.set('campaign',card.dataset.campaign);url.searchParams.set('country',countrySelect.value);entry.href=url.href;campaignChosen=true;campaignDialog.close();entry.click();});
+campaignDialog.addEventListener('click',e=>{const card=e.target.closest('[data-campaign]');if(!card||card.disabled)return;const url=new URL('./game.html',location.href);url.searchParams.set('campaign',card.dataset.campaign);url.searchParams.set('country',countrySelect.value);entry.href=url.href;campaignChosen=true;campaignDialog.close();entry.click();});
 entry.addEventListener('click',e=>{
  if(e.ctrlKey||e.metaKey||e.shiftKey||e.altKey)return;e.preventDefault();if(!campaignChosen){campaignDialog.showModal();return;}if(entering)return;entering=true;
  document.querySelector('#sound').disabled=true;audio.fadeOut(1.2);

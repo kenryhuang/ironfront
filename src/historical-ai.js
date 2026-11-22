@@ -1,3 +1,5 @@
+import {canFight,treatyProtected} from './diplomacy.js';
+import {runNavalAI} from './naval-ai.js';
 import {runAirAI} from './air-ai.js';
 import {createLandingSearch} from './deferred-navigation.js';
 import {aiPosture,canInitiate,conflictTargets,incomingAI,preparationRemaining} from './campaign-pacing.js';
@@ -10,9 +12,9 @@ export function runHistoricalAI(g){
  for(let i=0;i<Math.min(2,g.historicalAIOrder.length);i++){
   const n=g.nations.get(g.historicalAIOrder[g.historicalAICursor++%g.historicalAIOrder.length]);if(!n?.alive)continue;
   const conflicts=conflictTargets(g,n.id),posture=aiPosture(n),initiate=canInitiate(g,n);
-  runAirAI(g,n,{targets:conflicts});
+  runAirAI(g,n,{targets:conflicts});runNavalAI(g,n,{targets:conflicts});
   if((!initiate&&!conflicts.size)||g.time<(n.nextAttackAt??0)||g.armies.filter(a=>a.owner!==1).length>=6||g.armies.some(a=>a.owner===n.id)||g.transports.some(f=>f.owner===n.id)||n.troops<50000)continue;
-  const eligible=t=>t?.alive&&t.id!==n.id&&incomingAI(g,t.id)<2&&(conflicts.has(t.id)||initiate)&&n.troops>=t.troops*(conflicts.has(t.id)?.6:posture.advantage);
+  const eligible=t=>t?.alive&&canFight(g,n.id,t.id)&&incomingAI(g,t.id)<2&&(conflicts.has(t.id)||initiate)&&n.troops>=t.troops*(conflicts.has(t.id)?.6:posture.advantage);
   const preferred=n.code===740?710:n.code===255?290:0,neighbors=g.neighbors(n.id);
   const targets=neighbors.filter(id=>id>0).map(id=>g.nations.get(id)).filter(eligible).sort((a,b)=>Number(conflicts.has(b.id))-Number(conflicts.has(a.id))||Number(b.code===preferred)-Number(a.code===preferred)||a.troops-b.troops);
   const target=targets[0];

@@ -3,14 +3,27 @@ import assert from 'node:assert/strict';
 import {CampaignGame} from '../src/campaign-game.js';
 import {runtimeEffects} from '../src/research.js';
 import {airMissionTarget} from '../src/air-ui.js';
+import {initializeRegiments} from '../src/regiments.js';
 const config=()=>({width:80,height:24,owners:Array.from({length:1920},(_,t)=>t%80<40?1:2),terrain:Array(1920).fill(1),logistics:true,nations:[{id:1,troops:5000,gold:200000,equipment:5000,manpower:1000},{id:2,troops:5000,gold:200000,equipment:5000,manpower:1000,ai:true}]});
 const game=()=>new CampaignGame(config());
 const base=(g,owner=1)=>{const t=owner===1?810:870;g.buildings.set(t,{type:'airfield',level:2,remaining:0,integrity:100});return t;};
 const advance=(g,t,options={economy:false})=>{for(let i=0;i<Math.ceil(t*10);i++)g.step(.1,options);};
 test('campaign air starts empty and locked, paid production advances with campaign time',()=>{const g=game();assert.ok(g.air);assert.equal(g.researchState(1).completed.size,0);assert.equal(g.air.reserve(1).fighter,0);assert.equal(g.air.produce(1,'fighter').ok,false);base(g);g.researchState(1).completed.add('T07');const n=g.nations.get(1),gold=n.gold,eq=n.equipment;assert.equal(g.air.produce(1,'fighter').ok,true);assert.equal(n.gold,gold-2200);assert.equal(n.equipment,eq-100);advance(g,12.2);assert.equal(g.air.reserve(1).fighter,4);});
 test('campaign airport suppression pauses production and recovery resumes it',()=>{const g=game(),t=base(g);g.researchState(1).completed.add('T07');g.air.produce(1,'fighter');advance(g,2);g.buildings.get(t).suppressedUntil=g.time+10;advance(g,5);assert.ok(g.air.jobs[0].remaining>9);advance(g,16);assert.equal(g.air.reserve(1).fighter,4);});
-test('campaign transport cargo stays in population and is returned on recall',()=>{const g=game();base(g);g.researchState(1).completed.add('T14');g.air.reserve(1).transport=4;const before=g.population(1),troops=g.nations.get(1).troops;const r=g.air.order(1,'transport','airdrop',{x:55,y:10},{count:4,troops:1000});assert.equal(r.ok,true);assert.equal(g.population(1),before);assert.equal(g.nations.get(1).troops,troops-1000);g.air.recall(1,r.id);advance(g,2);assert.equal(g.nations.get(1).troops,troops);assert.equal(g.population(1),before);});
-test('campaign air combat creates tracers and wrecks, not free territorial capture',()=>{const g=game();for(const id of [1,2]){base(g,id);g.researchState(id).completed.add('T07');g.air.reserve(id).fighter=4;g.air.order(id,'fighter','patrol',{x:40,y:10},{count:4});}const original=g.nations.get(1).tiles.size;advance(g,5.5);assert.ok(g.air.tracers.length);assert.ok(g.air.wrecks.length);assert.equal(g.nations.get(1).tiles.size,original);});
+test('campaign transport boards an existing regiment and returns its personnel on recall',()=>{
+ const g=game();base(g);g.nations.get(1).troops=30000;g.nations.get(1).capitalTile=810;initializeRegiments(g);g.researchState(1).completed.add('T14');g.air.reserve(1).transport=4;
+ const unit=g.armies.find(a=>a.owner===1&&a.regiment?.type==='infantry'),before=g.population(1),troops=unit.troops;
+ const r=g.air.squadrons.create(1,{kind:'transport',count:4});assert.ok(r.ok,r.message);const squad=r.squadron;
+ const mission=g.air.squadrons.assign(1,squad.id,'airdrop',{x:55,y:10},{unitKey:unit.unitKey,troops:1000});assert.ok(mission.ok,mission.message);assert.equal(unit.troops,troops);
+ for(let i=0;i<300&&!squad.flightId;i++)g.step(.1,{economy:false});assert.ok(squad.flightId);assert.equal(g.population(1),before);assert.equal(unit.troops,troops-1000);
+ assert.ok(g.air.squadrons.recall(1,squad.id).ok);advance(g,25);assert.equal(unit.troops,troops);assert.equal(g.population(1),before);assert.equal(squad.status,'idle');assert.equal(g.air.reserve(1).transport,0);
+});
+test('campaign sustained air combat creates tracers and wrecks without territorial capture',()=>{
+ const g=game();for(const id of [1,2]){base(g,id);g.researchState(id).completed.add('T07');g.air.reserve(id).fighter=4;g.air.order(id,'fighter','patrol',{x:40,y:10},{count:4});}
+ const original=g.nations.get(1).tiles.size;let tracers=false,wrecks=false,engaged=0;
+ for(let i=0;i<300;i++){g.step(.1,{economy:false});tracers||=g.air.tracers.length>0;wrecks||=g.air.wrecks.length>0;if(g.air.flights.some(f=>f.combatTarget))engaged+=.1;}
+ assert.ok(tracers);assert.ok(wrecks);assert.ok(engaged>3);assert.equal(g.nations.get(1).tiles.size,original);
+});
 test('eliminated nations cannot finish aircraft production or keep flying',()=>{const g=game();base(g);g.researchState(1).completed.add('T07');g.air.reserve(1).fighter=4;g.air.order(1,'fighter','patrol',{x:20,y:10},{count:4});g.air.produce(1,'fighter');g.nations.get(1).alive=false;g.air.step(.1);assert.equal(g.air.jobs.length,0);assert.equal(g.air.flights.length,0);assert.equal(g.air.reserve(1).fighter,0);});
 test('research effects explicitly describe the now usable aircraft',()=>{assert.match(runtimeEffects('T07').join(),/战斗机/);assert.match(runtimeEffects('T14').join(),/运输机/);assert.match(runtimeEffects('T21').join(),/战略轰炸机/);});
 test('cancel aircraft production refunds only unspent resources once',()=>{const g=game();base(g);g.researchState(1).completed.add('T07');g.air.produce(1,'fighter');advance(g,6);const n=g.nations.get(1),gold=n.gold,eq=n.equipment;assert.equal(g.air.cancelProduction(1).ok,true);assert.ok(Math.abs(n.gold-gold-1100)<=1);assert.ok(Math.abs(n.equipment-eq-50)<=1);assert.equal(g.air.cancelProduction(1).ok,false);assert.equal(g.air.reserve(1).fighter,0);});

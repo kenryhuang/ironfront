@@ -1,10 +1,11 @@
+import {landAccess} from './diplomacy.js';
 const point=(g,t)=>({x:t%g.width+.5,y:Math.floor(t/g.width)+.5});
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 function route(g,owner,p,target){
  const q=point(g,target),start=Math.floor(p.y)*g.width+Math.floor(p.x);
  if(distance(p,q)<=1.01)return [{x:p.x,y:p.y},q];
- const goals=new Set(g.adjacent[target].filter(t=>g.owners[t]===owner)),queue=[start],prev=new Map([[start,null]]);let end=null;
- for(let i=0;i<queue.length;i++){const t=queue[i];if(goals.has(t)){end=t;break;}for(const n of g.adjacent[t]??[])if(g.owners[n]===owner&&!prev.has(n)){prev.set(n,t);queue.push(n);}}
+ const goals=new Set(g.adjacent[target].filter(t=>landAccess(g,owner,g.owners[t]))),queue=[start],prev=new Map([[start,null]]);let end=null;
+ for(let i=0;i<queue.length;i++){const t=queue[i];if(goals.has(t)){end=t;break;}for(const n of g.adjacent[t]??[])if(landAccess(g,owner,g.owners[n])&&!prev.has(n)){prev.set(n,t);queue.push(n);}}
  if(end===null)return [{x:p.x,y:p.y}];
  const cells=[];for(let t=end;t!==null;t=prev.get(t))cells.push(t);cells.reverse();return [{x:p.x,y:p.y},...cells.map(t=>point(g,t)),q];
 }

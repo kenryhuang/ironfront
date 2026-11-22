@@ -73,6 +73,7 @@ body.map-command-layout{height:100dvh;overflow:hidden;background:#9bb7bf}
 .building-context #facilities{padding:12px;margin:0;max-height:none;overflow:visible}.building-context .facility-card{margin:0;background:none;border:0;padding:0}.building-context .facility-heading strong{font-size:15px}.building-context .facility-status{font-size:12px;line-height:1.7;margin:8px 0}.building-context .facility-controls{gap:8px}
 .building-actions{display:flex;gap:8px;padding:0 12px 12px}.building-actions button{background:#2d4752;border:1px solid #81949650;padding:7px 12px;border-radius:5px;color:#d6e2e6;font-size:11px;cursor:pointer}
 .diplomacy-context p{padding:14px;margin:0;font-size:12px;line-height:1.8;color:#b7ccd3}
+.diplomacy-body{padding:12px;display:grid;gap:10px}.diplomacy-body p{padding:0}.diplomacy-body label{display:grid;gap:7px;font-size:12px;color:#b7ccd3}.diplomacy-body select{width:100%;padding:8px;background:#203540;color:#e0ecee;border:1px solid #6b8f9c;border-radius:5px}.diplomacy-relation{font-size:14px;color:#e3cf97}.diplomacy-actions{display:flex;gap:8px}.diplomacy-actions button{padding:8px 10px;background:#315760;border:1px solid #81949670;border-radius:5px;color:#e7efed;cursor:pointer}.diplomacy-actions button:disabled{opacity:.4;cursor:not-allowed}.diplomacy-rules{border-top:1px solid #78929d50;padding-top:9px!important;font-size:11px!important}
 .map-command-layout [hidden]{display:none!important}
 @media(max-width:1100px){
  .map-command-layout .operation-bar{top:62px;left:16px;transform:none}

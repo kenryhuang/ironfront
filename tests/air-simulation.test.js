@@ -2,12 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createInGameAirSimulation,stepAirSimulationEnemy} from '../src/air-simulation.js';
 
-test('in-game simulation starts with three named grounded squadrons drawn from stock',()=>{
+test('in-game simulation starts with eight named grounded squadrons drawn from stock',()=>{
  const g=createInGameAirSimulation(),a=g.air;
  assert.equal(g.campaign,'air-simulation');assert.equal(a.flights.length,0);
- assert.deepEqual(a.squadrons.units.map(s=>s.kind),['fighter','bomber','transport']);
+ assert.deepEqual(a.squadrons.units.map(s=>s.kind),['fighter','bomber','transport','fighter','fighter','fighter','bomber','recon']);
  assert.ok(a.squadrons.units.every(s=>s.status==='idle'&&s.planes.length===4));
- assert.equal(a.reserve(1).fighter,12);assert.equal(a.reserve(1).bomber,4);assert.equal(a.reserve(1).transport,4);
+ assert.equal(a.reserve(1).fighter,0);assert.equal(a.reserve(1).bomber,0);assert.equal(a.reserve(1).transport,4);
  assert.equal(a.usedCapacity(1),56);
  g.time=100;stepAirSimulationEnemy(g);assert.equal(a.flights.length,0);
 });

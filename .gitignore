@@ -41,3 +41,8 @@ __pycache__/
 # Browser automation and design process files
 .playwright-cli/
 .superpowers/
+
+# Local benchmark reports and screenshots
+docs/bench/*.md
+docs/bench/*.png
+docs/bench/*.jpg

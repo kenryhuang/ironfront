@@ -1,0 +1,29 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>1939 海上交战效果验证</title><style>body{margin:0;background:#172c3b;color:#e4edf2;font:14px system-ui}header,footer{padding:18px 24px}h1{font-size:21px;margin:0 0 8px}button{background:#304c63;border:1px solid #7793a6;color:#fff;padding:8px 15px;margin-right:8px;cursor:pointer}canvas{width:100%;display:block}output{margin-left:16px}a{color:#f5d78e}</style>
+<header><h1>1939 · 海上交战</h1><p>共用正式军舰战斗逻辑与像素特效：互射 / 运兵拦截 / 商船劫掠。</p><button id="replay">重新交战</button><button id="pause">暂停</button><button id="impact">命中定格</button><button id="sinking">沉没定格</button><output id="status"></output></header>
+<canvas width="1200" height="540" aria-label="军舰互射、拦截运兵船和劫掠商船三种效果"></canvas>
+<footer>固定海战回归场景，每次重新交战补充目标。<a href="../../game.html?campaign=1939&build=naval-effects">进入正式1939战役</a></footer>
+<script type="module">
+import {RoomGame} from '../../src/territory-1939/rules.js';
+import {drawPixelIcon} from '../../src/territory-1939/pixel-art.js';
+import {WarVisuals} from '../../src/territory-1939/war-visuals.js';
+import {drawNavalEffects} from '../../src/territory-1939/naval-effects.js';
+const W=120,H=54,tile=(x,y)=>y*W+x,owners=Array(W*H).fill(-1);owners[0]=1;owners[W-1]=2;
+const g=new RoomGame({width:W,height:H,owners,terrain:owners.map(()=>1),nations:[{id:1,name:'我方',troops:10000},{id:2,name:'敌方',troops:10000}],logistics:false});g.nations.set(3,{id:3,name:'贸易国',alive:true,gold:0});
+const ship=(id,owner,x,y,hp=1000)=>({id,owner,tile:tile(x,y),hp,path:[],distance:0,readyAt:1,buildUntil:0,level:1});
+let paused=false,last=performance.now();
+function reset(){g.time=0;g.nations.get(1).gold=0;g.fleet.shots=[];g.fleet.ships=[ship(1,1,42,10),ship(2,2,50,10,750),ship(3,1,42,28),ship(4,1,42,46)];g.transports=[{id:8,owner:2,troops:6000,militia:2000,path:Array.from({length:55},(_,i)=>tile(45+i,28)),distance:0}];g.market.journeys=[{id:9,owner:2,partner:3,kind:'ship',path:Array.from({length:55},(_,i)=>tile(44+i,46)),distance:8,convoySize:6,convoyGap:1.5,reward:35000}];}
+document.querySelector('#replay').onclick=reset;document.querySelector('#pause').onclick=e=>{paused=!paused;e.target.textContent=paused?'继续':'暂停';};reset();
+function advance(dt){g.time+=dt;for(const t of g.transports)t.distance+=dt*.35;for(const j of g.market.journeys)j.distance+=dt*.35;g.fleet.step(dt);}
+function freeze(seconds){reset();for(let t=0;t<seconds-1e-8;t+=.05)advance(.05);paused=true;document.querySelector('#pause').textContent='继续';}
+document.querySelector('#impact').onclick=()=>freeze(1.45);document.querySelector('#sinking').onclick=()=>freeze(5.55);
+const canvas=document.querySelector('canvas'),ctx=canvas.getContext('2d'),visuals=new WarVisuals(),point=t=>[(t%W+.5)*10,(Math.floor(t/W)+.5)*10];
+function frame(now){requestAnimationFrame(frame);if(document.hidden){last=now;return;}if(now-last<33)return;const dt=Math.min(.1,(now-last)/1000);last=now;if(!paused)advance(dt);
+ ctx.fillStyle='#427eaa';ctx.fillRect(0,0,1200,540);ctx.strokeStyle='#ffffff22';ctx.beginPath();ctx.moveTo(0,190);ctx.lineTo(1200,190);ctx.moveTo(0,370);ctx.lineTo(1200,370);ctx.stroke();ctx.fillStyle='#e8f1f6';ctx.font='bold 18px system-ui';ctx.fillText('军舰对轰',35,55);ctx.fillText('拦截运兵船',35,235);ctx.fillText('劫掠商船队',35,415);
+ for(const s of g.fleet.ships){const p=point(s.tile);drawPixelIcon(ctx,'warship',...p,32,s.owner===1?0:Math.PI);ctx.fillStyle=s.owner===1?'#ffe298':'#f2b3aa';ctx.fillRect(p[0]-10,p[1]+13,20*s.hp/1000,2);}
+ for(const t of g.transports){const p=point(t.path[Math.floor(t.distance)]);drawPixelIcon(ctx,'transport',...p,24);ctx.fillStyle='#fff0ce';ctx.font='12px system-ui';ctx.fillText(Math.floor(t.troops)+' 兵',p[0]-10,p[1]+30);}
+ for(const j of g.market.journeys)visuals.drawMerchant(ctx,j,{point,w:1200,h:540});
+ drawNavalEffects(ctx,g.fleet.shots,g.time,{point,w:1200,h:540,owner:1});
+ document.querySelector('#status').textContent='时间 '+g.time.toFixed(1)+' 秒 · 劫掠金币 +'+g.nations.get(1).gold.toLocaleString();
+}requestAnimationFrame(frame);
+</script></html>

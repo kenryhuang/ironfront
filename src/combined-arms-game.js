@@ -1,3 +1,4 @@
+import {canFight,treatyProtected,landAccess} from './diplomacy.js';
 import {registerOrderTargets} from './campaign-pacing.js';
 import {Game} from './engine.js';
 import {blastTiles,mapDistance} from './strategic-weapons.js';
@@ -22,10 +23,10 @@ export class CombinedArmsGame extends Game {
  reserveStations(owner){return reserveStations(this,owner);}
  reinforceCustom(owner,id,amount){const a=this.armies.find(a=>a.id===id&&a.owner===owner&&a.allowedTiles);return a?this.customAttack(owner,a.target,a.planPolygon,amount):{ok:false,message:'区域进攻已结束'};}
  retreat(owner,id){const a=this.armies.find(a=>a.id===id&&a.owner===owner);return a?.persistent?issueGroundOrder(this,owner,[a.unitKey],null,{kind:'retreat'}):this.stopAttack(owner,id);}
- claim(tile,owner){const previous=this.owners[tile];super.claim(tile,owner);if(previous!==owner)supplyClaim(this,tile,previous,owner);}
+ claim(tile,owner){const previous=this.owners[tile];super.claim(tile,owner);if(previous!==this.owners[tile])supplyClaim(this,tile,previous,owner);}
  deploy(tile){const result=super.deploy(tile);if(result.ok){this.groundGarrisons.delete(1);reserveStations(this,1);}return result;}
  seaDepartureTiles(owner){const key=`${owner}:${this.territoryVersions.get(owner)}:`+[...this.buildings].filter(([t,b])=>this.owners[t]===owner&&b.type==='barracks').map(([t,b])=>[t,b.remaining>0,b.suppressedUntil>this.time,b.integrity??100,!!this.radiationAt(t)].join(',')).join(';');this.departureCache??=new Map();if(this.departureCache.get(owner)?.key!==key)this.departureCache.set(owner,{key,tiles:embarkableLand(this,owner)});return this.departureCache.get(owner).tiles;}
- planAttack(owner,target,points){const key=`${owner}:${target}:`+[...this.territoryVersions.values()].join(',')+':'+JSON.stringify(points)+':'+[...this.buildings].filter(([,b])=>b.type==='barracks').map(([t,b])=>[t,b.remaining>0,b.suppressedUntil>this.time,!!this.radiationAt(t)].join(',')).join(';');if(this.planCache?.key===key)return this.planCache.result;const result=buildCombinedPlan(this,owner,target,points);this.planCache={key,result};return result;}
+ planAttack(owner,target,points){const key=`${owner}:${target}:${this.diplomacy?.protectionKey()}:`+[...this.territoryVersions.values()].join(',')+':'+JSON.stringify(points)+':'+[...this.buildings].filter(([,b])=>b.type==='barracks').map(([t,b])=>[t,b.remaining>0,b.suppressedUntil>this.time,!!this.radiationAt(t)].join(',')).join(';');if(this.planCache?.key===key)return this.planCache.result;const result=buildCombinedPlan(this,owner,target,points);this.planCache={key,result};return result;}
  customAttack(owner,target,points,amount){const n=this.nations.get(owner);if(this.phase!=='running'||!n?.alive||!Number.isInteger(amount)||amount<1||amount>Math.floor(n.troops))return {ok:false,message:'请输入不超过留守兵力的有效人数'};const plan=this.planAttack(owner,target,points);if(!plan.ok)return plan;if(plan.kind==='land')return this.commitAttack(owner,target,amount,plan.front,plan.allowedTiles,plan.polygon);const result=this.transport(owner,plan.destination,Math.min(1,(amount+.000001)/n.troops));if(result.ok){const f=this.transports.find(f=>f.id===result.fleetId);f.plan={allowedTiles:plan.allowedTiles,polygon:plan.polygon};registerOrderTargets(this,f,plan.allowedTiles);result.committed=f.troops;result.kind='naval';}return result;}
  stopTransport(owner,id){const f=this.transports.find(f=>f.id===id&&f.owner===owner);if(f?.embarkGroups?.some(p=>this.owners[Math.floor(p.y)*this.width+Math.floor(p.x)]!==owner))return {ok:false,message:'登陆部队所在位置已被敌方控制，需先解围，不能远程撤回。'};const result=super.stopTransport(owner,id);if(result.ok&&f){this.recordReturningFleet(f,result.returned);if(f.armor)this.armorReserve+=Math.floor(f.armor.remaining);}return result;}
  cancelTransport(owner,id){const f=this.transports.find(f=>f.id===id&&f.owner===owner);if(f?.embarkGroups?.some(p=>this.owners[Math.floor(p.y)*this.width+Math.floor(p.x)]!==owner))return {ok:false,message:'登陆部队被围，无法远程撤回。'};const result=super.cancelTransport(owner,id);if(result.ok&&f){this.recordReturningFleet(f,result.returned);if(f.armor)this.armorReserve+=Math.floor(f.armor.remaining*.75);}return result;}
@@ -94,13 +95,13 @@ export class CombinedArmsGame extends Game {
  advanceArmorProduction(dt){if(this.armorJob?.readyAt<=this.time){this.armorReserve+=12;this.armorJob=null;this.log('12辆中型坦克已生产入库。','player');}}
  produceArmor(){const n=this.nations.get(1);if(this.phase!=='running'||this.armorJob)return {ok:false,message:'战斗已结束或已有坦克生产任务。'};
   if(n.gold<1800||n.equipment<120)return {ok:false,message:'需要1800资金、120装备。'};n.gold-=1800;n.equipment-=120;this.armorJob={readyAt:this.time+12};return {ok:true,message:'已投产12辆中型坦克，12秒后入库。'};}
- batteryReady(){return this.phase==='running'&&this.owners[this.battery.tile]===1;}
+ batteryReady(withdraw=false){return this.phase==='running'&&landAccess(this,1,this.owners[this.battery.tile],withdraw);}
  deployBattery(){const b=this.battery;if(!this.batteryReady())return {ok:false,message:'炮兵阵地已失守或战斗结束。'};if(b.motion||b.deployed||b.readyAt>this.time)return {ok:false,message:'火炮正在转移、已展开或正在展开。'};b.readyAt=this.time+3;return {ok:true,message:'火炮展开中，3秒后可以炮击。'};}
- relocateBattery(tile){if(!Number.isInteger(tile)||this.owners[tile]!==1)return {ok:false,message:'只能在我方领土部署炮兵。'};const b=this.battery;if(b.reloadAt>this.time)return {ok:false,message:'装填期间不能转移。'};
-  if(!this.batteryReady())return {ok:false,message:'阵地已失守或战斗结束，无法转移。'};
+ relocateBattery(tile){if(!Number.isInteger(tile)||!landAccess(this,1,this.owners[tile]))return {ok:false,message:'只能在己方或盟友领土部署炮兵。'};const b=this.battery;if(b.reloadAt>this.time)return {ok:false,message:'装填期间不能转移。'};
+  if(!this.batteryReady(this.owners[tile]===1))return {ok:false,message:'阵地已失守或战斗结束，无法转移。'};
   if(this.localShells.some(s=>s.start>this.time))return {ok:false,message:'当前齐射尚未完成，请稍后转移。'};
   const path=batteryRoute(this,tile);if(!path)return {ok:false,message:'目标没有连通的我方陆路，无法转移。'};
-  b.motion={x:b.motion?.x??b.position?.x??b.tile%this.width+.5,y:b.motion?.y??b.position?.y??Math.floor(b.tile/this.width)+.5,angle:b.motion?.angle??0,path,destination:tile};b.deployed=false;b.readyAt=0;b.autoTarget=null;
+  b.motion={x:b.motion?.x??b.position?.x??b.tile%this.width+.5,y:b.motion?.y??b.position?.y??Math.floor(b.tile/this.width)+.5,angle:b.motion?.angle??0,path,destination:tile,withdraw:this.owners[tile]===1};b.deployed=false;b.readyAt=0;b.autoTarget=null;
   return {ok:true,message:'已停止炮击，炮兵沿我方陆路转移，抵达后自动展开。'};}
  startBarrage(tile){if(this.owners[tile]===1)return {ok:false,message:'持续炮击不能以我方领土为目标。'};const result=this.fireBarrage(tile);if(!result.ok)return result;this.battery.autoTarget=tile;return {ok:true,message:'已开始持续炮击。每8秒齐射3发；弹药耗尽等待补充，可随时停止。'};}
  stopBarrage(){this.battery.autoTarget=null;return {ok:true,message:'已停止后续炮击，已发射的炮弹继续飞行。'};}
@@ -108,7 +109,7 @@ export class CombinedArmsGame extends Game {
   if(!this.batteryReady()||this.owners[b.autoTarget]===1){b.autoTarget=null;this.log('目标已被我方占领或炮兵阵地失守，自动停止炮击。','info');return;}
   if(this.barrageStatus(b.autoTarget).ok)this.fireBarrage(b.autoTarget);
  }
- barrageStatus(tile){const b=this.battery;if(!this.batteryReady())return {ok:false,message:'炮兵阵地已失守或战斗结束。'};
+ barrageStatus(tile){if(treatyProtected(this,1,this.owners[tile]))return {ok:false,message:'盟友或互不侵犯国家受到保护'};const b=this.battery;if(!this.batteryReady())return {ok:false,message:'炮兵阵地已失守或战斗结束。'};
   if(!Number.isInteger(tile)||tile<0||tile>=this.owners.length||this.owners[tile]<0)return {ok:false,message:'请选择地图上的陆地区域。'};
   if(!b.deployed)return {ok:false,message:'请先展开火炮，或等待转移完成。'};if(b.reloadAt>this.time)return {ok:false,message:'弹药正在装填。'};
   if(b.cooldown>this.time)return {ok:false,message:`炮击冷却${Math.ceil(b.cooldown-this.time)}秒。`};if(b.ammo<3)return {ok:false,message:'弹药不足，请装填。'};
@@ -118,18 +119,18 @@ export class CombinedArmsGame extends Game {
   this.log('炮兵齐射3发：命中后削弱区域守军并压制设施20秒。','player');return {ok:true,message:'炮击已发射；爆炸会伤及范围内友军。'};}
  reloadBattery(){const b=this.battery,n=this.nations.get(1);if(!this.batteryReady()||b.motion||b.reloadAt>this.time||b.ammo>=18)return {ok:false,message:'阵地不可用、正在转移、弹药已满或正在装填。'};
   if(n.gold<300||n.equipment<20)return {ok:false,message:'需要300资金、20装备。'};n.gold-=300;n.equipment-=20;b.reloadAt=this.time+5;return {ok:true,message:'5秒后弹药补至18发。'};}
- artilleryImpact(tile,strength=1){strength=Math.max(0,Math.min(1,strength));const radius=6/this.gridScale,area=new Set(blastTiles(this,tile,radius));let casualties=0,structures=0;
-  for(const n of this.nations.values()){const cells=[...area].filter(t=>this.owners[t]===n.id).length;const loss=Math.min(n.troops,n.troops/Math.max(1,n.tiles.size)*cells*.18*strength);takeTroops(n,loss);casualties+=loss;}
-  for(const a of [...this.armies]){const front=a.front.slice(a.head).filter(t=>this.owners[t]!==a.owner),m=a.armor?.motion??a.infantry?.motion,lanes=a.frontline?.lanes??(m?[m]:[]);const fraction=m?lanes.filter(p=>Math.hypot(p.x-(tile%this.width+.5),p.y-(Math.floor(tile/this.width)+.5))<=6).length/lanes.length:front.filter(t=>area.has(t)).length/Math.max(1,front.length);const loss=a.troops*fraction*.16*strength;const before=a.troops;takeTroops(a,loss);if(a.armor)a.armor.remaining*=a.troops/Math.max(1,before);casualties+=loss;if(a.troops<1)this.finishArmy(a,false);}
-  for(const [t,b]of this.buildings)if(area.has(t)){structures++;this.releaseFacility(t,this.owners[t]);b.integrity=Math.max(0,(b.integrity??100)-22*strength);b.suppressedUntil=Math.max(b.suppressedUntil??0,this.time+20);if(!b.integrity)this.buildings.delete(t);}
-  this.strikeZones.push({target:tile,radius,factor:1-.65*strength,until:this.time+20});this.localImpacts.push({target:tile,time:this.time});this.localImpacts=this.localImpacts.slice(-12);
+ artilleryImpact(tile,strength=1,owner=1){strength=Math.max(0,Math.min(1,strength));const radius=6/this.gridScale,area=new Set(blastTiles(this,tile,radius));let casualties=0,structures=0;
+  for(const n of this.nations.values()){if(treatyProtected(this,owner,n.id))continue;const cells=[...area].filter(t=>this.owners[t]===n.id).length;const loss=Math.min(n.troops,n.troops/Math.max(1,n.tiles.size)*cells*.18*strength);takeTroops(n,loss);casualties+=loss;}
+  for(const a of [...this.armies]){if(treatyProtected(this,owner,a.owner))continue;const front=a.front.slice(a.head).filter(t=>this.owners[t]!==a.owner),m=a.armor?.motion??a.infantry?.motion,lanes=a.frontline?.lanes??(m?[m]:[]);const fraction=m?lanes.filter(p=>Math.hypot(p.x-(tile%this.width+.5),p.y-(Math.floor(tile/this.width)+.5))<=6).length/lanes.length:front.filter(t=>area.has(t)).length/Math.max(1,front.length);const loss=a.troops*fraction*.16*strength;const before=a.troops;takeTroops(a,loss);if(a.armor)a.armor.remaining*=a.troops/Math.max(1,before);casualties+=loss;if(a.troops<1)this.finishArmy(a,false);}
+  for(const [t,b]of this.buildings)if(area.has(t)&&!treatyProtected(this,owner,this.owners[t])){structures++;this.releaseFacility(t,this.owners[t]);b.integrity=Math.max(0,(b.integrity??100)-22*strength);b.suppressedUntil=Math.max(b.suppressedUntil??0,this.time+20);if(!b.integrity)this.buildings.delete(t);}
+  this.strikeZones.push({owner,target:tile,radius,factor:1-.65*strength,until:this.time+20});this.localImpacts.push({target:tile,time:this.time});this.localImpacts=this.localImpacts.slice(-12);
   this.log(`炮弹命中：守军/前线损失 ${Math.floor(casualties)}，影响${structures}座设施，区域压制20秒。`,'war');
  }
  step(dt,options){if(!Number.isFinite(dt)||dt<=0||dt>10)return;let left=dt;while(left>1e-8&&this.phase==='running'){const part=Math.min(.1,left);left-=part;super.step(part,options);
-   moveBattery(this,part);const b=this.battery;if(b.readyAt&&b.readyAt<=this.time){b.deployed=this.owners[b.tile]===1;b.readyAt=0;}
-   if(b.reloadAt&&b.reloadAt<=this.time){if(this.owners[b.tile]===1)b.ammo=18;b.reloadAt=0;}
+   moveBattery(this,part);const b=this.battery;if(b.readyAt&&b.readyAt<=this.time){b.deployed=landAccess(this,1,this.owners[b.tile]);b.readyAt=0;}
+   if(b.reloadAt&&b.reloadAt<=this.time){if(landAccess(this,1,this.owners[b.tile]))b.ammo=18;b.reloadAt=0;}
    this.advanceArmorProduction(part);
    this.advanceBarrage();
-   for(const shell of this.localShells)if(shell.impactAt<=this.time&&!shell.hit){shell.hit=true;this.artilleryImpact(shell.target,shell.strength??1);}this.localShells=this.localShells.filter(s=>!s.hit);
+   for(const shell of this.localShells)if(shell.impactAt<=this.time&&!shell.hit){shell.hit=true;this.artilleryImpact(shell.target,shell.strength??1,shell.owner??1);}this.localShells=this.localShells.filter(s=>!s.hit);
   }}
 }

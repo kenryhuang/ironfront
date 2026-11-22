@@ -41,6 +41,7 @@ export function buildRiverChannels(game){
   return {influence,level};
 }
 export function drawRivers(ctx,game){
+  if(game.noGeographicRivers)return;
   const s=game.gridScale||1;ctx.lineCap='round';ctx.lineJoin='round';
   for(const river of riverPaths){
     ctx.beginPath();river.points.forEach(([lon,lat],i)=>{const x=(lon+180)*s,y=(90-lat)*s;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});

@@ -1,0 +1,18 @@
+{
+  "project": "OpenFront",
+  "commit": "1636e2049c3aee43384ac72521a142ef85314aba",
+  "source": "https://github.com/openfrontio/OpenFrontIO/tree/1636e2049c3aee43384ac72521a142ef85314aba/resources/maps/world",
+  "license": "CC-BY-SA-4.0",
+  "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "downloaded": "2026-11-22",
+  "changes": "Original files unchanged. world-grid.js is a nearest-center 720x360 derivative. Runtime composites original texture layers per manifest and adds IronFront ownership tint.",
+  "sha256": {
+    "manifest.json": "1a54e0cafb1f25ccba6d6f0627ebcf9c2c2e2db8f38518f9960adec17925b4ca",
+    "map.bin": "89fba929c62fc762302778e1107acbd25cf22a9bab781dbd5ef4551a90a0d79d",
+    "map4x.bin": "a7dc24916ae1f21e21263ec4ff38e27a7546116b1254ff8d1ac1f542659fbc7d",
+    "map16x.bin": "7dab711bb5697612d7beda690576975b60534143505af3703796f988940442ec",
+    "w2kland.webp": "21546c4a4c8d96bc206623eeafe458271ea4de85752a06d92d542012fbaf1695",
+    "w2kwater.webp": "5a0fe419dde8f6a53281de8914cc621e66bbfc7310f4de0886ba727986e2e5ba",
+    "thumbnail.webp": "1ce474f04b6ac6309472be7b7f9710070491274001b91520ceee5e994bef352d"
+  }
+}

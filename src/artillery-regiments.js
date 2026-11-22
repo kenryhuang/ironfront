@@ -1,10 +1,11 @@
+import {canFight,treatyProtected,landAccess} from './diplomacy.js';
 import {effectiveArtilleryGuns} from './regiment-composition.js';
 import {unitPositions} from './ground-unit-orders.js';
 import {frontSupplied} from './ground-supply.js';
 import {registerHostilities} from './campaign-pacing.js';
 
 export function artilleryRegimentOrderStatus(g,a,target){
- if(!Number.isInteger(target)||g.owners[target]<0||g.owners[target]===a.owner)return {ok:false,message:'请选择敌方或无主陆地炮击。'};
+ if(!Number.isInteger(target)||g.owners[target]<0||!canFight(g,a.owner,g.owners[target]))return {ok:false,message:'请选择敌方或无主陆地炮击。'};
  if(a.groundOrder?.type!=='hold')return {ok:false,message:'炮兵正在转移，请到位或停止后再下达炮击命令。'};
  const p=unitPositions(a)[0],d=p?Math.hypot(p.x-target%g.width-.5,p.y-Math.floor(target/g.width)-.5):Infinity;
  if(d<3||d>32)return {ok:false,message:'炮兵团射程为3—32个地块，请先移动至射程内。'};
@@ -22,10 +23,10 @@ export function advanceArtilleryRegiments(g){
  for(const a of g.armies){const b=a.artillery;if(!b)continue;
   if(a.troops<b.personnel)b.remaining*=a.troops/Math.max(1,b.personnel);b.personnel=a.troops;
   if(b.target===null)continue;
-  if(g.owners[b.target]===a.owner){stopArtilleryRegiment(a);a.orderState='stationed';continue;}
+  if(!canFight(g,a.owner,g.owners[b.target])){stopArtilleryRegiment(a);a.orderState='stationed';continue;}
   if(a.groundOrder?.type!=='hold'){stopArtilleryRegiment(a);continue;}
   const p=unitPositions(a)[0],tile=Math.floor(p.y)*g.width+Math.floor(p.x),supply=frontSupplied(g,a);
-  if(!supply.connected||g.owners[tile]!==a.owner||g.radiationAt?.(tile)||(g.defenseSuppression?.(tile)??1)<1){a.orderState='resupplying';continue;}
+  if(!supply.connected||!landAccess(g,a.owner,g.owners[tile])||g.radiationAt?.(tile)||(g.defenseSuppression?.(tile)??1)<1){a.orderState='resupplying';continue;}
   if(b.readyAt>g.time+1e-8){a.orderState='deploying';continue;}
   b.deployed=true;b.readyAt=0;
   const staffed=effectiveArtilleryGuns(a);if(staffed<=0){a.orderState='no-guns';continue;}

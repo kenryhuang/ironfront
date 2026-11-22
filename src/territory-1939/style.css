@@ -1,0 +1,176 @@
+html.territory-mode body{background:#0b131b;color:#e0e8ef;overflow:auto}
+.territory-mode .operation-bar,.territory-mode .command-layout>:not(.map-panel),.territory-mode #help-button{display:none}
+.territory-mode .command-layout{display:block;min-height:0}
+.territory-mode .map-panel{width:100%;height:auto;min-height:0;overflow:visible;background:transparent;border:0;border-radius:0}
+.territory-1939{max-width:1510px;margin:auto;padding:16px;color-scheme:dark}
+.territory-1939 [hidden]{display:none!important}
+.territory-nav{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.territory-nav h2{font-size:clamp(16px,2.2vw,24px);margin:0 auto 0 0}
+.territory-nav a{color:#dbc089;text-decoration:underline}
+.territory-1939 #lobby,.territory-1939 #waiting{margin:clamp(20px,8vh,100px) auto 0;max-width:560px;padding:26px;background:#15232f;border:1px solid #384b5c;border-radius:8px}
+.territory-1939 p{line-height:1.65;color:#aabac7;font-size:14px}
+.territory-1939 #room-code{color:#e0c588;letter-spacing:.12em}
+.territory-1939 button,.territory-1939 input{font:inherit}
+.territory-1939 button{border:1px solid #516579;background:#223648;color:#e6edf5;padding:8px 12px;border-radius:4px;cursor:pointer}
+.territory-1939 button:hover:not(:disabled){background:#314e62}
+.territory-1939 button:disabled{opacity:.44;cursor:default}
+.territory-1939 :is(button,input,a):focus-visible{outline:2px solid #e0c588;outline-offset:3px}
+.territory-1939 input:not([type=range]){display:block;background:#0e1924;border:1px solid #516579;border-radius:4px;padding:9px;color:inherit;width:100%;margin-top:5px}
+.territory-1939 :is(.choices,#join){display:flex;flex-wrap:wrap;gap:8px;margin-top:15px;align-items:end}
+.territory-1939 #join label{flex:1}
+.territory-1939 #battle{max-width:min(100%,calc((100svh - 250px)*2));margin:auto;min-width:min(480px,100%)}
+.territory-1939 :is(.battle-top,.controls,.battle-foot){display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:9px 0}
+.territory-1939 #stats{font-weight:700;color:#e1c88f}
+.territory-1939 :is(#target,#ranking){color:#b8c9d6;font-size:13px}
+.territory-1939 [data-battlefield-slot]{position:relative;height:clamp(220px,58svh,720px);overflow:hidden;border:1px solid #3c5261;background:#112434}
+.territory-1939 #battlefield{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;cursor:crosshair;touch-action:none}
+.territory-1939 .terrain-webgl{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.territory-1939 .controls{justify-content:flex-start}
+.territory-1939 .controls input{width:clamp(90px,24vw,280px);accent-color:#d8b674}
+.territory-1939 .controls output{color:#e3c488;font-weight:700}
+.territory-1939 .battle-foot p{margin:0}
+.territory-1939 #ranking{display:flex;gap:5px;flex-wrap:wrap}
+.territory-1939 #ranking button{font-size:12px;padding:4px 8px;border-left:4px solid var(--team)}
+.territory-1939 #message{text-align:center;min-height:1.5em;margin:6px auto;color:#e9cc95}
+.territory-mode #battle-loading[hidden]{display:none}
+.territory-1939 #room-settings:not([hidden]){display:grid;gap:10px;padding:12px;margin:12px 0;border:1px solid #384b5c;border-radius:4px}
+.territory-1939 #room-settings label{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.territory-1939 #room-settings select{background:#0e1924;color:inherit;border:1px solid #516579;padding:4px}
+.territory-1939 #room-settings button{justify-self:start}
+
+#public-lobby { margin-block: 1.25rem; }
+#public-rooms article { padding: .75rem 0; border-top: 1px solid #ffffff30; }
+#public-rooms p { margin: .35rem 0; }
+#visibility-controls { margin-block: .75rem; }
+.territory-1939 #join-help{font-size:12px;margin-bottom:4px}
+.territory-1939 #join-status{color:#efc482;margin-top:4px}
+.territory-1939 #code[aria-invalid=true]{border-color:#efc482}
+.territory-1939 #battle{max-width:1450px}
+.economy-summary{font-size:14px;color:#f3d79c;padding:8px 0;font-variant-numeric:tabular-nums}
+.economy-actions{display:flex;gap:6px;flex-wrap:wrap}
+.economy-actions button[aria-pressed=true]{border-color:#dfbf78;background:#4b422b}
+.territory-1939 .order-instruction{margin:7px 0;font-size:12px}
+.territory-effects{position:absolute;inset:0;pointer-events:none;z-index:5;width:100%;height:100%}
+.territory-render-stats{position:absolute;left:8px;top:8px;z-index:10;pointer-events:none;padding:5px 8px;background:#07131de0;color:#b6dccb;font:12px monospace}
+.construction-menu{position:absolute;right:12px;top:12px;z-index:9;width:280px;max-width:90%;max-height:92%;overflow:auto;display:flex;flex-wrap:wrap;gap:8px;background:#102330f2;border:1px solid #79949b;border-radius:6px;padding:15px;box-shadow:0 8px 25px #0008}
+.construction-menu strong{flex:1;align-self:center}.construction-menu button{font-size:12px;flex-grow:1}.construction-menu p{margin:0}.construction-menu progress{width:100%;accent-color:#dfc17c}
+.territory-1939 #diplomacy-panel{border-top:1px solid #344753;margin-top:12px;padding-top:12px}
+.territory-1939 select{color:inherit;background:#142632;padding:5px;border:1px solid #546a79}
+
+/* Local to this campaign. Keep interface and effect colors out of the grade. */
+.territory-1939 #battlefield{filter:none;image-rendering:pixelated;object-fit:fill}
+.territory-1939 [data-battlefield-slot]{background:#1b2b34;border-color:#526069}
+.territory-mode body{background:#10181d}
+.territory-1939 button{background:#29363d;border-color:#59666d;color:#e1e5e3}
+.territory-1939 button:hover:not(:disabled){background:#3b4b52}
+.territory-1939 .economy-actions button[aria-pressed=true]{background:#514a38;border-color:#b6a477}
+.territory-1939 #stats,.territory-1939 .economy-summary{color:#d8cba7}
+.territory-1939 #command-status{color:#b9d7cb;font-size:12px}
+
+/* 1939-only floating HUD. No blur filters or animated shadows over the map. */
+.territory-front-surface{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.territory-1939 #battlefield{z-index:1;background:transparent}
+html.territory-mode:has(.in-battle) body{overflow:hidden}
+.territory-mode:has(.in-battle) .masthead{display:none}
+.territory-1939.in-battle{position:fixed;inset:0;padding:0;max-width:none;font:13px/1.4 system-ui,sans-serif;color:#ecf1f5;z-index:20}
+.territory-1939.in-battle #battle{position:absolute;inset:0;min-width:0;max-width:none;margin:0}
+.territory-1939.in-battle [data-battlefield-slot]{position:absolute;inset:0;height:100%;border:0}
+.territory-1939.in-battle .territory-nav{position:absolute;top:12px;right:12px;z-index:15;max-width:calc(100% - 272px);gap:8px;margin:0;padding:8px 10px;background:#152333eb;border:1px solid #ffffff24;border-radius:8px;box-shadow:0 2px 8px #0003}
+.territory-1939.in-battle .territory-nav h2{font:700 13px system-ui;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.territory-1939.in-battle .territory-nav a{color:#b8d3ea;font-size:11px}
+.territory-1939.in-battle button{background:#263e53;border:1px solid #ffffff25;border-radius:5px;color:#f1f5f9;padding:7px 10px;font-size:12px}
+.territory-1939.in-battle button:hover:not(:disabled){background:#35566e;border-color:#8bc7ea}
+.territory-1939.in-battle button:focus-visible,.territory-1939.in-battle summary:focus-visible{outline:2px solid #80d2ff;outline-offset:2px}
+.territory-command-dock{position:absolute;z-index:12;bottom:14px;left:50%;transform:translateX(-50%);width:min(720px,calc(100% - 28px));padding:12px 16px;background:#111e2ded;border:1px solid #ffffff30;border-radius:9px;box-shadow:0 3px 12px #0004}
+.territory-1939 .territory-command-dock .battle-top{padding:0 0 8px;border-bottom:1px solid #ffffff18;gap:8px}
+.territory-1939 .territory-command-dock #stats{color:#e7f2fa;font-size:14px;font-variant-numeric:tabular-nums}
+.territory-1939 .territory-command-dock #target{font-size:11px;color:#a2c5dd}
+.territory-1939 .territory-command-dock .economy-summary{padding:7px 0;color:#ebcf7b;font-size:12px}
+.territory-1939 .territory-command-dock .economy-actions{gap:5px}
+.territory-1939 .territory-command-dock .economy-actions button{flex:1;white-space:nowrap}
+.territory-1939 .territory-command-dock .economy-actions button[aria-pressed=true]{background:#29668b;border-color:#86c8ef}
+.territory-1939 .territory-command-dock [data-home]{background:#2b5970;border-color:#8bd1ed;color:#fff;font-weight:700}
+.territory-1939 .territory-command-dock .order-instruction{font-size:11px;color:#90aabd;margin:7px 0 0}
+.territory-1939 .territory-command-dock .controls{padding:9px 0 0;gap:8px;justify-content:flex-start}
+.territory-1939 .territory-command-dock .controls input{flex:1;min-width:70px;width:auto;accent-color:#6ebcec}
+.territory-1939 .territory-command-dock .controls output{color:#a9d5ee;font-size:12px}
+.territory-1939 .territory-command-dock #expand{background:#347851;border-color:#84bf92}
+.territory-1939 .territory-command-dock #stop{background:#65404a}
+.territory-1939 #dispatch-preview,.territory-1939 #command-status{font-variant-numeric:tabular-nums}
+.territory-hud-stack{position:absolute;left:12px;top:12px;z-index:12;width:232px;max-height:calc(100% - 260px);overflow:auto;scrollbar-width:thin;display:grid;gap:8px}
+.territory-hud-card{background:#152333e8;border:1px solid #ffffff26;border-radius:7px;overflow:hidden;box-shadow:0 2px 8px #0002}
+.territory-hud-card summary{cursor:pointer;padding:9px 12px;color:#ecf3f9;font-size:12px;font-weight:650;user-select:none}
+.territory-hud-card[open]>summary{border-bottom:1px solid #ffffff20}
+.territory-1939 .territory-hud-card #ranking{display:flex;flex-direction:column;flex-wrap:nowrap;gap:3px;max-height:190px;overflow:auto;padding:6px}
+.territory-1939 .territory-hud-card #ranking button{text-align:left;flex-shrink:0;background:#ffffff08;border:0;border-left:3px solid var(--team);border-radius:2px;padding:6px 8px;font-size:11px}
+.territory-1939 .territory-hud-card #ranking button:hover{background:#ffffff18}
+.territory-rank-row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:6px 8px;border-left:3px solid var(--team);background:#ffffff08;font-size:11px}
+.territory-rank-row b{font-weight:500;color:#b9d8e9;font-variant-numeric:tabular-nums}
+.territory-1939 .territory-hud-card #active-fronts{padding:6px 9px;font-size:11px;max-height:160px;overflow:auto}
+.territory-1939 .territory-hud-card #active-fronts:empty::after{content:'暂无进行中的攻势';color:#8ca5ba}
+.territory-1939 .territory-hud-card #active-fronts>div{padding:5px 0;border-bottom:1px solid #ffffff15}
+.territory-1939 .territory-hud-card #active-fronts button{padding:3px 6px;margin:3px}
+.territory-1939 .territory-hud-card #diplomacy-panel{margin:0;border:0;padding:10px}
+.territory-1939 .territory-hud-card #diplomacy-panel p{font-size:11px;line-height:1.6;margin:7px 0}
+.territory-1939 .territory-hud-card #diplomacy-panel .choices{gap:5px;margin-top:7px}
+.territory-1939 .territory-hud-card #diplomacy-target{max-width:100%;margin-top:4px}
+.territory-1939.in-battle .battle-foot{position:absolute;top:65px;right:16px;z-index:8;padding:0;pointer-events:none}
+.territory-1939.in-battle #mission{color:#f0f5f8;font-size:11px;text-shadow:0 1px 3px #000}
+.territory-1939.in-battle #message{position:absolute;bottom:235px;left:50%;transform:translateX(-50%);z-index:20;width:max-content;max-width:80%;padding:7px 12px;color:#fff;background:#172c3fe8;border-radius:5px;pointer-events:none}
+.territory-1939.in-battle #message:empty{display:none}
+.territory-1939.in-battle #room-actions{position:absolute;right:12px;top:92px;z-index:12;max-width:300px;justify-content:flex-end}
+.territory-1939.in-battle .territory-render-stats{left:auto;right:12px;top:auto;bottom:12px;font-size:10px;background:#142334cc}
+.territory-1939.in-battle .construction-menu{top:105px;z-index:20;background:#162a3cf5;border-color:#69879e}
+.territory-1939.in-battle .construction-menu{width:370px;max-height:calc(100% - 330px);padding:12px;gap:10px}
+.building-card-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+.territory-1939.in-battle button.building-card{display:grid;grid-template-columns:44px 1fr;gap:3px 5px;text-align:left;align-content:start;padding:9px;background:#244156;border-color:#58758b;min-height:144px}
+.territory-1939.in-battle button.building-card:disabled{opacity:1;background:#1b3040;border-color:#3b5365;color:#cad9e3}
+.territory-1939.in-battle button.building-card:disabled span{color:#dfa29a}
+.building-card .building-picture{grid-row:1/3;width:44px;height:44px;image-rendering:pixelated;background:#102b3d;border-radius:4px}
+.building-card strong{font-size:13px;align-self:center}.building-card span{font-size:10px;color:#f1d68f}.building-card small{grid-column:1/-1;color:#b8cddd;font-size:10px;line-height:1.6}
+.building-inspector{width:100%;display:flex;gap:12px;align-items:center;padding:9px;background:#0a1b2880;border-radius:5px}
+.building-inspector canvas{width:76px;height:76px;image-rendering:pixelated;flex:none}.building-inspector p{font-size:11px!important;color:#a9e3bc!important}
+.territory-1939 #conquest-events{padding:9px 12px;color:#b6cbd8;font-size:11px;line-height:1.6;max-height:160px;overflow:auto}
+.territory-1939 #conquest-events article+article{border-top:1px solid #ffffff20;margin-top:7px;padding-top:7px}
+.territory-1939 #conquest-events strong,.territory-1939 #conquest-events span{display:block}.territory-1939 #conquest-events span{color:#edd28e}
+
+/* Event-driven HUD only: no canvas redraws, particles or backdrop filters. */
+.territory-1939 .conquest-kill-feed{position:absolute;top:104px;right:14px;width:min(300px,calc(100% - 28px));display:grid;gap:6px;z-index:14;pointer-events:none}
+.territory-1939 .conquest-kill-row{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:7px;padding:8px 10px;background:#142332e8;border-right:3px solid #9caeb9;border-radius:3px;font-size:12px;animation:conquest-feed-life 6s both}
+.territory-1939 .conquest-kill-row strong{max-width:115px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.territory-1939 .conquest-kill-row small{color:#a5b9c9;font-size:10px}
+.territory-1939 .conquest-kill-icon{color:#e4ac64;font-size:18px}
+.territory-1939 .conquest-kill-row.is-mine{border-color:#f0cd78;background:#312b1ce8;color:#ffe4a0}
+.territory-1939 .conquest-kill-row.is-loss{border-color:#e47575;background:#3c2028e8}
+.territory-1939 .conquest-kill-banner{position:absolute;top:104px;left:50%;transform:translateX(-50%);width:min(320px,calc(100% - 28px));z-index:14;pointer-events:none;text-align:center}
+.territory-1939 .conquest-kill-notice{display:grid;justify-items:center;gap:4px;padding:12px 20px 16px;background:linear-gradient(90deg,#1e251600,#242c23ed 18%,#242c23ed 82%,#1e251600);border-block:1px solid #e8c67d80;color:#f8e3b0;text-shadow:0 2px 3px #000;animation:conquest-banner-life 6s both}
+.territory-1939 .conquest-kill-notice>strong{font-size:26px;font-weight:850;letter-spacing:5px}
+.territory-1939 .conquest-kill-notice>span:not(.conquest-kill-emblem){font-size:12px;color:#e1dbcc;overflow-wrap:anywhere}
+.territory-1939 .conquest-kill-notice>b{font-size:19px;color:#ffdc7f;font-variant-numeric:tabular-nums}
+.territory-1939 .conquest-kill-emblem{font-size:25px;line-height:1}
+.territory-1939 .conquest-kill-notice.is-loss{color:#ffacac;border-color:#d67a7a80;background:linear-gradient(90deg,#301a2200,#40252aed 18%,#40252aed 82%,#301a2200)}
+.territory-1939 .conquest-kill-notice.is-loss>b{font-size:14px;color:#e7c4c4}
+@keyframes conquest-feed-life{0%{opacity:0;transform:translateX(18px)}5%,86%{opacity:1;transform:translateX(0)}100%{opacity:0;transform:translateX(10px)}}
+@keyframes conquest-banner-life{0%{opacity:0;transform:translateY(-8px) scale(.94)}6%,84%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-6px)}}
+@media(max-width:1000px){.territory-1939 .conquest-kill-feed{top:275px;width:240px}.territory-1939 .conquest-kill-banner{top:104px;left:auto;right:14px;transform:none;width:240px}.territory-1939 .conquest-kill-notice>strong{font-size:22px}}
+@media(max-width:540px){.territory-1939 .conquest-kill-feed{top:244px;width:190px}.territory-1939 .conquest-kill-banner{top:104px;width:190px}.territory-1939 .conquest-kill-notice{padding:8px}.territory-1939 .conquest-kill-notice>strong{font-size:18px;letter-spacing:2px}.territory-1939 .conquest-kill-row{font-size:11px;padding:6px}}
+@media(prefers-reduced-motion:reduce){.territory-1939 .conquest-kill-row,.territory-1939 .conquest-kill-notice{animation:none}}
+.territory-1939.selecting-spawn .territory-command-dock,.territory-1939.selecting-spawn .territory-hud-stack,.territory-1939.selecting-spawn #mission{display:none}
+.territory-1939 .spawn-selection{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);width:min(510px,calc(100% - 40px));box-sizing:border-box;padding:18px 22px;background:#142535f2;border:1px solid #dbc985;border-radius:9px;z-index:16;color:#e6eef4;text-align:center;box-shadow:0 4px 18px #0004}
+.territory-1939 .spawn-selection h2{margin:0 0 8px;font-size:21px;color:#ffe6a6}
+.territory-1939 .spawn-selection p{margin:6px 0;font-size:12px;line-height:1.6}
+.territory-1939 .spawn-selection>div{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:12px}
+.territory-1939 .spawn-selection button:first-child{background:#3c7757;border-color:#88bd8b;font-weight:700}
+.territory-1939 .spawn-selection[hidden],.territory-1939 .spawn-selection button[hidden]{display:none}
+@media(max-width:760px){
+ .territory-hud-stack{width:180px;max-height:calc(100% - 280px);left:8px;top:8px}
+ .territory-1939.in-battle .territory-nav{right:8px;top:8px;max-width:calc(100% - 204px)}
+ .territory-1939.in-battle .territory-nav h2{font-size:11px}
+ .territory-1939.in-battle .territory-nav h2 a{font-size:9px!important;margin-left:0!important}
+ .territory-command-dock{bottom:8px;padding:9px;width:calc(100% - 16px)}
+ .territory-1939 .territory-command-dock .economy-actions{flex-wrap:wrap}
+ .territory-1939 .territory-command-dock .order-instruction{display:none}
+ .territory-1939 .territory-command-dock #stats{font-size:12px}
+ .territory-1939 .territory-hud-card #ranking{max-height:100px}
+ .territory-1939.in-battle .battle-foot{display:none}
+}
