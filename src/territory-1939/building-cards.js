@@ -2,7 +2,7 @@ import {STRUCTURES,buildingIncome,productionStatus} from './economy.js';
 import {drawBuilding} from './pixel-art.js';
 
 const money=n=>Math.floor(n??0).toLocaleString();
-export function buildingPicture(b,size=56){const c=document.createElement('canvas');c.width=c.height=size;c.className='building-picture';c.setAttribute('aria-hidden','true');const ctx=c.getContext('2d');ctx.translate(size/2,size/2);ctx.scale(1.8,1.8);drawBuilding(ctx,b,0,0,size*.65);return c;}
+export function buildingPicture(b,size=56,time=0){const c=document.createElement('canvas');c.width=c.height=size;c.className='building-picture';c.setAttribute('aria-hidden','true');const ctx=c.getContext('2d');drawBuilding(ctx,b,size/2,size/2,size*.74,{time});return c;}
 export function buildCards(menu,player,disabled,select){
  const grid=document.createElement('div');grid.className='building-card-grid';
  for(const [type,spec]of Object.entries(STRUCTURES)){
@@ -15,7 +15,7 @@ export function buildCards(menu,player,disabled,select){
  menu.append(grid);const hint=document.createElement('p');hint.textContent='选择建筑 → 地图预览 → 点击己方陆地确认。Esc 取消，不扣费。';menu.append(hint);
 }
 export function buildingDetails(menu,b,time=0){
- const spec=STRUCTURES[b.type],preview=document.createElement('div');preview.className='building-inspector';preview.append(buildingPicture(b,76));
+ const spec=STRUCTURES[b.type],preview=document.createElement('div');preview.className='building-inspector';preview.append(buildingPicture(b,76,time));
  const info=document.createElement('div'),state=document.createElement('strong'),output=document.createElement('p');
  state.textContent=b.remaining>0?(b.upgradeTo?'升级中 → Lv.'+b.upgradeTo:'施工中'):b.enabled===false?'已停产':'正在运行 · Lv.'+b.level;
  output.textContent=(spec.income?'当前产出 +'+money(buildingIncome(b))+' 金币/秒':'军事设施 · 无直接收入')+(b.type==='city'?' · 兵力上限 +'+money(b.level*250000):'');info.append(state,output);preview.append(info);menu.append(preview);

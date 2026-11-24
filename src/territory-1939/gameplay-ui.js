@@ -89,7 +89,15 @@ export function createGameplayUI(root,issue,hint){
   }
   const nuclearOptions={point,w,h,scale:renderer.scale,game:renderer.game,...wrapOptions()};
   nuclearVisuals.drawGround(ctx,view.fallout,time,nuclearOptions);
-  for(const b of view.buildings){const p=point(b.tile);if(p[0]<-30||p[0]>w+30||p[1]<-30||p[1]>h+30)continue;const size=Math.max(24,Math.min(42,renderer.scale*3));drawBuilding(ctx,b,...p,size);if(b.remaining>0){const progress=1-b.remaining/b.constructionTotal;ctx.fillStyle='#172b38';ctx.fillRect(p[0]-16,p[1]+18,32,4);ctx.fillStyle='#efd28a';ctx.fillRect(p[0]-16,p[1]+18,32*progress,4);}else{ctx.fillStyle='#dae8ed';ctx.fillText(b.type==='settlement'?'⌂':'Lv.'+b.level,p[0]+14,p[1]-10);if(['factory','port'].includes(b.type)){const s=productionGauge(b,time);circle([p[0]-10,p[1]-9],2.5,s.color);if(b.enabled!==false&&b.tradeState==='loading'){ctx.fillStyle='#172b38';ctx.fillRect(p[0]-12,p[1]+14,24,2);ctx.fillStyle=s.color;ctx.fillRect(p[0]-12,p[1]+14,24*s.progress,2);}}}}
+  for(const b of view.buildings){
+   const p=point(b.tile);if(p[0]<-40||p[0]>w+40||p[1]<-40||p[1]>h+40)continue;
+   const size=Math.max(20,Math.min(32,renderer.scale*3)),dots=renderer.zoom<1.45;
+   const color=renderer.game.nations.get(view.land[b.tile])?.color??'#82938a';
+   drawBuilding(ctx,b,...p,size,{color,time,dots});
+   if(!dots&&!(b.remaining>0)&&b.enabled!==false&&['factory','port'].includes(b.type)&&b.tradeState==='loading'){
+    const state=productionGauge(b,time);ctx.fillStyle='#172b38';ctx.fillRect(p[0]-8,p[1]+size*.46+3,16,2);ctx.fillStyle=state.color;ctx.fillRect(p[0]-8,p[1]+size*.46+3,16*state.progress,2);
+   }
+  }
   if(placement&&hoverTile>=0){const p=point(hoverTile),state=placementStatus(view,owner,hoverTile,placement,renderer.game.width);circle(p,25,state.ok?'#69d18a25':'#e8696925',state.ok?'#8de6a6':'#ff8d8d');ctx.globalAlpha=.75;drawBuilding(ctx,{type:placement,level:1},...p,40);ctx.globalAlpha=1;ctx.fillStyle='#142536e8';ctx.fillRect(p[0]-85,p[1]+32,170,24);ctx.fillStyle=state.ok?'#bdf5c9':'#ffb2b2';ctx.fillText(state.reason,p[0],p[1]+48);}
   const rails=new Set();for(const j of view.journeys){if(!j.path.length)continue;
    const key=[j.from,j.to].sort((a,b)=>a-b).join(':');if(j.kind==='train'&&!rails.has(key)&&rails.size<40){rails.add(key);ctx.strokeStyle='#d5d3b14d';ctx.setLineDash([3,3]);ctx.beginPath();for(let i=0;i<j.path.length;i+=Math.max(1,Math.ceil(j.path.length/64))){const p=point(j.path[i]);if(i===0)ctx.moveTo(...p);else ctx.lineTo(...p);}ctx.lineTo(...point(j.to));ctx.stroke();ctx.setLineDash([]);}

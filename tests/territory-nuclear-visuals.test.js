@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {nuclearFrame,scorchRaster,missilePose} from '../src/territory-1939/nuclear-visuals.js';
 import {createNuclearTestMatch} from '../src/territory-1939/nuclear-test.js';
-import {command,tick} from '../src/territory-1939/rules.js';
+import {RoomGame,command,tick,snapshot,packLand,unpackLand} from '../src/territory-1939/rules.js';
 
 test('blast expands continuously, has a bright first flash and expires without altering damage data',()=>{
  const e=Object.freeze({tile:10,time:2,radius:7.5,kind:'blast'});
@@ -40,4 +40,23 @@ test('world nuclear preview uses paid launches and the normal 120-second fallout
   assert.ok(g.strategic.fallout.length>0);
   assert.ok(Math.abs(g.strategic.fallout[0].until-g.time-120)<1e-8);
  }
+});
+
+test('ordinary matches publish nuclear visuals to both serialized room clients without test-mode metadata',()=>{
+ const width=60,height=20,owners=Array.from({length:width*height},(_,t)=>t%width<30?1:2);
+ const g=new RoomGame({width,height,owners,terrain:owners.map(()=>1),nations:[{id:1,name:'A',troops:100000},{id:2,name:'B',troops:100000}],logistics:false});
+ const match={game:g,seats:[1,2],settings:{speed:1},turn:0},source=10*width+20,target=10*width+35;
+ g.protection=0;g.nations.get(1).gold=1000000;g.buildings.set(source,{type:'missile',remaining:0,level:1});
+ assert.equal(command(match,1,{strike:'atom',source,tile:target}).ok,true);
+ const flight=snapshot(match);assert.equal(flight.missiles.length,1);assert.equal(flight.effects.length,0);
+ g.time=g.strategic.missiles[0].duration;g.strategic.step();
+ const state=snapshot(match);state.land=packLand(state.land);
+ const clientA=JSON.parse(JSON.stringify(state)),clientB=JSON.parse(JSON.stringify(state));
+ assert.deepEqual(clientA.effects,clientB.effects);assert.equal(clientA.effects[0].kind,'blast');
+ assert.equal(clientA.fallout[0].until-g.time,120);assert.equal(clientA.missiles.length,0);
+ const game={width,height,gridScale:1,wrapX:false,owners:unpackLand(clientA.land)};
+ assert.ok(scorchRaster(clientA.fallout[0],game).pixels.some((v,i)=>i%4===3&&v>0));
+ assert.ok(nuclearFrame(clientA.effects[0],g.time+.5).fire>0);
+ assert.equal(match.navalTest,undefined);
+ g.time+=121;g.strategic.step();assert.equal(snapshot(match).effects.length,0);assert.equal(snapshot(match).fallout.length,0);
 });

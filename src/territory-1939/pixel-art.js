@@ -1,4 +1,5 @@
-// Original hand-drawn pixel assets. Small shared atlases, no downloaded artwork.
+import {drawStructure} from './building-visuals.js';
+// Original mobile-unit pixel assets; structures use attributed OpenFront icons.
 export const PIXEL_PATTERNS={
  merchant:['................','......##........','.....#WW#.......','..###WLLW####...','.HDDDBBDDBBDHH..','HHDDDBBDDBBDDDH.','.HHHHHHHHHHHHH..','..sssssssssss...'],
  warship:['................','.....##.........','....#WW#..#.....','..###LLW##L###..','.HDDDLLDDDLDDHH.','HHDDDWWDDDDDDDH.','.HHHHHHHHHHHHH..','..sssssssssss...'],
@@ -32,13 +33,5 @@ export function drawPixelIcon(ctx,type,x,y,size=24,angle=0){
  ctx.drawImage(pixelSprite(type,angle),Math.round(x-s/2),Math.round(y-s/2),s,s);
 }
 
-// Reuses the small sprite atlas: level detail is a few rects, never a 3D mesh.
-export function drawBuilding(ctx,b,x,y,size=32){
- const s=Math.max(18,Math.min(54,Math.round(size)));
- ctx.save();ctx.fillStyle='#10202c70';ctx.fillRect(Math.round(x-s*.32),Math.round(y+s*.2),Math.round(s*.65),3);
- if(b.remaining>0){ctx.globalAlpha=.55;drawPixelIcon(ctx,b.type,x,y,s);ctx.globalAlpha=1;ctx.strokeStyle='#f2c879';ctx.lineWidth=1;ctx.strokeRect(Math.round(x-s*.34),Math.round(y-s*.35),Math.round(s*.68),Math.round(s*.7));}
- else drawPixelIcon(ctx,b.type,x,y,s);
- if(b.level>1){ctx.fillStyle='#efcf87';for(let i=0;i<Math.min(5,b.level);i++)ctx.fillRect(Math.round(x-s*.25+i*4),Math.round(y-s*.38),2,3);}
- if(b.enabled===false){ctx.fillStyle='#efc16a';ctx.fillRect(x+8,y-8,2,7);ctx.fillRect(x+12,y-8,2,7);}
- ctx.restore();
-}
+// Shared map/menu rendering: cached icons, owner-color discs and compact status.
+export function drawBuilding(ctx,b,x,y,size=28,options={}){drawStructure(ctx,b,x,y,size,options);}

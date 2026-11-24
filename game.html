@@ -123,7 +123,7 @@
 <section id="lobby">
   <h2>选择对局</h2>
   <p>从小领地扩张，经营城市与贸易，建造军舰和导弹井。右键地图建设；同盟、赠送与禁运决定合作关系。</p>
-  <label>昵称 <input id="name" maxlength="16" value="指挥官" autocomplete="nickname"></label>
+  <label>你的势力名称 <input id="name" maxlength="16" placeholder="输入你想使用的名字" autocomplete="nickname" required></label>
   <div class="choices"><button id="solo" disabled>单人练习</button><button id="create" disabled>创建联机房间</button></div>
   <form id="join"><label>房间码 <input id="code" maxlength="2048" autocomplete="off" spellcheck="false" placeholder="六位房间码或完整邀请链接" aria-describedby="join-help join-status"></label><button id="join-room" type="submit" disabled>加入房间</button><button type="button" id="watch-room">观战</button></form>
   <p id="join-help">输入后按回车或点击“加入房间”。房主需先创建房间；自己试玩请点击“单人练习”。</p>

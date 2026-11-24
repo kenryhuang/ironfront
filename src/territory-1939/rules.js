@@ -11,6 +11,7 @@ import {Strategic} from './strategic.js';
 import {Fleet} from './fleet.js';
 import {runRoomAI} from './ai.js';
 import {createHistoricalTheater} from '../historical-map.js';
+import {countrySpawn} from './country-spawns.js';
 
 export const TICK_MS=50;
 const seats=[710,255,2,365,740,200];
@@ -237,8 +238,8 @@ export function createMatch(names,overrides=defaultSettings,lineup=null){
   const pool=roomCountries().map(n=>n.code);
   codes=names.map(()=>pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
  }
- const commanders=new Map(names.map((name,i)=>[codes[i],name]));
- const nations=config.nations.map(n=>({...n,commander:commanders.get(n.code),ai:false,populationBase:0,troops:0}));
+ const commanders=new Map(names.map((name,i)=>[codes[i],typeof name==='string'&&name.trim()?name.trim().slice(0,16):`玩家${i+1}`]));
+ const nations=config.nations.map(n=>({...n,name:commanders.get(n.code)??n.name,commander:commanders.get(n.code),ai:false,populationBase:0,troops:0}));
  const game=new RoomGame({...config,nations});
  game.protection=settings.protection;
  const playerSeats=names.map((_,i)=>nations.find(n=>n.code===codes[i]).id);
@@ -264,7 +265,18 @@ export function createMatch(names,overrides=defaultSettings,lineup=null){
  if(settings.layout!=='countries'){
   const participants=[...game.nations.values()].filter(n=>n.ai||n.commander),land=game.owners.map((o,t)=>o>=0&&Math.floor(t/game.width)>15*game.gridScale&&Math.floor(t/game.width)<145*game.gridScale&&game.adjacent[t].every(p=>game.owners[p]>=0)?t:-1).filter(t=>t>=0),anchors=[];
   for(let t=0;t<game.owners.length;t++)if(game.owners[t]>=0)game.owners[t]=0;for(const n of game.nations.values()){n.tiles.clear();n.alive=false;}
-  for(const n of participants){let center=land[Math.floor(game.random()*land.length)],attempt=0;while(attempt++<500&&anchors.some(t=>distance(game,t,center)<7))center=land[Math.floor(game.random()*land.length)];anchors.push(center);n.alive=true;const cells=[center],seen=new Set(cells);for(let i=0;i<cells.length;i++)for(const t of game.adjacent[cells[i]])if(game.owners[t]===0&&!seen.has(t)&&distance(game,t,center)<=2){seen.add(t);cells.push(t);}for(const t of cells)game.claim(t,n.id);n.spawnTile=center;}
+  // Reserve local AI starts first. Humans retain random defaults and manual selection.
+  for(const n of participants.sort((a,b)=>Number(b.ai)-Number(a.ai))){
+   let center=n.ai?countrySpawn(game,n,anchors):null;
+   if(center===null){
+    let attempt=0;do{center=land[Math.floor(game.random()*land.length)];}while(attempt++<500&&(game.owners[center]!==0||anchors.some(t=>distance(game,t,center)<7)));
+    if(game.owners[center]!==0)center=land.find(t=>game.owners[t]===0);
+   }
+   if(center===undefined)continue;
+   anchors.push(center);n.alive=true;const cells=[center],seen=new Set(cells);
+   for(let i=0;i<cells.length;i++)for(const t of game.adjacent[cells[i]])if(game.owners[t]===0&&!seen.has(t)&&distance(game,t,center)<=2){seen.add(t);cells.push(t);}
+   for(const t of cells)game.claim(t,n.id);n.spawnTile=center;
+  }
   game.borders.rebuild();game.landRevision++;
   game.spawnUntil=10;
  }

@@ -1,0 +1,19 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>1939 · 建筑可视化</title>
+<style>body{margin:0;background:#142736;color:#e5eef2;font:14px system-ui}main{max-width:1120px;margin:32px auto;padding:24px}h1{font-size:24px}p{color:#b0c6d3;line-height:1.8}canvas{width:100%;border-radius:12px}a{color:#a7dce9}button{background:#294b5d;color:#fff;border:1px solid #6c91a4;border-radius:6px;padding:9px 16px;margin-right:8px}</style>
+<main><h1>1939 · 建筑标记</h1><p>国家色圆底、OpenFront 白色图标、高等级数字。所有示例直接使用正式战役的建筑绘制模块。</p><button id="color">切换敌我颜色</button><button id="pause">暂停施工动画</button><p><a href="../../game.html?campaign=1939&build=openfront-buildings">进入正式战役</a> · <a href="../../src/territory-1939/assets/openfront-buildings/NOTICE.html">素材来源与许可</a></p><canvas width="1120" height="570" aria-label="城市、工厂、港口、防御哨、导弹井、防空和部落建筑的等级与状态对照"></canvas></main>
+<script type="module">
+import {drawBuilding} from '../../src/territory-1939/pixel-art.js';
+import {loadBuildingAssets} from '../../src/territory-1939/building-visuals.js';
+await loadBuildingAssets();
+const c=document.querySelector('canvas'),ctx=c.getContext('2d'),types=['city','factory','port','fort','missile','sam','settlement'],names=['城市','工厂','港口','防御哨','导弹井','防空设施','部落聚落'];
+let enemy=false,paused=false,last=0,time=0;
+document.querySelector('#color').onclick=()=>enemy=!enemy;document.querySelector('#pause').onclick=e=>{paused=!paused;e.target.textContent=paused?'继续施工动画':'暂停施工动画';};
+function frame(now){requestAnimationFrame(frame);if(document.hidden||now-last<50)return;if(!paused)time+=Math.min(.1,(now-last)/1000);last=now;
+ctx.fillStyle='#a0b795';ctx.fillRect(0,0,1120,570);ctx.fillStyle='#172c39';ctx.font='bold 15px system-ui';ctx.textAlign='center';names.forEach((n,i)=>ctx.fillText(n,140+i*145,38));
+const labels=['一级','升级后','高级','施工中','工作状态','缩远'];
+for(let row=0;row<6;row++){const y=92+row*83;ctx.fillStyle='#233e46';ctx.font='13px system-ui';ctx.textAlign='left';ctx.fillText(labels[row],14,y+5);
+types.forEach((type,i)=>{const b={type,level:row===1?3:row===2?8:1};if(type==='fort'||type==='settlement')b.level=1;
+if(row===3){b.constructionTotal=5;b.remaining=5-time%5;}if(row===4){if(type==='factory'||type==='port')b.enabled=false;if(type==='missile'){b.level=3;b.launches=[time+3,time+7];}if(type==='sam')b.readyAt=time+4;}
+drawBuilding(ctx,b,140+i*145,y,34,{color:enemy?'#bc6975':'#527e98',time,dots:row===5});});}
+}requestAnimationFrame(frame);
+</script></html>

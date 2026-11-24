@@ -1,6 +1,6 @@
 import {TICK_MS,createMatch,command,tick,snapshot,theater1939,unpackLand} from './rules.js';
 import {TerritoryView} from './territory-view.js';
-import {loadWorldAssets,WORLD_ASSET_ROOT,OPENFRONT_MAP_ID} from './openfront-world.js';
+import {loadWorldAssets,OPENFRONT_MAP_ID} from './openfront-world.js';
 import {PixelRenderer as Renderer} from './pixel-renderer.js';
 import {createGameplayUI} from './gameplay-ui.js';
 import {parseRoomInput} from './room-input.js';
@@ -10,6 +10,7 @@ import {arrangeCampaignHud} from './hud-layout.js';
 import {focusTerritory} from './territory-focus.js';
 import {createKillFeed} from './kill-feed.js';
 import {createDeploymentUI} from './deployment-ui.js';
+import {loadBuildingAssets} from './building-visuals.js';
 
 const panel=document.querySelector('.map-panel');
 const canvas=document.getElementById('battlefield');
@@ -25,7 +26,7 @@ const endpoint=new URL('../../api/1939',import.meta.url);
 $('return-campaign').onclick=()=>sessionStorage.setItem('ironfront.battle-access','1');
 document.querySelector('.header-center').textContent='1939 · 全球争夺';
 document.getElementById('battle-loading').hidden=true;
-const credit=document.createElement('a');credit.href=new URL('NOTICE.html',WORLD_ASSET_ROOT);credit.textContent='地图资源：OpenFront · CC BY-SA 4.0';credit.target='_blank';credit.rel='noopener';credit.style.cssText='font-size:11px;color:#9cbdcf;margin-left:12px';root.querySelector('h2').append(credit);
+const credit=document.createElement('a');credit.href=new URL('./assets/openfront-buildings/NOTICE.html',import.meta.url);credit.textContent='地图与建筑：OpenFront · CC BY-SA 4.0';credit.target='_blank';credit.rel='noopener';credit.style.cssText='font-size:11px;color:#9cbdcf;margin-left:12px';root.querySelector('h2').append(credit);
 const terrainToggle=document.createElement('button');terrainToggle.type='button';terrainToggle.textContent='显示地表纹理';terrainToggle.hidden=true;terrainToggle.style.cssText='font-size:11px;margin-left:10px';root.querySelector('h2').append(terrainToggle);terrainToggle.onclick=()=>{renderer.setTerrainTexture(!renderer.terrainTexture);terrainToggle.textContent=renderer.terrainTexture?'恢复像素地形':'显示地表纹理';frameLoop.invalidate();};
 const sessionKey='ironfront.1939.room';
 let solo=null, room=null, view=null, pending=false, epoch=0, pollTimer=null;
@@ -142,10 +143,10 @@ function renderDiplomacy(){
  const owner=myId(),player=view.players[owner-1];
  const select=$('diplomacy-target');
  const countries=view.players.filter(p=>p.area&&!p.tribe&&p.id!==owner).sort((a,b)=>Number(!!b.commander)-Number(!!a.commander));
- const roster=countries.map(p=>p.id).join(',');
+ const roster=JSON.stringify(countries.map(p=>[p.id,p.name,p.commander]));
  if(select.dataset.roster!==roster){
   const chosen=select.value;
-  select.replaceChildren(...countries.map(p=>new Option(p.name+(p.commander?' · '+p.commander:''),p.id)));
+  select.replaceChildren(...countries.map(p=>new Option(p.name+(p.commander&&p.commander!==p.name?' · '+p.commander:''),p.id)));
   if(countries.some(p=>p.id===Number(chosen)))select.value=chosen;
   select.dataset.roster=roster;
  }
@@ -212,7 +213,7 @@ function render(){
  if(timeLimit&&!room?.finished)clocks.push('对局剩余 '+Math.max(0,Math.ceil(timeLimit-view.time))+' 秒');
  if(clocks.length)$('stats').textContent+=' · '+clocks.join(' · ');
  const leaders=view.players.filter(p=>p.area&&!p.tribe).sort((a,b)=>b.area-a.area).slice(0,5),ranking=$('ranking');
- const rankKey=leaders.map(p=>p.id+':'+(p.area/view.total*100).toFixed(1)).join('|');
+ const rankKey=JSON.stringify(leaders.map(p=>[p.id,p.name,p.team,p.color,(p.area/view.total*100).toFixed(1)]));
  if(ranking.dataset.key!==rankKey){ranking.dataset.key=rankKey;ranking.replaceChildren(...leaders.map((p,i)=>{const row=document.createElement('div');row.className='territory-rank-row';row.style.setProperty('--team',p.color);const name=document.createElement('span'),area=document.createElement('b');name.textContent=(i+1)+'. '+(p.team?teamLabel(p.team)+' ':'')+p.name;area.textContent=(p.area/view.total*100).toFixed(1)+'%';row.append(name,area);return row;}));}
  renderOrders();
  renderDiplomacy();
@@ -289,10 +290,11 @@ function drawLineup(state){
   if(!seat)return row;
   const country=state.settings?.randomCountries?'开局随机':state.countries.find(n=>n.code===seat.country)?.name??seat.country;
   if(!state.host){
-   row.append(' · '+country+(teams?' · '+teamLabel(seat.team):''));
+   row.append((state.settings?.layout==='countries'?' · '+country:'')+(teams?' · '+teamLabel(seat.team):''));
    return row;
   }
   const countrySelect=document.createElement('select'), teamSelect=document.createElement('select');
+  countrySelect.hidden=state.settings?.layout!=='countries';
   countrySelect.setAttribute('aria-label',name+'的国家');
   teamSelect.setAttribute('aria-label',name+'的阵营');
   const taken=new Set(state.lineup.filter(p=>p.id!==seat.id).map(p=>p.country));
@@ -314,7 +316,7 @@ function drawLineup(state){
    }finally{if(generation===epoch)pending=false;}
   };
   countrySelect.onchange=teamSelect.onchange=save;
-  if(state.settings?.randomCountries)row.append(' · 开局随机');
+  if(state.settings?.randomCountries&&state.settings?.layout==='countries')row.append(' · 开局随机');
   else row.append(' ',countrySelect);
   if(teams)row.append(' ',teamSelect);
   if(index>0){
@@ -402,6 +404,7 @@ async function poll(generation=epoch){
 }
 async function enter(action,code=$('code').value){
  if(!mapAssetsReady||pending)return;
+ if(['create','join'].includes(action)&&!$('name').value.trim()){hint('请先填写你的势力名称。');$('name').focus();return;}
  const joining=['join','watch','resume'].includes(action);
  if(joining){
   const input=parseRoomInput(code,location.href);
@@ -484,7 +487,8 @@ $('stop').onclick=()=>issue({stop:true});
 $('ratio').oninput=()=>{$('ratio-value').value=$('ratio').value+'%';renderOrders();renderDiplomacy();};
 $('solo').onclick=()=>{
  if(!mapAssetsReady||pending)return;
- const name=$('name').value.trim()||'指挥官';
+ const name=$('name').value.trim();
+ if(!name){hint('请先填写你的势力名称。');$('name').focus();return;}
  solo=createMatch([name],{chooseSpawn:true});
  view=snapshot(solo);render();
 };
@@ -542,7 +546,7 @@ $('exit').onclick=()=>{
 };
 setInterval(()=>{if(solo&&!(solo.navalTest&&navalTestPaused)&&solo.game.phase==='running'){tick(solo);view=snapshot(solo);if(!document.hidden)render();}},TICK_MS);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&view){if(solo)view=snapshot(solo);render();frameLoop.invalidate();}});
-try{await loadWorldAssets();mapAssetsReady=true;for(const id of ['solo','create','join-room'])$(id).disabled=false;}catch(error){const message=document.createElement('p');message.setAttribute('role','alert');message.textContent=error.message+'，请刷新重试。';const retry=document.createElement('button');retry.textContent='重新加载地图';retry.onclick=()=>location.reload();message.append(' ',retry);$('lobby').append(message);$('watch-room').disabled=true;$('resume-room').querySelector('button').disabled=true;}
+try{await Promise.all([loadWorldAssets(),loadBuildingAssets()]);mapAssetsReady=true;for(const id of ['solo','create','join-room'])$(id).disabled=false;}catch(error){const message=document.createElement('p');message.setAttribute('role','alert');message.textContent=error.message+'，请刷新重试。';const retry=document.createElement('button');retry.textContent='重新加载资源';retry.onclick=()=>location.reload();message.append(' ',retry);$('lobby').append(message);$('watch-room').disabled=true;$('resume-room').querySelector('button').disabled=true;}
 if(mapAssetsReady&&!worldTestMode)try{room=JSON.parse(sessionStorage.getItem(sessionKey));}catch{}
 const inviteCode=$('code').value.toUpperCase();
 if(room?.token&&room.code&&(!inviteCode||inviteCode===room.code)){screen();poll();}else room=null;

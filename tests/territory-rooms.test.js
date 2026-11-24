@@ -48,6 +48,8 @@ test('two authenticated clients share a live room and see the same captured land
  const {data:before}=await call(null,b);
  assert.equal(before.you,2);
  assert.equal(before.match.players[0].commander,'甲');
+ assert.equal(before.match.players.find(p=>p.commander==='甲').name,'甲');
+ assert.equal(before.match.players.find(p=>p.commander==='乙').name,'乙');
  const fixture=createMatch(['甲','乙'],settings,[{country:710,team:1},{country:740,team:2}]);
  const owner=fixture.seats[0],target=0;
  const tile=fixture.game.frontier(owner,target)[0];

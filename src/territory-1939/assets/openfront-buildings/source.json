@@ -1,0 +1,39 @@
+{
+  "project": "OpenFront",
+  "commit": "1636e2049c3aee43384ac72521a142ef85314aba",
+  "license": "CC-BY-SA-4.0",
+  "downloaded": "2026-11-23",
+  "changes": "Original SVG files unchanged. Runtime rasterizes and tints white on player-color circles. Settlement icon is original IronFront artwork.",
+  "files": [
+    {
+      "name": "city",
+      "path": "resources/images/CityIconWhite.svg",
+      "sha256": "f51c6181899ff6831fa5a1f3fa06c067011a16c86e67a657e4b6e5d12491e6ae"
+    },
+    {
+      "name": "factory",
+      "path": "resources/images/FactoryIconWhite.svg",
+      "sha256": "df44504decd623d18294bc327437463fb9317f396ec0e3590108a957cbaa3cdc"
+    },
+    {
+      "name": "port",
+      "path": "resources/images/PortIcon.svg",
+      "sha256": "8a929d857f291f8e36f487878a3a4318f596399bc125da521d5d53fc2c15a4c6"
+    },
+    {
+      "name": "fort",
+      "path": "resources/images/ShieldIconWhite.svg",
+      "sha256": "dedb220e04bb62387d479ad82989587fe34337c9a3fca0b149abfcc7d6ab619c"
+    },
+    {
+      "name": "missile",
+      "path": "resources/images/MissileSiloIconWhite.svg",
+      "sha256": "27f4b5bfbc13f75cdae5fc203e7dc129d1cf84684f23bb4e0a48a3cee180d8b6"
+    },
+    {
+      "name": "sam",
+      "path": "resources/images/SamLauncherIconWhite.svg",
+      "sha256": "ba0b6ba738950c3b4d8cc6702f4fafed040aaf7725526f729369946b4ca98fd2"
+    }
+  ]
+}

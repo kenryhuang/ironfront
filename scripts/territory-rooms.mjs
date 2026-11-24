@@ -83,7 +83,7 @@ export function createTerritoryRooms({now=Date.now}={}){
   const {action}=body;
   if(method==='POST'&&(['create','join','watch','resume'].includes(action))){
    const name=typeof body.name==='string'?body.name.trim().slice(0,16):'';
-   if(!name&&['create','join'].includes(action))return error(400,'请输入昵称。');
+   if(!name&&['create','join'].includes(action))return error(400,'请输入你的势力名称。');
    let room;
    if(action==='create'){
     if(rooms.size>=ROOM_LIMIT)return error(503,'房间已满，请稍后重试。');

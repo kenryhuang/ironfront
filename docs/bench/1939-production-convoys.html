@@ -8,6 +8,8 @@
 import {RoomGame} from '../../src/territory-1939/rules.js';
 import {WarVisuals} from '../../src/territory-1939/war-visuals.js';
 import {drawBuilding} from '../../src/territory-1939/pixel-art.js';
+import {loadBuildingAssets} from '../../src/territory-1939/building-visuals.js';
+await loadBuildingAssets();
 import {buildingDetails} from '../../src/territory-1939/building-cards.js';
 import {productionGauge} from '../../src/territory-1939/economy.js';
 const W=120,H=56,owners=Array.from({length:W*H},(_,t)=>t%W<20?1:t%W>=87?2:-1);
